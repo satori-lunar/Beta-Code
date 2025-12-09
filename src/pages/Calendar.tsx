@@ -1,0 +1,412 @@
+import { useState } from 'react';
+import {
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  X,
+  Clock,
+  Video,
+  Target,
+  Bell,
+  Flag
+} from 'lucide-react';
+import { useStore } from '../store/useStore';
+import {
+  format,
+  startOfMonth,
+  endOfMonth,
+  startOfWeek,
+  endOfWeek,
+  addDays,
+  addMonths,
+  subMonths,
+  isSameMonth,
+  isSameDay,
+  parseISO
+} from 'date-fns';
+
+const eventTypes = [
+  { id: 'class', name: 'Class', icon: Video, color: '#f8b4b4' },
+  { id: 'habit', name: 'Habit', icon: Target, color: '#d8f3dc' },
+  { id: 'reminder', name: 'Reminder', icon: Bell, color: '#bde0fe' },
+  { id: 'goal', name: 'Goal', icon: Flag, color: '#e2d5f1' },
+];
+
+export default function Calendar() {
+  const { calendarEvents, addCalendarEvent, deleteCalendarEvent, liveClasses } = useStore();
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newEvent, setNewEvent] = useState({
+    title: '',
+    type: 'reminder',
+    time: '',
+    description: '',
+  });
+
+  const monthStart = startOfMonth(currentMonth);
+  const monthEnd = endOfMonth(monthStart);
+  const startDate = startOfWeek(monthStart, { weekStartsOn: 1 });
+  const endDate = endOfWeek(monthEnd, { weekStartsOn: 1 });
+
+  const rows: Date[][] = [];
+  let days: Date[] = [];
+  let day = startDate;
+
+  while (day <= endDate) {
+    for (let i = 0; i < 7; i++) {
+      days.push(day);
+      day = addDays(day, 1);
+    }
+    rows.push(days);
+    days = [];
+  }
+
+  const getEventsForDate = (date: Date) => {
+    const dateString = format(date, 'yyyy-MM-dd');
+    return calendarEvents.filter((event) => event.date === dateString);
+  };
+
+  const selectedDateEvents = getEventsForDate(selectedDate);
+  const selectedDateString = format(selectedDate, 'yyyy-MM-dd');
+
+  // Get upcoming live classes
+  const upcomingClasses = liveClasses
+    .filter((c) => new Date(c.scheduledAt) >= new Date())
+    .slice(0, 3);
+
+  const handleAddEvent = () => {
+    if (newEvent.title.trim()) {
+      const eventType = eventTypes.find((t) => t.id === newEvent.type);
+      addCalendarEvent({
+        id: Date.now().toString(),
+        title: newEvent.title,
+        date: selectedDateString,
+        time: newEvent.time || undefined,
+        type: newEvent.type as 'class' | 'habit' | 'reminder' | 'goal',
+        color: eventType?.color || '#f8b4b4',
+        description: newEvent.description || undefined,
+      });
+      setNewEvent({ title: '', type: 'reminder', time: '', description: '' });
+      setShowAddModal(false);
+    }
+  };
+
+  return (
+    <div className="space-y-8 pb-20 lg:pb-0">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl lg:text-3xl font-display font-bold text-gray-900">
+            Calendar
+          </h1>
+          <p className="text-gray-500 mt-1">Manage your wellness schedule</p>
+        </div>
+        <button
+          onClick={() => setShowAddModal(true)}
+          className="btn-primary flex items-center gap-2 self-start"
+        >
+          <Plus className="w-5 h-5" />
+          Add Event
+        </button>
+      </div>
+
+      <div className="grid lg:grid-cols-3 gap-6">
+        {/* Calendar */}
+        <div className="lg:col-span-2 card">
+          {/* Calendar Header */}
+          <div className="flex items-center justify-between mb-6">
+            <button
+              onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <ChevronLeft className="w-5 h-5 text-gray-600" />
+            </button>
+            <h2 className="text-xl font-display font-semibold text-gray-900">
+              {format(currentMonth, 'MMMM yyyy')}
+            </h2>
+            <button
+              onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <ChevronRight className="w-5 h-5 text-gray-600" />
+            </button>
+          </div>
+
+          {/* Days of Week */}
+          <div className="grid grid-cols-7 mb-2">
+            {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
+              <div key={day} className="text-center text-sm font-medium text-gray-500 py-2">
+                {day}
+              </div>
+            ))}
+          </div>
+
+          {/* Calendar Grid */}
+          <div className="border border-gray-100 rounded-xl overflow-hidden">
+            {rows.map((week, weekIndex) => (
+              <div key={weekIndex} className="grid grid-cols-7">
+                {week.map((day, dayIndex) => {
+                  const dayEvents = getEventsForDate(day);
+                  const isCurrentMonth = isSameMonth(day, currentMonth);
+                  const isSelected = isSameDay(day, selectedDate);
+                  const isToday = isSameDay(day, new Date());
+
+                  return (
+                    <button
+                      key={dayIndex}
+                      onClick={() => setSelectedDate(day)}
+                      className={`min-h-[80px] p-2 border-b border-r border-gray-100 text-left transition-colors ${
+                        !isCurrentMonth ? 'bg-gray-50 text-gray-400' : 'hover:bg-gray-50'
+                      } ${isSelected ? 'bg-coral-50' : ''}`}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span
+                          className={`text-sm font-medium ${
+                            isToday
+                              ? 'w-7 h-7 bg-coral-500 text-white rounded-full flex items-center justify-center'
+                              : isSelected
+                              ? 'text-coral-600'
+                              : ''
+                          }`}
+                        >
+                          {format(day, 'd')}
+                        </span>
+                      </div>
+                      <div className="space-y-1">
+                        {dayEvents.slice(0, 2).map((event) => (
+                          <div
+                            key={event.id}
+                            className="text-xs px-1.5 py-0.5 rounded truncate"
+                            style={{ backgroundColor: event.color }}
+                          >
+                            {event.title}
+                          </div>
+                        ))}
+                        {dayEvents.length > 2 && (
+                          <div className="text-xs text-gray-500">
+                            +{dayEvents.length - 2} more
+                          </div>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Sidebar */}
+        <div className="space-y-6">
+          {/* Selected Date Events */}
+          <div className="card">
+            <h3 className="font-semibold text-gray-900 mb-4">
+              {format(selectedDate, 'EEEE, MMMM d')}
+            </h3>
+
+            {selectedDateEvents.length > 0 ? (
+              <div className="space-y-3">
+                {selectedDateEvents.map((event) => {
+                  const eventType = eventTypes.find((t) => t.id === event.type);
+                  const IconComponent = eventType?.icon || Bell;
+
+                  return (
+                    <div
+                      key={event.id}
+                      className="flex items-start gap-3 p-3 rounded-xl"
+                      style={{ backgroundColor: event.color + '30' }}
+                    >
+                      <div
+                        className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                        style={{ backgroundColor: event.color }}
+                      >
+                        <IconComponent className="w-4 h-4 text-gray-700" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-gray-900">{event.title}</p>
+                        {event.time && (
+                          <p className="text-sm text-gray-500 flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {event.time}
+                          </p>
+                        )}
+                        {event.description && (
+                          <p className="text-sm text-gray-500 mt-1">{event.description}</p>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => deleteCalendarEvent(event.id)}
+                        className="p-1 text-gray-400 hover:text-red-500 rounded"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-gray-500 text-sm">No events scheduled for this day</p>
+            )}
+
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="w-full mt-4 py-2 px-4 rounded-xl border-2 border-dashed border-gray-200 text-gray-500 hover:border-coral-300 hover:text-coral-500 transition-colors flex items-center justify-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Add Event
+            </button>
+          </div>
+
+          {/* Upcoming Classes */}
+          <div className="card">
+            <h3 className="font-semibold text-gray-900 mb-4">Upcoming Classes</h3>
+            <div className="space-y-3">
+              {upcomingClasses.map((classItem) => (
+                <div
+                  key={classItem.id}
+                  className="flex items-center gap-3 p-3 bg-navy-50 rounded-xl"
+                >
+                  <div className="w-10 h-10 rounded-lg bg-navy-800 flex items-center justify-center flex-shrink-0">
+                    <Video className="w-5 h-5 text-white" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-gray-900 truncate">{classItem.title}</p>
+                    <p className="text-sm text-gray-500">
+                      {format(parseISO(classItem.scheduledAt), 'MMM d, h:mm a')}
+                    </p>
+                  </div>
+                </div>
+              ))}
+              {upcomingClasses.length === 0 && (
+                <p className="text-gray-500 text-sm">No upcoming classes</p>
+              )}
+            </div>
+          </div>
+
+          {/* Event Type Legend */}
+          <div className="card">
+            <h3 className="font-semibold text-gray-900 mb-4">Event Types</h3>
+            <div className="space-y-2">
+              {eventTypes.map((type) => (
+                <div key={type.id} className="flex items-center gap-3">
+                  <div
+                    className="w-4 h-4 rounded"
+                    style={{ backgroundColor: type.color }}
+                  />
+                  <span className="text-sm text-gray-600">{type.name}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Add Event Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-md p-6 shadow-elevated">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-display font-semibold">Add Event</h3>
+              <button
+                onClick={() => setShowAddModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Event Type
+                </label>
+                <div className="grid grid-cols-4 gap-2">
+                  {eventTypes.map((type) => (
+                    <button
+                      key={type.id}
+                      onClick={() => setNewEvent({ ...newEvent, type: type.id })}
+                      className={`p-3 rounded-xl flex flex-col items-center gap-1 transition-all ${
+                        newEvent.type === type.id
+                          ? 'ring-2 ring-coral-500'
+                          : 'hover:bg-gray-100'
+                      }`}
+                      style={{
+                        backgroundColor: newEvent.type === type.id ? type.color : '#f9fafb',
+                      }}
+                    >
+                      <type.icon className="w-5 h-5 text-gray-700" />
+                      <span className="text-xs text-gray-600">{type.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Title
+                </label>
+                <input
+                  type="text"
+                  value={newEvent.title}
+                  onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
+                  placeholder="Event title"
+                  className="input"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Date
+                </label>
+                <input
+                  type="text"
+                  value={format(selectedDate, 'MMMM d, yyyy')}
+                  disabled
+                  className="input bg-gray-50"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Time (optional)
+                </label>
+                <input
+                  type="time"
+                  value={newEvent.time}
+                  onChange={(e) => setNewEvent({ ...newEvent, time: e.target.value })}
+                  className="input"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Description (optional)
+                </label>
+                <textarea
+                  value={newEvent.description}
+                  onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
+                  placeholder="Add a description..."
+                  rows={3}
+                  className="input resize-none"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={() => setShowAddModal(false)}
+                  className="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button onClick={handleAddEvent} className="flex-1 btn-primary">
+                  Add Event
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

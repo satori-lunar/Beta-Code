@@ -9,6 +9,7 @@ import Courses from './pages/Courses';
 import Calendar from './pages/Calendar';
 import Classes from './pages/Classes';
 import Settings from './pages/Settings';
+import Badges from './pages/Badges';
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
           <Route path="calendar" element={<Calendar />} />
           <Route path="classes" element={<Classes />} />
           <Route path="settings" element={<Settings />} />
+          <Route path="badges" element={<Badges />} />
         </Route>
       </Routes>
     </Router>

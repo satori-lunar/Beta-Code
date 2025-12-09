@@ -13,10 +13,13 @@ import {
   PlayCircle,
   ChevronRight,
   CheckCircle2,
-  Circle
+  Circle,
+  Clock,
+  Users,
+  Video
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
-import { format } from 'date-fns';
+import { format, isToday, parseISO } from 'date-fns';
 
 const badgeIcons: Record<string, React.ElementType> = {
   flame: Flame,
@@ -35,6 +38,12 @@ export default function Dashboard() {
   ).length;
 
   const upcomingClass = liveClasses.find(c => new Date(c.scheduledAt) > new Date());
+
+  // Get today's live classes
+  const todaysClasses = liveClasses.filter(c => {
+    const classDate = parseISO(c.scheduledAt);
+    return isToday(classDate);
+  }).sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime());
 
   const latestWeight = weightEntries[weightEntries.length - 1];
   const previousWeight = weightEntries[weightEntries.length - 2];
@@ -157,6 +166,90 @@ export default function Dashboard() {
           )}
         </div>
       </div>
+
+      {/* Today's Live Classes */}
+      {todaysClasses.length > 0 && (
+        <div className="card">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center">
+                <Video className="w-5 h-5 text-red-600" />
+              </div>
+              <div>
+                <h2 className="text-xl font-display font-semibold text-gray-900">Today's Live Classes</h2>
+                <p className="text-sm text-gray-500">{todaysClasses.length} class{todaysClasses.length !== 1 ? 'es' : ''} scheduled</p>
+              </div>
+            </div>
+            <Link to="/classes" className="text-coral-600 hover:text-coral-700 text-sm font-medium flex items-center gap-1">
+              View All <ChevronRight className="w-4 h-4" />
+            </Link>
+          </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {todaysClasses.map((liveClass) => {
+              const classTime = new Date(liveClass.scheduledAt);
+              const now = new Date();
+              const isLive = classTime <= now && classTime.getTime() + liveClass.duration * 60000 > now.getTime();
+              const isPast = classTime.getTime() + liveClass.duration * 60000 < now.getTime();
+
+              return (
+                <div
+                  key={liveClass.id}
+                  className={`p-4 rounded-xl border transition-all ${
+                    isLive
+                      ? 'bg-gradient-to-br from-red-50 to-orange-50 border-red-200 ring-2 ring-red-200'
+                      : isPast
+                        ? 'bg-gray-50 border-gray-200 opacity-60'
+                        : 'bg-white border-gray-200 hover:border-coral-200 hover:shadow-md'
+                  }`}
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-gray-500" />
+                      <span className="text-sm font-medium text-gray-600">
+                        {format(classTime, 'h:mm a')}
+                      </span>
+                    </div>
+                    {isLive && (
+                      <span className="flex items-center gap-1 px-2 py-0.5 bg-red-500 text-white text-xs font-medium rounded-full animate-pulse">
+                        <span className="w-1.5 h-1.5 bg-white rounded-full"></span>
+                        LIVE
+                      </span>
+                    )}
+                    {isPast && (
+                      <span className="px-2 py-0.5 bg-gray-200 text-gray-600 text-xs font-medium rounded-full">
+                        Ended
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="font-semibold text-gray-900 mb-1">{liveClass.title}</h3>
+                  <p className="text-sm text-gray-500 mb-3">{liveClass.instructor}</p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-400 flex items-center gap-1">
+                      <Users className="w-3 h-3" />
+                      {liveClass.duration} min
+                    </span>
+                    {!isPast && (
+                      <a
+                        href={liveClass.zoomLink || '#'}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                          isLive
+                            ? 'bg-red-500 hover:bg-red-600 text-white'
+                            : 'bg-coral-500 hover:bg-coral-600 text-white'
+                        }`}
+                      >
+                        <PlayCircle className="w-4 h-4" />
+                        {isLive ? 'Join Now' : 'Join'}
+                      </a>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Main Content Grid */}
       <div className="grid lg:grid-cols-2 gap-6">

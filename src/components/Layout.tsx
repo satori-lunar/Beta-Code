@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { formatDistanceToNow } from 'date-fns';
+import HelpDesk from './HelpDesk';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
@@ -561,6 +562,9 @@ export default function Layout() {
           ))}
         </div>
       </nav>
+
+      {/* Help Desk Floating Button */}
+      <HelpDesk userName={user?.name || 'there'} />
     </div>
   );
 }

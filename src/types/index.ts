@@ -122,3 +122,21 @@ export interface CalendarEvent {
   color: string;
   description?: string;
 }
+
+export interface Notification {
+  id: string;
+  title: string;
+  message: string;
+  type: 'reminder' | 'achievement' | 'class' | 'streak' | 'system';
+  read: boolean;
+  createdAt: string;
+  link?: string;
+}
+
+export interface SearchResult {
+  id: string;
+  title: string;
+  description: string;
+  type: 'habit' | 'course' | 'class' | 'journal' | 'page';
+  link: string;
+}

@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type {
   User, Habit, NutritionEntry, WeightEntry,
-  JournalEntry, Course, LiveClass, RecordedSession, CalendarEvent
+  JournalEntry, Course, LiveClass, RecordedSession, CalendarEvent, Notification
 } from '../types';
 
 interface AppState {
@@ -46,6 +46,12 @@ interface AppState {
   calendarEvents: CalendarEvent[];
   addCalendarEvent: (event: CalendarEvent) => void;
   deleteCalendarEvent: (id: string) => void;
+
+  // Notifications
+  notifications: Notification[];
+  markNotificationRead: (id: string) => void;
+  markAllNotificationsRead: () => void;
+  deleteNotification: (id: string) => void;
 }
 
 // Mock data
@@ -197,6 +203,26 @@ export const useStore = create<AppState>()(
       })),
       deleteCalendarEvent: (id) => set((state) => ({
         calendarEvents: state.calendarEvents.filter(e => e.id !== id)
+      })),
+
+      // Notifications
+      notifications: [
+        { id: '1', title: 'Keep up your streak!', message: 'You\'re on a 12 day streak. Complete today\'s habits to keep it going!', type: 'streak', read: false, createdAt: new Date().toISOString(), link: '/habits' },
+        { id: '2', title: 'Live Yoga Session starting soon', message: 'Your yoga class with Sarah Mitchell starts in 30 minutes.', type: 'class', read: false, createdAt: new Date(Date.now() - 1800000).toISOString(), link: '/classes' },
+        { id: '3', title: 'New badge earned!', message: 'Congratulations! You\'ve earned the "Hydration Hero" badge.', type: 'achievement', read: false, createdAt: new Date(Date.now() - 3600000).toISOString(), link: '/badges' },
+        { id: '4', title: 'Weekly weight check-in', message: 'Don\'t forget to log your weight this week.', type: 'reminder', read: true, createdAt: new Date(Date.now() - 86400000).toISOString(), link: '/weight' },
+        { id: '5', title: 'Course progress update', message: 'You\'re 47% through "Finding Calm". Keep going!', type: 'system', read: true, createdAt: new Date(Date.now() - 172800000).toISOString(), link: '/courses' },
+      ],
+      markNotificationRead: (id) => set((state) => ({
+        notifications: state.notifications.map(n =>
+          n.id === id ? { ...n, read: true } : n
+        )
+      })),
+      markAllNotificationsRead: () => set((state) => ({
+        notifications: state.notifications.map(n => ({ ...n, read: true }))
+      })),
+      deleteNotification: (id) => set((state) => ({
+        notifications: state.notifications.filter(n => n.id !== id)
       })),
     }),
     {

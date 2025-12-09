@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { useState, useRef, useEffect } from 'react';
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   Target,
@@ -15,9 +15,16 @@ import {
   X,
   Bell,
   Search,
-  Flame
+  Flame,
+  Award,
+  ChevronRight,
+  Check,
+  Trash2,
+  User,
+  Clock
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
+import { formatDistanceToNow } from 'date-fns';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
@@ -30,9 +37,160 @@ const navigation = [
   { name: 'Classes', href: '/classes', icon: Video },
 ];
 
+const pages = [
+  { name: 'Dashboard', description: 'View your wellness overview', href: '/' },
+  { name: 'Habits', description: 'Track your daily habits', href: '/habits' },
+  { name: 'Nutrition', description: 'Log meals and water intake', href: '/nutrition' },
+  { name: 'Weight Log', description: 'Track your weight progress', href: '/weight' },
+  { name: 'Journal', description: 'Write and reflect', href: '/journal' },
+  { name: 'Courses', description: 'Learn and grow', href: '/courses' },
+  { name: 'Calendar', description: 'View your schedule', href: '/calendar' },
+  { name: 'Classes', description: 'Live and recorded sessions', href: '/classes' },
+  { name: 'Badges', description: 'View your achievements', href: '/badges' },
+  { name: 'Settings', description: 'Manage your account', href: '/settings' },
+];
+
+const notificationIcons: Record<string, React.ElementType> = {
+  streak: Flame,
+  class: Video,
+  achievement: Award,
+  reminder: Bell,
+  system: Settings,
+};
+
 export default function Layout() {
+  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { user } = useStore();
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+
+  const searchRef = useRef<HTMLDivElement>(null);
+  const notificationsRef = useRef<HTMLDivElement>(null);
+  const profileRef = useRef<HTMLDivElement>(null);
+
+  const {
+    user,
+    habits,
+    courses,
+    recordedSessions,
+    journalEntries,
+    notifications,
+    markNotificationRead,
+    markAllNotificationsRead,
+    deleteNotification
+  } = useStore();
+
+  const unreadCount = notifications.filter(n => !n.read).length;
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setSearchOpen(false);
+      }
+      if (notificationsRef.current && !notificationsRef.current.contains(event.target as Node)) {
+        setNotificationsOpen(false);
+      }
+      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
+        setProfileOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Search results
+  const getSearchResults = () => {
+    if (!searchQuery.trim()) return [];
+
+    const query = searchQuery.toLowerCase();
+    const results: Array<{ id: string; title: string; description: string; type: string; link: string }> = [];
+
+    // Search pages
+    pages.forEach(page => {
+      if (page.name.toLowerCase().includes(query) || page.description.toLowerCase().includes(query)) {
+        results.push({
+          id: `page-${page.href}`,
+          title: page.name,
+          description: page.description,
+          type: 'page',
+          link: page.href
+        });
+      }
+    });
+
+    // Search habits
+    habits.forEach(habit => {
+      if (habit.name.toLowerCase().includes(query)) {
+        results.push({
+          id: `habit-${habit.id}`,
+          title: habit.name,
+          description: `Habit - ${habit.streak} day streak`,
+          type: 'habit',
+          link: '/habits'
+        });
+      }
+    });
+
+    // Search courses
+    courses.forEach(course => {
+      if (course.title.toLowerCase().includes(query) || course.description.toLowerCase().includes(query)) {
+        results.push({
+          id: `course-${course.id}`,
+          title: course.title,
+          description: `Course by ${course.instructor}`,
+          type: 'course',
+          link: '/courses'
+        });
+      }
+    });
+
+    // Search recordings
+    recordedSessions.forEach(session => {
+      if (session.title.toLowerCase().includes(query) || session.description.toLowerCase().includes(query)) {
+        results.push({
+          id: `session-${session.id}`,
+          title: session.title,
+          description: `Recording - ${session.category}`,
+          type: 'class',
+          link: '/classes'
+        });
+      }
+    });
+
+    // Search journal entries
+    journalEntries.forEach(entry => {
+      if (entry.title.toLowerCase().includes(query) || entry.content.toLowerCase().includes(query)) {
+        results.push({
+          id: `journal-${entry.id}`,
+          title: entry.title,
+          description: `Journal entry - ${entry.mood} mood`,
+          type: 'journal',
+          link: '/journal'
+        });
+      }
+    });
+
+    return results.slice(0, 8);
+  };
+
+  const searchResults = getSearchResults();
+
+  const handleSearchSelect = (link: string) => {
+    navigate(link);
+    setSearchQuery('');
+    setSearchOpen(false);
+  };
+
+  const handleNotificationClick = (notification: typeof notifications[0]) => {
+    markNotificationRead(notification.id);
+    if (notification.link) {
+      navigate(notification.link);
+    }
+    setNotificationsOpen(false);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-rose-50 via-white to-orange-50">
@@ -133,23 +291,246 @@ export default function Layout() {
               >
                 <Menu className="w-6 h-6 text-gray-600" />
               </button>
-              <div className="hidden sm:flex items-center gap-2 bg-gray-50 rounded-xl px-4 py-2.5 w-64">
-                <Search className="w-5 h-5 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search..."
-                  className="bg-transparent outline-none text-sm text-gray-600 w-full"
-                />
+
+              {/* Search */}
+              <div ref={searchRef} className="relative hidden sm:block">
+                <div className="flex items-center gap-2 bg-gray-50 rounded-xl px-4 py-2.5 w-64 lg:w-80">
+                  <Search className="w-5 h-5 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search habits, courses, pages..."
+                    value={searchQuery}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      setSearchOpen(true);
+                    }}
+                    onFocus={() => setSearchOpen(true)}
+                    className="bg-transparent outline-none text-sm text-gray-600 w-full"
+                  />
+                  {searchQuery && (
+                    <button onClick={() => setSearchQuery('')} className="text-gray-400 hover:text-gray-600">
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Search Results Dropdown */}
+                {searchOpen && searchQuery && (
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-elevated border border-gray-100 overflow-hidden z-50">
+                    {searchResults.length > 0 ? (
+                      <div className="max-h-96 overflow-y-auto">
+                        {searchResults.map((result) => (
+                          <button
+                            key={result.id}
+                            onClick={() => handleSearchSelect(result.link)}
+                            className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 transition-colors text-left"
+                          >
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                              result.type === 'page' ? 'bg-coral-100 text-coral-600' :
+                              result.type === 'habit' ? 'bg-sage-100 text-sage-600' :
+                              result.type === 'course' ? 'bg-purple-100 text-purple-600' :
+                              result.type === 'class' ? 'bg-blue-100 text-blue-600' :
+                              'bg-amber-100 text-amber-600'
+                            }`}>
+                              {result.type === 'page' && <LayoutDashboard className="w-4 h-4" />}
+                              {result.type === 'habit' && <Target className="w-4 h-4" />}
+                              {result.type === 'course' && <GraduationCap className="w-4 h-4" />}
+                              {result.type === 'class' && <Video className="w-4 h-4" />}
+                              {result.type === 'journal' && <BookOpen className="w-4 h-4" />}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-gray-900 truncate">{result.title}</p>
+                              <p className="text-xs text-gray-500 truncate">{result.description}</p>
+                            </div>
+                            <ChevronRight className="w-4 h-4 text-gray-400" />
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="p-4 text-center text-gray-500 text-sm">
+                        No results found for "{searchQuery}"
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
             <div className="flex items-center gap-3">
-              <button className="relative p-2.5 rounded-xl hover:bg-gray-100 transition-colors">
-                <Bell className="w-5 h-5 text-gray-600" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-coral-500 rounded-full" />
-              </button>
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-coral-200 to-coral-400 flex items-center justify-center text-white font-semibold">
-                {user?.name?.charAt(0) || 'U'}
+              {/* Notifications */}
+              <div ref={notificationsRef} className="relative">
+                <button
+                  onClick={() => {
+                    setNotificationsOpen(!notificationsOpen);
+                    setProfileOpen(false);
+                  }}
+                  className="relative p-2.5 rounded-xl hover:bg-gray-100 transition-colors"
+                >
+                  <Bell className="w-5 h-5 text-gray-600" />
+                  {unreadCount > 0 && (
+                    <span className="absolute top-1 right-1 w-5 h-5 bg-coral-500 text-white text-xs font-medium rounded-full flex items-center justify-center">
+                      {unreadCount}
+                    </span>
+                  )}
+                </button>
+
+                {/* Notifications Dropdown */}
+                {notificationsOpen && (
+                  <div className="absolute top-full right-0 mt-2 w-80 sm:w-96 bg-white rounded-xl shadow-elevated border border-gray-100 overflow-hidden z-50">
+                    <div className="flex items-center justify-between p-4 border-b border-gray-100">
+                      <h3 className="font-semibold text-gray-900">Notifications</h3>
+                      {unreadCount > 0 && (
+                        <button
+                          onClick={markAllNotificationsRead}
+                          className="text-sm text-coral-600 hover:text-coral-700 font-medium"
+                        >
+                          Mark all read
+                        </button>
+                      )}
+                    </div>
+                    <div className="max-h-96 overflow-y-auto">
+                      {notifications.length > 0 ? (
+                        notifications.map((notification) => {
+                          const IconComponent = notificationIcons[notification.type] || Bell;
+                          return (
+                            <div
+                              key={notification.id}
+                              className={`flex items-start gap-3 p-4 hover:bg-gray-50 transition-colors cursor-pointer ${
+                                !notification.read ? 'bg-coral-50/50' : ''
+                              }`}
+                              onClick={() => handleNotificationClick(notification)}
+                            >
+                              <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                                notification.type === 'streak' ? 'bg-amber-100 text-amber-600' :
+                                notification.type === 'class' ? 'bg-blue-100 text-blue-600' :
+                                notification.type === 'achievement' ? 'bg-purple-100 text-purple-600' :
+                                notification.type === 'reminder' ? 'bg-sage-100 text-sage-600' :
+                                'bg-gray-100 text-gray-600'
+                              }`}>
+                                <IconComponent className="w-5 h-5" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className={`text-sm ${!notification.read ? 'font-semibold text-gray-900' : 'font-medium text-gray-700'}`}>
+                                  {notification.title}
+                                </p>
+                                <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">
+                                  {notification.message}
+                                </p>
+                                <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
+                                  <Clock className="w-3 h-3" />
+                                  {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                {!notification.read && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      markNotificationRead(notification.id);
+                                    }}
+                                    className="p-1 text-gray-400 hover:text-sage-600 rounded"
+                                    title="Mark as read"
+                                  >
+                                    <Check className="w-4 h-4" />
+                                  </button>
+                                )}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    deleteNotification(notification.id);
+                                  }}
+                                  className="p-1 text-gray-400 hover:text-red-500 rounded"
+                                  title="Delete"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <div className="p-8 text-center text-gray-500 text-sm">
+                          <Bell className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                          No notifications
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Profile */}
+              <div ref={profileRef} className="relative">
+                <button
+                  onClick={() => {
+                    setProfileOpen(!profileOpen);
+                    setNotificationsOpen(false);
+                  }}
+                  className="w-10 h-10 rounded-full bg-gradient-to-br from-coral-200 to-coral-400 flex items-center justify-center text-white font-semibold hover:ring-2 hover:ring-coral-200 transition-all"
+                >
+                  {user?.name?.charAt(0) || 'U'}
+                </button>
+
+                {/* Profile Dropdown */}
+                {profileOpen && (
+                  <div className="absolute top-full right-0 mt-2 w-64 bg-white rounded-xl shadow-elevated border border-gray-100 overflow-hidden z-50">
+                    <div className="p-4 border-b border-gray-100">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-coral-200 to-coral-400 flex items-center justify-center text-white font-semibold text-lg">
+                          {user?.name?.charAt(0) || 'U'}
+                        </div>
+                        <div>
+                          <p className="font-semibold text-gray-900">{user?.name || 'User'}</p>
+                          <p className="text-sm text-gray-500">{user?.email || 'user@example.com'}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 mt-3 p-2 bg-amber-50 rounded-lg">
+                        <Flame className="w-5 h-5 text-amber-500" />
+                        <span className="text-sm font-medium text-amber-700">{user?.streak || 0} day streak</span>
+                        <Award className="w-5 h-5 text-amber-500 ml-auto" />
+                        <span className="text-sm font-medium text-amber-700">{user?.badges?.length || 0} badges</span>
+                      </div>
+                    </div>
+                    <div className="p-2">
+                      <button
+                        onClick={() => {
+                          navigate('/settings');
+                          setProfileOpen(false);
+                        }}
+                        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 text-gray-700 transition-colors"
+                      >
+                        <User className="w-5 h-5" />
+                        <span>My Profile</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          navigate('/badges');
+                          setProfileOpen(false);
+                        }}
+                        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 text-gray-700 transition-colors"
+                      >
+                        <Award className="w-5 h-5" />
+                        <span>My Badges</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          navigate('/settings');
+                          setProfileOpen(false);
+                        }}
+                        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 text-gray-700 transition-colors"
+                      >
+                        <Settings className="w-5 h-5" />
+                        <span>Settings</span>
+                      </button>
+                    </div>
+                    <div className="p-2 border-t border-gray-100">
+                      <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-red-50 text-red-600 transition-colors">
+                        <LogOut className="w-5 h-5" />
+                        <span>Log Out</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>

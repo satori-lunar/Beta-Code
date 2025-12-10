@@ -25,12 +25,15 @@ import {
   Link2,
   CheckCircle,
   AlertCircle,
-  Upload
+  Upload,
+  Sparkles
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useUserProfile } from '../hooks/useSupabaseData';
 import { supabase } from '../lib/supabase';
 import { useTheme } from '../contexts/ThemeContext';
+import AvatarBuilder, { AvatarDisplay } from '../components/AvatarBuilder';
+import ComingSoonModal from '../components/ComingSoonModal';
 
 // Avatar options
 const avatarOptions = [
@@ -62,15 +65,12 @@ export default function Settings() {
   const [showHelpModal, setShowHelpModal] = useState(false);
   const [showAvatarModal, setShowAvatarModal] = useState(false);
   const [showColorModal, setShowColorModal] = useState(false);
+  const [showComingSoonModal, setShowComingSoonModal] = useState(false);
+  const [comingSoonFeature, setComingSoonFeature] = useState('');
   const [privacySettings, setPrivacySettings] = useState({
     profileVisible: true,
     showProgress: true,
     shareData: false,
-  });
-  const [healthConnections, setHealthConnections] = useState({
-    fitbit: false,
-    appleHealth: false,
-    googleFit: false,
   });
 
   const languages = ['English', 'Spanish', 'French', 'German', 'Portuguese', 'Japanese', 'Chinese'];
@@ -116,14 +116,9 @@ export default function Settings() {
     }
   };
 
-  const connectFitbit = () => {
-    // In production, this would redirect to Fitbit OAuth
-    const fitbitAuthUrl = `https://www.fitbit.com/oauth2/authorize?response_type=code&client_id=YOUR_CLIENT_ID&redirect_uri=${encodeURIComponent(window.location.origin + '/auth/fitbit/callback')}&scope=activity%20heartrate%20sleep%20weight`;
-    window.open(fitbitAuthUrl, '_blank', 'width=500,height=600');
-    // For demo, simulate connection
-    setTimeout(() => {
-      setHealthConnections(prev => ({ ...prev, fitbit: true }));
-    }, 1000);
+  const handleDeviceConnect = (deviceName: string) => {
+    setComingSoonFeature(`${deviceName} Integration`);
+    setShowComingSoonModal(true);
   };
 
   const renderAvatar = () => {
@@ -132,6 +127,13 @@ export default function Settings() {
         <img src={customAvatarUrl} alt="Avatar" className="w-full h-full object-cover rounded-full" />
       );
     }
+    
+    // Check if it's a JSON avatar config from AvatarBuilder
+    if (selectedAvatar && selectedAvatar.startsWith('{')) {
+      return <AvatarDisplay avatarData={selectedAvatar} size={80} />;
+    }
+    
+    // Legacy gradient avatar
     const avatar = avatarOptions.find(a => a.id === selectedAvatar);
     if (avatar) {
       return (
@@ -315,20 +317,13 @@ export default function Settings() {
                 <p className="text-sm text-gray-500">Sync activity, sleep & heart rate</p>
               </div>
             </div>
-            {healthConnections.fitbit ? (
-              <span className="flex items-center gap-1 text-green-600 text-sm font-medium">
-                <CheckCircle className="w-4 h-4" />
-                Connected
-              </span>
-            ) : (
-              <button
-                onClick={connectFitbit}
-                className="flex items-center gap-1 px-3 py-1.5 bg-teal-500 text-white rounded-lg text-sm font-medium hover:bg-teal-600 transition-colors"
-              >
-                <Link2 className="w-4 h-4" />
-                Connect
-              </button>
-            )}
+            <button
+              onClick={() => handleDeviceConnect('Fitbit')}
+              className="flex items-center gap-1 px-3 py-1.5 bg-teal-500 text-white rounded-lg text-sm font-medium hover:bg-teal-600 transition-colors"
+            >
+              <Sparkles className="w-4 h-4" />
+              Connect
+            </button>
           </div>
 
           {/* Apple Health */}
@@ -339,13 +334,16 @@ export default function Settings() {
               </div>
               <div>
                 <p className="font-medium text-gray-900">Apple Health</p>
-                <p className="text-sm text-gray-500">Requires iOS app</p>
+                <p className="text-sm text-gray-500">Sync from your iPhone</p>
               </div>
             </div>
-            <span className="flex items-center gap-1 text-gray-400 text-sm">
-              <AlertCircle className="w-4 h-4" />
-              iOS Only
-            </span>
+            <button
+              onClick={() => handleDeviceConnect('Apple Health')}
+              className="flex items-center gap-1 px-3 py-1.5 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600 transition-colors"
+            >
+              <Sparkles className="w-4 h-4" />
+              Connect
+            </button>
           </div>
 
           {/* Google Fit */}
@@ -359,25 +357,18 @@ export default function Settings() {
                 <p className="text-sm text-gray-500">Sync workouts & activity</p>
               </div>
             </div>
-            {healthConnections.googleFit ? (
-              <span className="flex items-center gap-1 text-green-600 text-sm font-medium">
-                <CheckCircle className="w-4 h-4" />
-                Connected
-              </span>
-            ) : (
-              <button
-                onClick={() => setHealthConnections(prev => ({ ...prev, googleFit: true }))}
-                className="flex items-center gap-1 px-3 py-1.5 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors"
-              >
-                <Link2 className="w-4 h-4" />
-                Connect
-              </button>
-            )}
+            <button
+              onClick={() => handleDeviceConnect('Google Fit')}
+              className="flex items-center gap-1 px-3 py-1.5 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors"
+            >
+              <Sparkles className="w-4 h-4" />
+              Connect
+            </button>
           </div>
         </div>
 
         <p className="text-xs text-gray-500 mt-4">
-          Connected devices will automatically sync your health data to provide personalized insights.
+          Device integrations are coming soon! We'll notify you when they're ready.
         </p>
       </div>
 
@@ -474,89 +465,24 @@ export default function Settings() {
         <p className="mt-1">Made with care for your wellbeing</p>
       </div>
 
-      {/* Avatar Modal */}
-      {showAvatarModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden">
-            <div className="flex items-center justify-between p-4 border-b border-gray-100">
-              <h3 className="text-lg font-semibold text-gray-900">Choose Avatar</h3>
-              <button
-                onClick={() => setShowAvatarModal(false)}
-                className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center"
-              >
-                <X className="w-5 h-5 text-gray-500" />
-              </button>
-            </div>
-            <div className="p-4">
-              {/* Upload custom */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Upload Custom Avatar
-                </label>
-                <label
-                  className="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer transition-colors"
-                  style={{
-                    ['--hover-border' as string]: primaryColor,
-                    ['--hover-bg' as string]: colorPresets[colorPreset]?.light
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = primaryColor;
-                    e.currentTarget.style.backgroundColor = colorPresets[colorPreset]?.light;
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = '#e5e7eb';
-                    e.currentTarget.style.backgroundColor = '';
-                  }}
-                >
-                  <Upload className="w-5 h-5 text-gray-400" />
-                  <span className="text-sm text-gray-500">Click to upload image</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleAvatarUpload}
-                    className="hidden"
-                  />
-                </label>
-              </div>
+      {/* Avatar Builder Modal */}
+      <AvatarBuilder
+        isOpen={showAvatarModal}
+        onClose={() => setShowAvatarModal(false)}
+        onSave={(avatarData) => {
+          setSelectedAvatar(avatarData);
+          setCustomAvatarUrl(null);
+          handleSaveProfile();
+        }}
+      />
 
-              {/* Gradient options */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Or choose a color
-                </label>
-                <div className="grid grid-cols-6 gap-3">
-                  {avatarOptions.map((avatar) => (
-                    <button
-                      key={avatar.id}
-                      onClick={() => {
-                        setSelectedAvatar(avatar.id);
-                        setCustomAvatarUrl(null);
-                      }}
-                      className={`w-12 h-12 rounded-full transition-all ${
-                        selectedAvatar === avatar.id ? 'ring-2 ring-offset-2' : ''
-                      }`}
-                      style={{
-                        background: `linear-gradient(135deg, ${avatar.colors[0]}, ${avatar.colors[1]})`,
-                        ['--tw-ring-color' as string]: selectedAvatar === avatar.id ? primaryColor : undefined
-                      }}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              <button
-                onClick={() => {
-                  handleSaveProfile();
-                  setShowAvatarModal(false);
-                }}
-                className="w-full mt-6 btn-primary"
-              >
-                Save Avatar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Coming Soon Modal */}
+      <ComingSoonModal
+        isOpen={showComingSoonModal}
+        onClose={() => setShowComingSoonModal(false)}
+        feature={comingSoonFeature}
+        description="We're working hard to bring you seamless device integrations. Connect your favorite fitness trackers and health devices to automatically sync your data!"
+      />
 
       {/* Color Theme Modal */}
       {showColorModal && (

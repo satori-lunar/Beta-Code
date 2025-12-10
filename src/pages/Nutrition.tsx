@@ -9,7 +9,11 @@ import {
   Moon as MoonIcon,
   TrendingUp,
   Minus,
-  X
+  X,
+  Sparkles,
+  Lightbulb,
+  Target,
+  CheckCircle
 } from 'lucide-react';
 import {
   AreaChart,
@@ -51,15 +55,11 @@ interface Meal {
 }
 
 export default function Nutrition() {
-  const [waterIntake, setWaterIntake] = useState(1750);
+  const [waterIntake, setWaterIntake] = useState(0);
   const [showAddMealModal, setShowAddMealModal] = useState(false);
   const [selectedMealType, setSelectedMealType] = useState('breakfast');
-  const [meals, setMeals] = useState<Meal[]>([
-    { id: '1', type: 'breakfast', name: 'Oatmeal with berries', calories: 396, protein: 12, carbs: 68, fat: 8 },
-    { id: '2', type: 'lunch', name: 'Grilled chicken salad', calories: 613, protein: 45, carbs: 32, fat: 35 },
-    { id: '3', type: 'snacks', name: 'Greek yogurt & almonds', calories: 209, protein: 15, carbs: 12, fat: 12 },
-    { id: '4', type: 'dinner', name: 'Salmon with vegetables', calories: 424, protein: 38, carbs: 22, fat: 20 },
-  ]);
+  const [meals, setMeals] = useState<Meal[]>([]);
+  const [showGettingStarted, setShowGettingStarted] = useState(true);
 
   const [newMeal, setNewMeal] = useState({
     name: '',
@@ -104,6 +104,8 @@ export default function Nutrition() {
   const getMealCaloriesByType = (type: string) =>
     getMealsByType(type).reduce((sum, m) => sum + m.calories, 0);
 
+  const hasNoData = meals.length === 0 && waterIntake === 0;
+
   return (
     <div className="space-y-8 pb-20 lg:pb-0">
       {/* Header */}
@@ -113,6 +115,74 @@ export default function Nutrition() {
         </h1>
         <p className="text-gray-500 mt-1">Track your meals and stay hydrated</p>
       </div>
+
+      {/* Getting Started Card - Shows when there's no data */}
+      {hasNoData && showGettingStarted && (
+        <div className="card bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 border border-emerald-100">
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-lg">
+                <Sparkles className="w-7 h-7 text-white" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900 mb-1">Welcome to Nutrition Tracking!</h2>
+                <p className="text-gray-600 text-sm">Let's set up your daily nutrition goals and start tracking.</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowGettingStarted(false)}
+              className="p-1 hover:bg-white/50 rounded-full transition-colors"
+            >
+              <X className="w-5 h-5 text-gray-400" />
+            </button>
+          </div>
+
+          <div className="grid sm:grid-cols-3 gap-4 mt-6">
+            <div className="bg-white/60 backdrop-blur rounded-xl p-4 border border-white/50">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
+                  <Droplet className="w-4 h-4 text-blue-600" />
+                </div>
+                <span className="font-medium text-gray-900">1. Track Water</span>
+              </div>
+              <p className="text-sm text-gray-600">
+                Use the + and - buttons to log your water intake throughout the day.
+              </p>
+            </div>
+
+            <div className="bg-white/60 backdrop-blur rounded-xl p-4 border border-white/50">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center">
+                  <Apple className="w-4 h-4 text-orange-600" />
+                </div>
+                <span className="font-medium text-gray-900">2. Log Meals</span>
+              </div>
+              <p className="text-sm text-gray-600">
+                Click on any meal type below or "Add Meal" to record what you eat.
+              </p>
+            </div>
+
+            <div className="bg-white/60 backdrop-blur rounded-xl p-4 border border-white/50">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center">
+                  <Target className="w-4 h-4 text-purple-600" />
+                </div>
+                <span className="font-medium text-gray-900">3. Set Goals</span>
+              </div>
+              <p className="text-sm text-gray-600">
+                Your daily goals are set to 2000 kcal and 2000ml water by default.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 mt-4 pt-4 border-t border-emerald-100">
+            <Lightbulb className="w-4 h-4 text-amber-500" />
+            <p className="text-sm text-gray-600">
+              <span className="font-medium">Pro tip:</span> Consistent tracking helps you understand your eating patterns and make healthier choices!
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -297,26 +367,56 @@ export default function Nutrition() {
           </button>
         </div>
 
-        <div className="space-y-4">
-          {mealTypes.map((mealType) => {
-            const typeMeals = getMealsByType(mealType.id);
-            if (typeMeals.length === 0) return null;
+        {meals.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="w-20 h-20 mx-auto bg-gradient-to-br from-orange-100 to-amber-100 rounded-2xl flex items-center justify-center mb-4">
+              <UtensilsCrossed className="w-10 h-10 text-orange-500" />
+            </div>
+            <h3 className="font-semibold text-gray-900 mb-2">No meals logged yet</h3>
+            <p className="text-gray-500 mb-6 max-w-sm mx-auto">
+              Start tracking your nutrition by adding your first meal. Click on a meal type above or use the button below.
+            </p>
+            <div className="flex flex-wrap justify-center gap-2">
+              {mealTypes.map((mealType) => (
+                <button
+                  key={mealType.id}
+                  onClick={() => {
+                    setSelectedMealType(mealType.id);
+                    setShowAddMealModal(true);
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 rounded-full border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-colors"
+                >
+                  <mealType.icon className="w-4 h-4" style={{ color: mealType.color.replace('100', '600') }} />
+                  <span className="text-sm font-medium text-gray-700">{mealType.name}</span>
+                </button>
+              ))}
+            </div>
+            <div className="mt-6 flex items-center justify-center gap-2 text-sm text-gray-400">
+              <CheckCircle className="w-4 h-4" />
+              <span>Your meals will appear here once you add them</span>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {mealTypes.map((mealType) => {
+              const typeMeals = getMealsByType(mealType.id);
+              if (typeMeals.length === 0) return null;
 
-            return (
-              <div key={mealType.id}>
-                <h3 className="text-sm font-medium text-gray-500 mb-3 flex items-center gap-2">
-                  <mealType.icon className="w-4 h-4" />
-                  {mealType.name}
-                </h3>
-                <div className="space-y-2">
-                  {typeMeals.map((meal) => (
-                    <div
-                      key={meal.id}
-                      className="flex items-center justify-between p-4 bg-gray-50 rounded-xl"
-                    >
-                      <div>
-                        <p className="font-medium text-gray-900">{meal.name}</p>
-                        <p className="text-sm text-gray-500">
+              return (
+                <div key={mealType.id}>
+                  <h3 className="text-sm font-medium text-gray-500 mb-3 flex items-center gap-2">
+                    <mealType.icon className="w-4 h-4" />
+                    {mealType.name}
+                  </h3>
+                  <div className="space-y-2">
+                    {typeMeals.map((meal) => (
+                      <div
+                        key={meal.id}
+                        className="flex items-center justify-between p-4 bg-gray-50 rounded-xl"
+                      >
+                        <div>
+                          <p className="font-medium text-gray-900">{meal.name}</p>
+                          <p className="text-sm text-gray-500">
                           P: {meal.protein}g | C: {meal.carbs}g | F: {meal.fat}g
                         </p>
                       </div>
@@ -327,7 +427,8 @@ export default function Nutrition() {
               </div>
             );
           })}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Add Meal Modal */}

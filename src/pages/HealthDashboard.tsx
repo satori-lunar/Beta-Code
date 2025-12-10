@@ -36,6 +36,7 @@ import {
 import { useStore } from '../store/useStore';
 import { useTheme } from '../contexts/ThemeContext';
 import { format, formatDistanceToNow, startOfWeek, addDays } from 'date-fns';
+import ComingSoonModal from '../components/ComingSoonModal';
 
 type MetricKey = 'heartRate' | 'bloodPressure' | 'bodyTemperature' | 'oxygenSaturation' |
   'respiratoryRate' | 'bmi' | 'bodyFat' | 'height' | 'weight' | 'sleepHours' |
@@ -1047,43 +1048,28 @@ export default function HealthDashboard() {
                   Manage <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
-              <div className="space-y-2">
-                {connectedDevices.filter(d => d.connected).length === 0 ? (
-                  <div className="text-center py-8">
-                    <Watch className="w-12 h-12 mx-auto text-gray-300 mb-3" />
-                    <p className="text-sm text-gray-500">
-                      No devices connected. Connect a device to sync your health data automatically.
-                    </p>
-                    <button
-                      onClick={() => setShowDevicesPanel(true)}
-                      className="mt-4 px-4 py-2 rounded-lg text-sm font-medium text-white"
-                      style={{ backgroundColor: primaryColor }}
-                    >
-                      Connect Device
-                    </button>
+              <div className="space-y-3">
+                <div className="text-center py-6 px-4">
+                  <div className="w-16 h-16 mx-auto bg-gradient-to-br from-indigo-100 to-purple-100 rounded-2xl flex items-center justify-center mb-4">
+                    <Watch className="w-8 h-8 text-indigo-500" />
                   </div>
-                ) : (
-                  connectedDevices.filter(d => d.connected).map(device => {
-                    const IconComponent = deviceIcons[device.icon] || Watch;
-                    return (
-                      <div key={device.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
-                        <div
-                          className="w-10 h-10 rounded-full flex items-center justify-center"
-                          style={{ backgroundColor: colorPresets[colorPreset]?.light }}
-                        >
-                          <IconComponent className="w-5 h-5" style={{ color: primaryColor }} />
-                        </div>
-                        <div className="flex-1">
-                          <p className="font-medium text-gray-900">{device.name}</p>
-                          <p className="text-xs text-gray-500">
-                            Synced {device.lastSync ? formatDistanceToNow(new Date(device.lastSync), { addSuffix: true }) : 'never'}
-                          </p>
-                        </div>
-                        <span className="w-2 h-2 rounded-full bg-green-500"></span>
-                      </div>
-                    );
-                  })
-                )}
+                  <h4 className="font-medium text-gray-900 mb-2">Device Integration Coming Soon!</h4>
+                  <p className="text-sm text-gray-500 mb-4">
+                    We're building connections for Fitbit, Apple Watch, and more. For now, you can manually log your health metrics.
+                  </p>
+                  <button
+                    onClick={() => setShowDevicesPanel(true)}
+                    className="px-4 py-2 rounded-lg text-sm font-medium text-white"
+                    style={{ backgroundColor: primaryColor }}
+                  >
+                    Learn More
+                  </button>
+                </div>
+                <div className="border-t border-gray-100 pt-3">
+                  <p className="text-xs text-gray-400 text-center">
+                    💡 Tip: Click on any health metric to manually update your data!
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -1473,70 +1459,13 @@ export default function HealthDashboard() {
         </div>
       )}
 
-      {/* Devices Panel Modal */}
-      {showDevicesPanel && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full overflow-hidden">
-            <div className="flex items-center justify-between p-4 border-b border-gray-100">
-              <h3 className="text-lg font-semibold text-gray-900">Connected Devices</h3>
-              <button
-                onClick={() => setShowDevicesPanel(false)}
-                className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center"
-              >
-                <X className="w-5 h-5 text-gray-500" />
-              </button>
-            </div>
-            <div className="p-4 space-y-3">
-              <p className="text-sm text-gray-500 mb-4">
-                Connect your fitness devices to automatically sync your health data.
-              </p>
-              {connectedDevices.map(device => {
-                const IconComponent = deviceIcons[device.icon] || Watch;
-                return (
-                  <div
-                    key={device.id}
-                    className="flex items-center gap-4 p-4 rounded-xl border border-gray-100 hover:border-gray-200 transition-colors"
-                  >
-                    <div
-                      className="w-12 h-12 rounded-xl flex items-center justify-center"
-                      style={{
-                        backgroundColor: device.connected ? colorPresets[colorPreset]?.light : '#f3f4f6',
-                        color: device.connected ? primaryColor : '#9ca3af'
-                      }}
-                    >
-                      <IconComponent className="w-6 h-6" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-medium text-gray-900">{device.name}</p>
-                      <p className="text-sm text-gray-500">
-                        {device.connected
-                          ? `Connected • Last sync ${device.lastSync ? formatDistanceToNow(new Date(device.lastSync), { addSuffix: true }) : 'pending'}`
-                          : 'Not connected'
-                        }
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => toggleDeviceConnection(device.id)}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        device.connected ? 'bg-gray-100 text-gray-600 hover:bg-gray-200' : ''
-                      }`}
-                      style={!device.connected ? { backgroundColor: primaryColor, color: 'white' } : undefined}
-                    >
-                      {device.connected ? 'Disconnect' : 'Connect'}
-                    </button>
-                  </div>
-                );
-              })}
-
-              <div className="pt-4 border-t border-gray-100 mt-4">
-                <p className="text-xs text-gray-500 text-center">
-                  Your data is encrypted and stored securely. We never share your health information with third parties.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Devices Panel - Coming Soon Modal */}
+      <ComingSoonModal
+        isOpen={showDevicesPanel}
+        onClose={() => setShowDevicesPanel(false)}
+        feature="Device Connections"
+        description="We're working hard to bring you seamless device integrations! Soon you'll be able to connect your Fitbit, Apple Watch, and other fitness devices to automatically sync your health data."
+      />
     </div>
   );
 }

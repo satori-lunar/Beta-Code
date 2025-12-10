@@ -525,8 +525,6 @@ export default function Layout() {
                       <div className="flex items-center gap-2 mt-3 p-2 bg-amber-50 rounded-lg">
                         <Award className="w-5 h-5 text-amber-500" />
                         <span className="text-sm font-medium text-amber-700">Wellness Dashboard</span>
-                        <Award className="w-5 h-5 text-amber-500 ml-auto" />
-                        <span className="text-sm font-medium text-amber-700">{user?.badges?.length || 0} badges</span>
                       </div>
                     </div>
                     <div className="p-2">

@@ -44,11 +44,11 @@ const avatarOptions = [
 
 export default function Settings() {
   const { user } = useAuth();
-  const { profile, loading: profileLoading } = useUserProfile();
+  const { profile } = useUserProfile();
   const { colorPreset, setColorPreset, isDark, toggleDark, colorPresets, primaryColor } = useTheme();
   const [name, setName] = useState(user?.user_metadata?.name || user?.email?.split('@')[0] || '');
   const [email, setEmail] = useState(user?.email || '');
-  const [selectedAvatar, setSelectedAvatar] = useState(profile?.avatar || 'gradient-coral');
+  const [selectedAvatar, setSelectedAvatar] = useState(profile?.avatar_url || 'gradient-coral');
   const [customAvatarUrl, setCustomAvatarUrl] = useState<string | null>(null);
   const [notifications, setNotifications] = useState({
     reminders: true,
@@ -90,7 +90,7 @@ export default function Settings() {
         .from('user_profiles')
         .update({ 
           full_name: name,
-          avatar: selectedAvatar 
+          avatar_url: selectedAvatar 
         })
         .eq('id', user.id);
     } else {
@@ -99,7 +99,7 @@ export default function Settings() {
         .insert({ 
           id: user.id,
           full_name: name,
-          avatar: selectedAvatar 
+          avatar_url: selectedAvatar 
         });
     }
   };
@@ -193,8 +193,8 @@ export default function Settings() {
             </button>
           </div>
           <div>
-            <h3 className="font-semibold text-gray-900">{user?.name}</h3>
-            <p className="text-sm text-gray-500">Member since {user?.joinDate}</p>
+            <h3 className="font-semibold text-gray-900">{user?.user_metadata?.name || user?.email?.split('@')[0] || 'User'}</h3>
+            <p className="text-sm text-gray-500">Member since {profile?.join_date ? new Date(profile.join_date).toLocaleDateString() : new Date(user?.created_at || '').toLocaleDateString()}</p>
             <button
               onClick={() => setShowAvatarModal(true)}
               className="text-sm mt-1 hover:opacity-80"

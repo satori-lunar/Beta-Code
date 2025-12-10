@@ -177,7 +177,7 @@ export default function Habits() {
             </div>
           </div>
           <p className="text-2xl font-bold text-gray-900">
-            {Math.max(...habits.map(h => h.streak), 0)}
+            {Math.max(...habits.map(h => h.streak || 0), 0)}
           </p>
           <p className="text-sm text-gray-500">Best Streak</p>
         </div>

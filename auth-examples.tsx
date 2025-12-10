@@ -3,7 +3,7 @@
  * Complete examples of authentication flows using Supabase
  */
 
-import { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { supabase } from './supabase-client'
 
 // ============================================================================
@@ -416,7 +416,7 @@ export function useAuth() {
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
-  useState(() => {
+  useEffect(() => {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null)
@@ -432,7 +432,7 @@ export function useAuth() {
     })
 
     return () => subscription.unsubscribe()
-  })
+  }, [])
 
   return { user, loading }
 }

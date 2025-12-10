@@ -17,6 +17,7 @@ export function useUserData<T>(
   const [data, setData] = useState<T[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
+  const [refetchTrigger, setRefetchTrigger] = useState(0)
 
   useEffect(() => {
     if (!user) {
@@ -76,9 +77,13 @@ export function useUserData<T>(
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [user, table, options?.orderBy?.column, options?.orderBy?.ascending, options?.limit])
+  }, [user, table, options?.orderBy?.column, options?.orderBy?.ascending, options?.limit, refetchTrigger])
 
-  return { data, loading, error, refetch: () => {} }
+  const refetch = () => {
+    setRefetchTrigger(prev => prev + 1)
+  }
+
+  return { data, loading, error, refetch }
 }
 
 // Specific hooks for each table

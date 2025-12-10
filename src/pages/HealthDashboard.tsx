@@ -12,7 +12,6 @@ import {
   Brain,
   Zap,
   Watch,
-  Smartphone,
   Link2,
   X,
   Edit3,

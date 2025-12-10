@@ -17,38 +17,114 @@ import {
   Database,
   Trash2,
   Download,
-  MessageCircle
+  MessageCircle,
+  Palette,
+  Activity,
+  Watch,
+  Smartphone,
+  Link2,
+  CheckCircle,
+  AlertCircle,
+  Upload
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
+import { useTheme } from '../contexts/ThemeContext';
+
+// Avatar options
+const avatarOptions = [
+  { id: 'gradient-coral', type: 'gradient', colors: ['#f97316', '#ec4899'] },
+  { id: 'gradient-ocean', type: 'gradient', colors: ['#0ea5e9', '#06b6d4'] },
+  { id: 'gradient-forest', type: 'gradient', colors: ['#22c55e', '#10b981'] },
+  { id: 'gradient-sunset', type: 'gradient', colors: ['#f59e0b', '#ef4444'] },
+  { id: 'gradient-lavender', type: 'gradient', colors: ['#a855f7', '#6366f1'] },
+  { id: 'gradient-midnight', type: 'gradient', colors: ['#1e293b', '#475569'] },
+];
 
 export default function Settings() {
   const { user, setUser } = useStore();
+  const { colorPreset, setColorPreset, isDark, toggleDark, colorPresets, primaryColor } = useTheme();
   const [name, setName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
+  const [selectedAvatar, setSelectedAvatar] = useState(user?.avatar || 'gradient-coral');
+  const [customAvatarUrl, setCustomAvatarUrl] = useState<string | null>(null);
   const [notifications, setNotifications] = useState({
     reminders: true,
     classAlerts: true,
     weeklyProgress: true,
     achievements: true,
   });
-  const [darkMode, setDarkMode] = useState(false);
   const [language, setLanguage] = useState('English');
   const [showLanguageModal, setShowLanguageModal] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
+  const [showAvatarModal, setShowAvatarModal] = useState(false);
+  const [showColorModal, setShowColorModal] = useState(false);
   const [privacySettings, setPrivacySettings] = useState({
     profileVisible: true,
     showProgress: true,
     shareData: false,
   });
+  const [healthConnections, setHealthConnections] = useState({
+    fitbit: false,
+    appleHealth: false,
+    googleFit: false,
+  });
 
   const languages = ['English', 'Spanish', 'French', 'German', 'Portuguese', 'Japanese', 'Chinese'];
 
-
   const handleSaveProfile = () => {
     if (user) {
-      setUser({ ...user, name, email });
+      setUser({ ...user, name, email, avatar: selectedAvatar });
     }
+  };
+
+  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setCustomAvatarUrl(reader.result as string);
+        setSelectedAvatar('custom');
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const connectFitbit = () => {
+    // In production, this would redirect to Fitbit OAuth
+    const fitbitAuthUrl = `https://www.fitbit.com/oauth2/authorize?response_type=code&client_id=YOUR_CLIENT_ID&redirect_uri=${encodeURIComponent(window.location.origin + '/auth/fitbit/callback')}&scope=activity%20heartrate%20sleep%20weight`;
+    window.open(fitbitAuthUrl, '_blank', 'width=500,height=600');
+    // For demo, simulate connection
+    setTimeout(() => {
+      setHealthConnections(prev => ({ ...prev, fitbit: true }));
+    }, 1000);
+  };
+
+  const renderAvatar = () => {
+    if (selectedAvatar === 'custom' && customAvatarUrl) {
+      return (
+        <img src={customAvatarUrl} alt="Avatar" className="w-full h-full object-cover rounded-full" />
+      );
+    }
+    const avatar = avatarOptions.find(a => a.id === selectedAvatar);
+    if (avatar) {
+      return (
+        <div
+          className="w-full h-full rounded-full flex items-center justify-center text-white text-2xl font-bold"
+          style={{ background: `linear-gradient(135deg, ${avatar.colors[0]}, ${avatar.colors[1]})` }}
+        >
+          {name.charAt(0) || 'U'}
+        </div>
+      );
+    }
+    return (
+      <div
+        className="w-full h-full rounded-full flex items-center justify-center text-white text-2xl font-bold"
+        style={{ background: `linear-gradient(to bottom right, ${colorPresets[colorPreset]?.light}, ${primaryColor})` }}
+      >
+        {name.charAt(0) || 'U'}
+      </div>
+    );
   };
 
   const settingsSections = [
@@ -80,16 +156,26 @@ export default function Settings() {
 
         <div className="flex items-center gap-6 mb-6">
           <div className="relative">
-            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-coral-200 to-coral-400 flex items-center justify-center text-white text-2xl font-bold">
-              {name.charAt(0) || 'U'}
+            <div className="w-20 h-20">
+              {renderAvatar()}
             </div>
-            <button className="absolute bottom-0 right-0 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-gray-50 transition-colors">
+            <button
+              onClick={() => setShowAvatarModal(true)}
+              className="absolute bottom-0 right-0 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-gray-50 transition-colors"
+            >
               <Camera className="w-4 h-4 text-gray-600" />
             </button>
           </div>
           <div>
             <h3 className="font-semibold text-gray-900">{user?.name}</h3>
             <p className="text-sm text-gray-500">Member since {user?.joinDate}</p>
+            <button
+              onClick={() => setShowAvatarModal(true)}
+              className="text-sm mt-1 hover:opacity-80"
+              style={{ color: primaryColor }}
+            >
+              Change avatar
+            </button>
           </div>
         </div>
 
@@ -128,6 +214,147 @@ export default function Settings() {
         </div>
       </div>
 
+      {/* Appearance Section */}
+      <div className="card">
+        <h2 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
+          <Palette className="w-5 h-5 text-gray-400" />
+          Appearance
+        </h2>
+
+        <div className="space-y-4">
+          {/* Color Theme */}
+          <button
+            onClick={() => setShowColorModal(true)}
+            className="w-full flex items-center justify-between p-4 rounded-xl hover:bg-gray-50 transition-colors border border-gray-100"
+          >
+            <div className="flex items-center gap-3">
+              <div className="flex -space-x-1">
+                {colorPresets[colorPreset].colors.slice(0, 3).map((color, i) => (
+                  <div
+                    key={i}
+                    className="w-6 h-6 rounded-full border-2 border-white"
+                    style={{ backgroundColor: color }}
+                  />
+                ))}
+              </div>
+              <div className="text-left">
+                <span className="text-gray-700 font-medium">Color Theme</span>
+                <p className="text-sm text-gray-500">{colorPresets[colorPreset].name}</p>
+              </div>
+            </div>
+            <ChevronRight className="w-5 h-5 text-gray-400" />
+          </button>
+
+          {/* Dark Mode Toggle */}
+          <div className="flex items-center justify-between p-4 rounded-xl border border-gray-100">
+            <div className="flex items-center gap-3">
+              {isDark ? (
+                <Moon className="w-5 h-5 text-gray-400" />
+              ) : (
+                <Sun className="w-5 h-5 text-gray-400" />
+              )}
+              <span className="text-gray-700">Dark Mode</span>
+            </div>
+            <button
+              onClick={toggleDark}
+              className="relative w-12 h-7 rounded-full transition-colors"
+              style={{ backgroundColor: isDark ? primaryColor : '#e5e7eb' }}
+            >
+              <div
+                className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+                  isDark ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Health Integrations */}
+      <div className="card">
+        <h2 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
+          <Activity className="w-5 h-5 text-gray-400" />
+          Health Integrations
+        </h2>
+
+        <div className="space-y-3">
+          {/* Fitbit */}
+          <div className="flex items-center justify-between p-4 rounded-xl border border-gray-100">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-teal-100 flex items-center justify-center">
+                <Watch className="w-5 h-5 text-teal-600" />
+              </div>
+              <div>
+                <p className="font-medium text-gray-900">Fitbit</p>
+                <p className="text-sm text-gray-500">Sync activity, sleep & heart rate</p>
+              </div>
+            </div>
+            {healthConnections.fitbit ? (
+              <span className="flex items-center gap-1 text-green-600 text-sm font-medium">
+                <CheckCircle className="w-4 h-4" />
+                Connected
+              </span>
+            ) : (
+              <button
+                onClick={connectFitbit}
+                className="flex items-center gap-1 px-3 py-1.5 bg-teal-500 text-white rounded-lg text-sm font-medium hover:bg-teal-600 transition-colors"
+              >
+                <Link2 className="w-4 h-4" />
+                Connect
+              </button>
+            )}
+          </div>
+
+          {/* Apple Health */}
+          <div className="flex items-center justify-between p-4 rounded-xl border border-gray-100">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center">
+                <Smartphone className="w-5 h-5 text-red-600" />
+              </div>
+              <div>
+                <p className="font-medium text-gray-900">Apple Health</p>
+                <p className="text-sm text-gray-500">Requires iOS app</p>
+              </div>
+            </div>
+            <span className="flex items-center gap-1 text-gray-400 text-sm">
+              <AlertCircle className="w-4 h-4" />
+              iOS Only
+            </span>
+          </div>
+
+          {/* Google Fit */}
+          <div className="flex items-center justify-between p-4 rounded-xl border border-gray-100">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center">
+                <Activity className="w-5 h-5 text-blue-600" />
+              </div>
+              <div>
+                <p className="font-medium text-gray-900">Google Fit</p>
+                <p className="text-sm text-gray-500">Sync workouts & activity</p>
+              </div>
+            </div>
+            {healthConnections.googleFit ? (
+              <span className="flex items-center gap-1 text-green-600 text-sm font-medium">
+                <CheckCircle className="w-4 h-4" />
+                Connected
+              </span>
+            ) : (
+              <button
+                onClick={() => setHealthConnections(prev => ({ ...prev, googleFit: true }))}
+                className="flex items-center gap-1 px-3 py-1.5 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors"
+              >
+                <Link2 className="w-4 h-4" />
+                Connect
+              </button>
+            )}
+          </div>
+        </div>
+
+        <p className="text-xs text-gray-500 mt-4">
+          Connected devices will automatically sync your health data to provide personalized insights.
+        </p>
+      </div>
+
       {/* Notifications */}
       <div className="card">
         <h2 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
@@ -149,11 +376,12 @@ export default function Settings() {
                     [item.key]: !notifications[item.key as keyof typeof notifications],
                   })
                 }
-                className={`relative w-12 h-7 rounded-full transition-colors ${
-                  notifications[item.key as keyof typeof notifications]
-                    ? 'bg-coral-500'
-                    : 'bg-gray-200'
-                }`}
+                className="relative w-12 h-7 rounded-full transition-colors"
+                style={{
+                  backgroundColor: notifications[item.key as keyof typeof notifications]
+                    ? primaryColor
+                    : '#e5e7eb'
+                }}
               >
                 <div
                   className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-transform ${
@@ -200,32 +428,6 @@ export default function Settings() {
             </div>
           </button>
 
-          {/* Dark Mode Toggle */}
-          <button
-            onClick={() => setDarkMode(!darkMode)}
-            className="w-full flex items-center justify-between p-4 rounded-xl hover:bg-gray-50 transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              {darkMode ? (
-                <Moon className="w-5 h-5 text-gray-400" />
-              ) : (
-                <Sun className="w-5 h-5 text-gray-400" />
-              )}
-              <span className="text-gray-700">Dark Mode</span>
-            </div>
-            <div
-              className={`relative w-12 h-7 rounded-full transition-colors ${
-                darkMode ? 'bg-coral-500' : 'bg-gray-200'
-              }`}
-            >
-              <div
-                className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-transform ${
-                  darkMode ? 'translate-x-6' : 'translate-x-1'
-                }`}
-              />
-            </div>
-          </button>
-
           {/* Help & Support */}
           <button
             onClick={() => setShowHelpModal(true)}
@@ -245,6 +447,139 @@ export default function Settings() {
         <p>Wellness Dashboard v1.0.0</p>
         <p className="mt-1">Made with care for your wellbeing</p>
       </div>
+
+      {/* Avatar Modal */}
+      {showAvatarModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b border-gray-100">
+              <h3 className="text-lg font-semibold text-gray-900">Choose Avatar</h3>
+              <button
+                onClick={() => setShowAvatarModal(false)}
+                className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            <div className="p-4">
+              {/* Upload custom */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Upload Custom Avatar
+                </label>
+                <label
+                  className="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer transition-colors"
+                  style={{
+                    ['--hover-border' as string]: primaryColor,
+                    ['--hover-bg' as string]: colorPresets[colorPreset]?.light
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = primaryColor;
+                    e.currentTarget.style.backgroundColor = colorPresets[colorPreset]?.light;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = '#e5e7eb';
+                    e.currentTarget.style.backgroundColor = '';
+                  }}
+                >
+                  <Upload className="w-5 h-5 text-gray-400" />
+                  <span className="text-sm text-gray-500">Click to upload image</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAvatarUpload}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+
+              {/* Gradient options */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Or choose a color
+                </label>
+                <div className="grid grid-cols-6 gap-3">
+                  {avatarOptions.map((avatar) => (
+                    <button
+                      key={avatar.id}
+                      onClick={() => {
+                        setSelectedAvatar(avatar.id);
+                        setCustomAvatarUrl(null);
+                      }}
+                      className={`w-12 h-12 rounded-full transition-all ${
+                        selectedAvatar === avatar.id ? 'ring-2 ring-offset-2' : ''
+                      }`}
+                      style={{
+                        background: `linear-gradient(135deg, ${avatar.colors[0]}, ${avatar.colors[1]})`,
+                        ['--tw-ring-color' as string]: selectedAvatar === avatar.id ? primaryColor : undefined
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <button
+                onClick={() => {
+                  handleSaveProfile();
+                  setShowAvatarModal(false);
+                }}
+                className="w-full mt-6 btn-primary"
+              >
+                Save Avatar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Color Theme Modal */}
+      {showColorModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b border-gray-100">
+              <h3 className="text-lg font-semibold text-gray-900">Color Theme</h3>
+              <button
+                onClick={() => setShowColorModal(false)}
+                className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            <div className="p-4 space-y-3">
+              {Object.entries(colorPresets).map(([key, preset]) => (
+                <button
+                  key={key}
+                  onClick={() => {
+                    setColorPreset(key);
+                    setShowColorModal(false);
+                  }}
+                  className={`w-full flex items-center gap-4 p-4 rounded-xl transition-colors ${
+                    colorPreset === key ? 'ring-2' : 'hover:bg-gray-50'
+                  }`}
+                  style={colorPreset === key ? {
+                    backgroundColor: preset.light,
+                    ['--tw-ring-color' as string]: `${preset.colors[0]}40`
+                  } : undefined}
+                >
+                  <div className="flex -space-x-1">
+                    {preset.colors.map((color, i) => (
+                      <div
+                        key={i}
+                        className="w-8 h-8 rounded-full border-2 border-white shadow-sm"
+                        style={{ backgroundColor: color }}
+                      />
+                    ))}
+                  </div>
+                  <span className="font-medium text-gray-900">{preset.name}</span>
+                  {colorPreset === key && (
+                    <Check className="w-5 h-5 ml-auto" style={{ color: preset.colors[0] }} />
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Language Modal */}
       {showLanguageModal && (
@@ -267,9 +602,11 @@ export default function Settings() {
                     setLanguage(lang);
                     setShowLanguageModal(false);
                   }}
-                  className={`w-full flex items-center justify-between p-4 rounded-xl transition-colors ${
-                    language === lang ? 'bg-coral-50 text-coral-600' : 'hover:bg-gray-50'
-                  }`}
+                  className="w-full flex items-center justify-between p-4 rounded-xl transition-colors hover:bg-gray-50"
+                  style={language === lang ? {
+                    backgroundColor: colorPresets[colorPreset]?.light,
+                    color: primaryColor
+                  } : undefined}
                 >
                   <span>{lang}</span>
                   {language === lang && <Check className="w-5 h-5" />}
@@ -317,9 +654,8 @@ export default function Settings() {
                       profileVisible: !privacySettings.profileVisible,
                     })
                   }
-                  className={`relative w-12 h-7 rounded-full transition-colors ${
-                    privacySettings.profileVisible ? 'bg-coral-500' : 'bg-gray-200'
-                  }`}
+                  className="relative w-12 h-7 rounded-full transition-colors"
+                  style={{ backgroundColor: privacySettings.profileVisible ? primaryColor : '#e5e7eb' }}
                 >
                   <div
                     className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-transform ${
@@ -345,9 +681,8 @@ export default function Settings() {
                       showProgress: !privacySettings.showProgress,
                     })
                   }
-                  className={`relative w-12 h-7 rounded-full transition-colors ${
-                    privacySettings.showProgress ? 'bg-coral-500' : 'bg-gray-200'
-                  }`}
+                  className="relative w-12 h-7 rounded-full transition-colors"
+                  style={{ backgroundColor: privacySettings.showProgress ? primaryColor : '#e5e7eb' }}
                 >
                   <div
                     className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-transform ${
@@ -373,9 +708,8 @@ export default function Settings() {
                       shareData: !privacySettings.shareData,
                     })
                   }
-                  className={`relative w-12 h-7 rounded-full transition-colors ${
-                    privacySettings.shareData ? 'bg-coral-500' : 'bg-gray-200'
-                  }`}
+                  className="relative w-12 h-7 rounded-full transition-colors"
+                  style={{ backgroundColor: privacySettings.shareData ? primaryColor : '#e5e7eb' }}
                 >
                   <div
                     className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-transform ${
@@ -418,7 +752,10 @@ export default function Settings() {
                 href="#"
                 className="flex items-center gap-4 p-4 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors"
               >
-                <div className="w-12 h-12 bg-coral-100 rounded-full flex items-center justify-center text-coral-600">
+                <div
+                  className="w-12 h-12 rounded-full flex items-center justify-center"
+                  style={{ backgroundColor: colorPresets[colorPreset]?.light, color: primaryColor }}
+                >
                   <MessageCircle className="w-6 h-6" />
                 </div>
                 <div>

@@ -1,6 +1,10 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { AuthProvider } from './contexts/AuthContext';
+import { ThemeProvider } from './contexts/ThemeContext';
+import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
+import HealthDashboard from './pages/HealthDashboard';
 import Habits from './pages/Habits';
 import Nutrition from './pages/Nutrition';
 import WeightLog from './pages/WeightLog';
@@ -10,25 +14,44 @@ import Calendar from './pages/Calendar';
 import Classes from './pages/Classes';
 import Settings from './pages/Settings';
 import Badges from './pages/Badges';
+import Login from './pages/Login';
+import Signup from './pages/Signup';
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Layout />}>
-          <Route index element={<Dashboard />} />
-          <Route path="habits" element={<Habits />} />
-          <Route path="nutrition" element={<Nutrition />} />
-          <Route path="weight" element={<WeightLog />} />
-          <Route path="journal" element={<Journal />} />
-          <Route path="courses" element={<Courses />} />
-          <Route path="calendar" element={<Calendar />} />
-          <Route path="classes" element={<Classes />} />
-          <Route path="settings" element={<Settings />} />
-          <Route path="badges" element={<Badges />} />
-        </Route>
-      </Routes>
-    </Router>
+    <AuthProvider>
+      <ThemeProvider>
+        <Router>
+          <Routes>
+            {/* Public routes */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+
+            {/* Protected routes */}
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute>
+                  <Layout />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<Dashboard />} />
+              <Route path="health" element={<HealthDashboard />} />
+              <Route path="habits" element={<Habits />} />
+              <Route path="nutrition" element={<Nutrition />} />
+              <Route path="weight" element={<WeightLog />} />
+              <Route path="journal" element={<Journal />} />
+              <Route path="courses" element={<Courses />} />
+              <Route path="calendar" element={<Calendar />} />
+              <Route path="classes" element={<Classes />} />
+              <Route path="settings" element={<Settings />} />
+              <Route path="badges" element={<Badges />} />
+            </Route>
+          </Routes>
+        </Router>
+      </ThemeProvider>
+    </AuthProvider>
   );
 }
 

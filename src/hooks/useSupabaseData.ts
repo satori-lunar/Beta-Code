@@ -29,9 +29,9 @@ export function useUserData<T>(
       try {
         setLoading(true)
         let query = supabase
-          .from(table as string)
+          .from(table as any)
           .select('*')
-          .eq('user_id', user!.id)
+          .eq('user_id', user!.id) as any
 
         if (options?.orderBy) {
           query = query.order(options.orderBy.column, {
@@ -58,13 +58,13 @@ export function useUserData<T>(
 
     // Subscribe to real-time changes
     const channel = supabase
-      .channel(`${table}_changes`)
+      .channel(`${table as string}_changes`)
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
-          table: table as string,
+          table: table as any,
           filter: `user_id=eq.${user.id}`,
         },
         () => {

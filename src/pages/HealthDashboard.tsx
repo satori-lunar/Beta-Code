@@ -36,6 +36,7 @@ import { useStore } from '../store/useStore';
 import { useTheme } from '../contexts/ThemeContext';
 import { format, startOfWeek, addDays } from 'date-fns';
 import ComingSoonModal from '../components/ComingSoonModal';
+import WorkoutCamera from '../components/WorkoutCamera';
 
 type MetricKey = 'heartRate' | 'bloodPressure' | 'bodyTemperature' | 'oxygenSaturation' |
   'respiratoryRate' | 'bmi' | 'bodyFat' | 'height' | 'weight' | 'sleepHours' |
@@ -100,7 +101,6 @@ export default function HealthDashboard() {
   const [workoutTime, setWorkoutTime] = useState(0);
   const [selectedWorkout, setSelectedWorkout] = useState<string | null>(null);
   const [showWorkoutCamera, setShowWorkoutCamera] = useState(false);
-  const [motionPoints, setMotionPoints] = useState<{ x: number; y: number; id: number }[]>([]);
 
   const hasConnectedDevice = connectedDevices.some(d => d.connected);
 
@@ -123,22 +123,6 @@ export default function HealthDashboard() {
     return () => { if (interval) clearInterval(interval); };
   }, [isWorkoutActive]);
 
-  // Motion detection simulation
-  useEffect(() => {
-    if (showWorkoutCamera && isWorkoutActive) {
-      const interval = setInterval(() => {
-        setMotionPoints([
-          { x: 30 + Math.random() * 10, y: 20 + Math.random() * 5, id: 1 },
-          { x: 50 + Math.random() * 5, y: 35 + Math.random() * 5, id: 2 },
-          { x: 70 + Math.random() * 10, y: 20 + Math.random() * 5, id: 3 },
-          { x: 30 + Math.random() * 5, y: 70 + Math.random() * 10, id: 4 },
-          { x: 70 + Math.random() * 5, y: 70 + Math.random() * 10, id: 5 },
-          { x: 50 + Math.random() * 3, y: 50 + Math.random() * 5, id: 6 },
-        ]);
-      }, 100);
-      return () => clearInterval(interval);
-    }
-  }, [showWorkoutCamera, isWorkoutActive]);
 
   const formatWorkoutTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -674,93 +658,6 @@ export default function HealthDashboard() {
     );
   };
 
-  // Workout Camera View with Motion Tracking
-  const WorkoutCameraView = () => (
-    <div className="relative w-full aspect-video bg-gray-900 rounded-2xl overflow-hidden">
-      {/* Simulated camera view */}
-      <div className="absolute inset-0 flex items-center justify-center">
-        <div
-          className="w-32 h-48 rounded-xl opacity-30"
-          style={{ backgroundColor: primaryColor }}
-        />
-      </div>
-
-      {/* Motion tracking points */}
-      {motionPoints.map(point => (
-        <div
-          key={point.id}
-          className="absolute w-4 h-4 -translate-x-1/2 -translate-y-1/2 transition-all duration-100"
-          style={{ left: `${point.x}%`, top: `${point.y}%` }}
-        >
-          <div
-            className="w-full h-full rounded-full animate-pulse"
-            style={{ backgroundColor: primaryColor, boxShadow: `0 0 12px ${primaryColor}` }}
-          />
-          <div
-            className="absolute inset-0 rounded-full animate-ping opacity-50"
-            style={{ backgroundColor: primaryColor }}
-          />
-        </div>
-      ))}
-
-      {/* Skeleton overlay */}
-      <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-        {motionPoints.length >= 6 && (
-          <>
-            {/* Head to center */}
-            <line x1={motionPoints[1].x} y1={motionPoints[1].y} x2={motionPoints[5].x} y2={motionPoints[5].y}
-                  stroke={primaryColor} strokeWidth="0.5" opacity="0.6" />
-            {/* Left arm */}
-            <line x1={motionPoints[0].x} y1={motionPoints[0].y} x2={motionPoints[5].x} y2={motionPoints[5].y}
-                  stroke={primaryColor} strokeWidth="0.5" opacity="0.6" />
-            {/* Right arm */}
-            <line x1={motionPoints[2].x} y1={motionPoints[2].y} x2={motionPoints[5].x} y2={motionPoints[5].y}
-                  stroke={primaryColor} strokeWidth="0.5" opacity="0.6" />
-            {/* Left leg */}
-            <line x1={motionPoints[3].x} y1={motionPoints[3].y} x2={motionPoints[5].x} y2={motionPoints[5].y}
-                  stroke={primaryColor} strokeWidth="0.5" opacity="0.6" />
-            {/* Right leg */}
-            <line x1={motionPoints[4].x} y1={motionPoints[4].y} x2={motionPoints[5].x} y2={motionPoints[5].y}
-                  stroke={primaryColor} strokeWidth="0.5" opacity="0.6" />
-          </>
-        )}
-      </svg>
-
-      {/* Timer overlay */}
-      <div className="absolute top-4 left-4 px-4 py-2 bg-black/50 backdrop-blur-sm rounded-xl">
-        <div className="text-2xl font-mono font-bold text-white">{formatWorkoutTime(workoutTime)}</div>
-      </div>
-
-      {/* Rep counter */}
-      <div className="absolute top-4 right-4 px-4 py-2 bg-black/50 backdrop-blur-sm rounded-xl text-center">
-        <div className="text-xl font-bold text-white">{Math.floor(workoutTime / 3)}</div>
-        <div className="text-xs text-gray-300">Reps</div>
-      </div>
-
-      {/* Controls */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-4">
-        <button
-          onClick={() => setIsWorkoutActive(!isWorkoutActive)}
-          className="w-16 h-16 rounded-full flex items-center justify-center text-white shadow-lg"
-          style={{ backgroundColor: isWorkoutActive ? '#ef4444' : primaryColor }}
-        >
-          {isWorkoutActive ? <Pause className="w-8 h-8" /> : <Play className="w-8 h-8 ml-1" />}
-        </button>
-      </div>
-
-      {/* Close button */}
-      <button
-        onClick={() => {
-          setShowWorkoutCamera(false);
-          setIsWorkoutActive(false);
-          setWorkoutTime(0);
-        }}
-        className="absolute top-4 right-4 hidden sm:flex w-10 h-10 rounded-full bg-black/50 items-center justify-center text-white hover:bg-black/70"
-      >
-        <X className="w-5 h-5" />
-      </button>
-    </div>
-  );
 
   // 2D Body Silhouette SVG
   const BodySilhouette = () => (
@@ -1115,27 +1012,18 @@ export default function HealthDashboard() {
       {activeTab === 'workout' && (
         <div className="space-y-6">
           {showWorkoutCamera ? (
-            <div className="card p-4">
-              <WorkoutCameraView />
-              <div className="mt-4 flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    <CircleDot className="w-4 h-4 text-red-500 animate-pulse" />
-                    <span className="text-sm text-gray-600">Motion Tracking Active</span>
-                  </div>
-                </div>
-                <button
-                  onClick={() => {
-                    setShowWorkoutCamera(false);
-                    setIsWorkoutActive(false);
-                    setWorkoutTime(0);
-                  }}
-                  className="px-4 py-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50"
-                >
-                  End Workout
-                </button>
-              </div>
-            </div>
+            <WorkoutCamera
+              primaryColor={primaryColor}
+              onClose={() => {
+                setShowWorkoutCamera(false);
+                setIsWorkoutActive(false);
+                setWorkoutTime(0);
+              }}
+              onWorkoutComplete={(data) => {
+                console.log('Workout completed:', data);
+                // TODO: Save workout data to Supabase
+              }}
+            />
           ) : (
             <>
               {/* Start Workout */}

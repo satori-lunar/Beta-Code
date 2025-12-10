@@ -27,7 +27,9 @@ import {
   AlertCircle,
   Upload
 } from 'lucide-react';
-import { useStore } from '../store/useStore';
+import { useAuth } from '../contexts/AuthContext';
+import { useUserProfile } from '../hooks/useSupabaseData';
+import { supabase } from '../lib/supabase';
 import { useTheme } from '../contexts/ThemeContext';
 
 // Avatar options
@@ -41,11 +43,12 @@ const avatarOptions = [
 ];
 
 export default function Settings() {
-  const { user, setUser } = useStore();
+  const { user } = useAuth();
+  const { profile, loading: profileLoading } = useUserProfile();
   const { colorPreset, setColorPreset, isDark, toggleDark, colorPresets, primaryColor } = useTheme();
-  const [name, setName] = useState(user?.name || '');
+  const [name, setName] = useState(user?.user_metadata?.name || user?.email?.split('@')[0] || '');
   const [email, setEmail] = useState(user?.email || '');
-  const [selectedAvatar, setSelectedAvatar] = useState(user?.avatar || 'gradient-coral');
+  const [selectedAvatar, setSelectedAvatar] = useState(profile?.avatar || 'gradient-coral');
   const [customAvatarUrl, setCustomAvatarUrl] = useState<string | null>(null);
   const [notifications, setNotifications] = useState({
     reminders: true,
@@ -72,9 +75,32 @@ export default function Settings() {
 
   const languages = ['English', 'Spanish', 'French', 'German', 'Portuguese', 'Japanese', 'Chinese'];
 
-  const handleSaveProfile = () => {
-    if (user) {
-      setUser({ ...user, name, email, avatar: selectedAvatar });
+  const handleSaveProfile = async () => {
+    if (!user) return;
+
+    // Update user metadata in Supabase Auth
+    await supabase.auth.updateUser({
+      email: email,
+      data: { name: name }
+    });
+
+    // Update or create user profile
+    if (profile) {
+      await supabase
+        .from('user_profiles')
+        .update({ 
+          full_name: name,
+          avatar: selectedAvatar 
+        })
+        .eq('id', user.id);
+    } else {
+      await supabase
+        .from('user_profiles')
+        .insert({ 
+          id: user.id,
+          full_name: name,
+          avatar: selectedAvatar 
+        });
     }
   };
 

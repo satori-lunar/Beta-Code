@@ -78,8 +78,8 @@ export default function Layout() {
   const notificationsRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
 
+  const { user } = useAuth();
   const {
-    user,
     habits,
     courses,
     recordedSessions,
@@ -255,14 +255,11 @@ export default function Layout() {
                 className="w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold text-lg"
                 style={{ background: `linear-gradient(to bottom right, ${colorPresets[colorPreset]?.light}, ${primaryColor})` }}
               >
-                {user?.name?.charAt(0) || 'U'}
+                {(user?.user_metadata?.name || user?.email)?.charAt(0)?.toUpperCase() || 'U'}
               </div>
               <div>
-                <p className="font-medium text-gray-900">Hello, {user?.name || 'User'}!</p>
-                <div className="flex items-center gap-1 text-sm" style={{ color: primaryColor }}>
-                  <Flame className="w-4 h-4" />
-                  <span>{user?.streak || 0} day streak</span>
-                </div>
+                <p className="font-medium text-gray-900">Hello, {user?.user_metadata?.name || user?.email?.split('@')[0] || 'User'}!</p>
+                <p className="text-sm text-gray-500">{user?.email}</p>
               </div>
             </div>
           </div>
@@ -506,7 +503,7 @@ export default function Layout() {
                     ['--tw-ring-color' as string]: `${primaryColor}40`
                   }}
                 >
-                  {user?.name?.charAt(0) || 'U'}
+                  {(user?.user_metadata?.name || user?.email)?.charAt(0)?.toUpperCase() || 'U'}
                 </button>
 
                 {/* Profile Dropdown */}
@@ -518,16 +515,16 @@ export default function Layout() {
                           className="w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold text-lg"
                           style={{ background: `linear-gradient(to bottom right, ${colorPresets[colorPreset]?.light}, ${primaryColor})` }}
                         >
-                          {user?.name?.charAt(0) || 'U'}
+                          {(user?.user_metadata?.name || user?.email)?.charAt(0)?.toUpperCase() || 'U'}
                         </div>
                         <div>
-                          <p className="font-semibold text-gray-900">{user?.name || 'User'}</p>
+                          <p className="font-semibold text-gray-900">{user?.user_metadata?.name || user?.email?.split('@')[0] || 'User'}</p>
                           <p className="text-sm text-gray-500">{user?.email || 'user@example.com'}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2 mt-3 p-2 bg-amber-50 rounded-lg">
-                        <Flame className="w-5 h-5 text-amber-500" />
-                        <span className="text-sm font-medium text-amber-700">{user?.streak || 0} day streak</span>
+                        <Award className="w-5 h-5 text-amber-500" />
+                        <span className="text-sm font-medium text-amber-700">Wellness Dashboard</span>
                         <Award className="w-5 h-5 text-amber-500 ml-auto" />
                         <span className="text-sm font-medium text-amber-700">{user?.badges?.length || 0} badges</span>
                       </div>
@@ -603,7 +600,7 @@ export default function Layout() {
       </nav>
 
       {/* Help Desk Floating Button */}
-      <HelpDesk userName={user?.name || 'there'} />
+      <HelpDesk userName={user?.user_metadata?.name || user?.email?.split('@')[0] || 'there'} />
     </div>
   );
 }

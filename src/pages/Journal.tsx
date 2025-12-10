@@ -27,7 +27,7 @@ type Mood = 'great' | 'good' | 'neutral' | 'low' | 'bad';
 
 export default function Journal() {
   const { user } = useAuth();
-  const { data: journalEntries = [], loading, refetch } = useJournalEntries();
+  const { data: journalEntries = [], refetch } = useJournalEntries();
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingEntry, setEditingEntry] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -43,7 +43,7 @@ export default function Journal() {
 
   const filteredEntries = journalEntries.filter((entry) => {
     const matchesSearch =
-      entry.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (entry.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       entry.content.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesMood = !filterMood || entry.mood === filterMood;
     return matchesSearch && matchesMood;
@@ -86,10 +86,10 @@ export default function Journal() {
 
   const handleEditEntry = (entry: typeof journalEntries[0]) => {
     setNewEntry({
-      title: entry.title,
+      title: entry.title || '',
       content: entry.content,
-      mood: entry.mood,
-      tags: entry.tags.join(', '),
+      mood: (entry.mood as Mood) || 'good',
+      tags: Array.isArray(entry.tags) ? entry.tags.join(', ') : '',
       gratitude: [
         entry.gratitude?.[0] || '',
         entry.gratitude?.[1] || '',
@@ -168,10 +168,10 @@ export default function Journal() {
       <div className="space-y-4">
         {filteredEntries.map((entry) => (
           <div key={entry.id} className="card">
-            <div className="flex items-start justify-between gap-4 mb-4">
+              <div className="flex items-start justify-between gap-4 mb-4">
               <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg ${getMoodColor(entry.mood)}`}>
-                  {getMoodIcon(entry.mood)}
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg ${getMoodColor(entry.mood || 'neutral')}`}>
+                  {getMoodIcon(entry.mood || 'neutral')}
                 </div>
                 <div>
                   <h3 className="font-semibold text-gray-900">{entry.title}</h3>
@@ -179,7 +179,7 @@ export default function Journal() {
                     <Calendar className="w-4 h-4" />
                     <span>{format(parseISO(entry.date), 'MMMM d, yyyy')}</span>
                     <Clock className="w-4 h-4 ml-2" />
-                    <span>{format(parseISO(entry.createdAt), 'h:mm a')}</span>
+                    <span>{format(parseISO(entry.created_at || entry.date), 'h:mm a')}</span>
                   </div>
                 </div>
               </div>
@@ -218,10 +218,10 @@ export default function Journal() {
               </div>
             )}
 
-            {entry.tags.length > 0 && (
+            {entry.tags && Array.isArray(entry.tags) && entry.tags.length > 0 && (
               <div className="flex items-center gap-2 flex-wrap">
                 <Tag className="w-4 h-4 text-gray-400" />
-                {entry.tags.map((tag) => (
+                {entry.tags.map((tag: string) => (
                   <span
                     key={tag}
                     className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm"

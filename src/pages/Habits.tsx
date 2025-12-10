@@ -59,7 +59,7 @@ const colorOptions = [
 
 export default function Habits() {
   const { user } = useAuth();
-  const { data: habits = [], loading, refetch } = useHabits();
+  const { data: habits = [], refetch } = useHabits();
   const { colorPreset, colorPresets, primaryColor } = useTheme();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showAddModal, setShowAddModal] = useState(false);
@@ -208,7 +208,10 @@ export default function Habits() {
             const dayString = format(day, 'yyyy-MM-dd');
             const isSelected = isSameDay(day, selectedDate);
             const isToday = isSameDay(day, new Date());
-            const completedCount = habits.filter(h => h.completedDates.includes(dayString)).length;
+            const completedCount = habits.filter(h => {
+              const completedDates = (h.completed_dates as any) || [];
+              return Array.isArray(completedDates) && completedDates.includes(dayString);
+            }).length;
             const allCompleted = completedCount === totalHabits && totalHabits > 0;
 
             return (
@@ -255,8 +258,9 @@ export default function Habits() {
 
         <div className="space-y-3">
           {habits.map((habit) => {
-            const isCompleted = habit.completedDates.includes(dateString);
-            const IconComponent = habitIcons[habit.icon] || Target;
+            const completedDates = (habit.completed_dates as any) || [];
+            const isCompleted = Array.isArray(completedDates) && completedDates.includes(dateString);
+            const IconComponent = habitIcons[habit.icon || ''] || Target;
 
             return (
               <div
@@ -270,7 +274,7 @@ export default function Habits() {
               >
                 <div
                   className="w-12 h-12 rounded-xl flex items-center justify-center transition-all"
-                  style={{ backgroundColor: habit.color }}
+                  style={{ backgroundColor: habit.color || '#10b981' }}
                 >
                   <IconComponent className="w-6 h-6 text-gray-700" />
                 </div>
@@ -280,10 +284,10 @@ export default function Habits() {
                   </p>
                   <div className="flex items-center gap-3 mt-1">
                     <span className="text-xs text-gray-500 flex items-center gap-1">
-                      <Flame className="w-3 h-3 text-amber-500" /> {habit.streak} day streak
+                      <Flame className="w-3 h-3 text-amber-500" /> {habit.streak || 0} day streak
                     </span>
                     <span className="text-xs text-gray-400">
-                      {habit.completedDates.length} total completions
+                      {Array.isArray(completedDates) ? completedDates.length : 0} total completions
                     </span>
                   </div>
                 </div>

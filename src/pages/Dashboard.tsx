@@ -70,10 +70,10 @@ const availableWidgets = [
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const { data: habits = [], loading: habitsLoading } = useHabits();
-  const { data: weightEntries = [], loading: weightLoading } = useWeightEntries();
-  const { data: journalEntries = [], loading: journalLoading } = useJournalEntries();
-  const { data: userBadges = [], loading: badgesLoading } = useUserBadges();
+  const { data: habits = [] } = useHabits();
+  const { data: weightEntries = [] } = useWeightEntries();
+  const { data: journalEntries = [] } = useJournalEntries();
+  const { data: userBadges = [] } = useUserBadges();
   const { colorPreset, setColorPreset, colorPresets, primaryColor } = useTheme();
   const [widgets, setWidgets] = useState<WidgetConfig[]>(() => {
     const saved = localStorage.getItem('dashboardWidgets');
@@ -441,7 +441,8 @@ export default function Dashboard() {
       </div>
       <div className="space-y-3">
         {habits.slice(0, 5).map((habit) => {
-          const isCompleted = habit.completedDates.includes(today);
+          const completedDates = (habit.completed_dates as any) || [];
+          const isCompleted = Array.isArray(completedDates) && completedDates.includes(today);
           return (
             <div
               key={habit.id}
@@ -451,12 +452,12 @@ export default function Dashboard() {
             >
               <div
                 className="w-10 h-10 rounded-xl flex items-center justify-center"
-                style={{ backgroundColor: habit.color + '30' }}
+                style={{ backgroundColor: (habit.color || '#10b981') + '30' }}
               >
                 {isCompleted ? (
                   <CheckCircle2 className="w-5 h-5 text-sage-600" />
                 ) : (
-                  <Circle className="w-5 h-5" style={{ color: habit.color }} />
+                  <Circle className="w-5 h-5" style={{ color: habit.color || '#10b981' }} />
                 )}
               </div>
               <div className="flex-1">
@@ -583,12 +584,12 @@ export default function Dashboard() {
           }}
         >
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-sm text-gray-500">{format(new Date(journalEntries[0].date), 'MMMM d, yyyy')}</span>
-            <span className={`badge ${getMoodBadgeClass(journalEntries[0].mood)}`}>
-              {journalEntries[0].mood}
+            <span className="text-sm text-gray-500">{format(new Date(journalEntries[0].date || new Date()), 'MMMM d, yyyy')}</span>
+            <span className={`badge ${getMoodBadgeClass(journalEntries[0].mood || 'neutral')}`}>
+              {journalEntries[0].mood || 'neutral'}
             </span>
           </div>
-          <h3 className="font-semibold text-gray-900 mb-2">{journalEntries[0].title}</h3>
+          <h3 className="font-semibold text-gray-900 mb-2">{journalEntries[0].title || 'Untitled'}</h3>
           <p className="text-gray-600 text-sm line-clamp-2">{journalEntries[0].content}</p>
         </div>
       </div>

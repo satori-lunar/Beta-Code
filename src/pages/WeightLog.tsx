@@ -26,7 +26,7 @@ import { format, parseISO } from 'date-fns';
 
 export default function WeightLog() {
   const { user } = useAuth();
-  const { data: weightEntries = [], loading, refetch } = useWeightEntries();
+  const { data: weightEntries = [], refetch } = useWeightEntries();
   const [showAddModal, setShowAddModal] = useState(false);
   const [newEntry, setNewEntry] = useState({
     weight: '',

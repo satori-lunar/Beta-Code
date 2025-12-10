@@ -227,7 +227,11 @@ export default function Dashboard() {
     <div className="card">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-display font-semibold text-gray-900">Your Badges</h2>
-        <Link to="/badges" className="text-coral-600 hover:text-coral-700 text-sm font-medium flex items-center gap-1">
+        <Link
+          to="/badges"
+          className="text-sm font-medium flex items-center gap-1 hover:opacity-80"
+          style={{ color: primaryColor }}
+        >
           View All <ChevronRight className="w-4 h-4" />
         </Link>
       </div>
@@ -237,9 +241,18 @@ export default function Dashboard() {
           return (
             <div
               key={badge.id}
-              className="flex-shrink-0 flex flex-col items-center gap-2 p-4 bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl border border-amber-100 min-w-[120px]"
+              className="flex-shrink-0 flex flex-col items-center gap-2 p-4 rounded-2xl border min-w-[120px]"
+              style={{
+                background: `linear-gradient(to bottom right, ${colorPresets[colorPreset]?.light}, ${colorPresets[colorPreset]?.light}dd)`,
+                borderColor: `${primaryColor}30`
+              }}
             >
-              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg">
+              <div
+                className="w-14 h-14 rounded-full flex items-center justify-center shadow-lg"
+                style={{
+                  background: `linear-gradient(to bottom right, ${primaryColor}, ${colorPresets[colorPreset]?.colors[1]})`
+                }}
+              >
                 <IconComponent className="w-7 h-7 text-white" />
               </div>
               <span className="text-sm font-medium text-gray-800 text-center">{badge.name}</span>
@@ -291,8 +304,11 @@ export default function Dashboard() {
 
       <div className="stat-card">
         <div className="flex items-center gap-3 mb-3">
-          <div className="w-10 h-10 rounded-xl bg-coral-100 flex items-center justify-center">
-            <TrendingUp className="w-5 h-5 text-coral-600" />
+          <div
+            className="w-10 h-10 rounded-xl flex items-center justify-center"
+            style={{ backgroundColor: colorPresets[colorPreset]?.light }}
+          >
+            <TrendingUp className="w-5 h-5" style={{ color: primaryColor }} />
           </div>
           <span className="text-sm text-gray-500">Weight</span>
         </div>
@@ -323,7 +339,11 @@ export default function Dashboard() {
               <p className="text-sm text-gray-500">{todaysClasses.length} class{todaysClasses.length !== 1 ? 'es' : ''} scheduled</p>
             </div>
           </div>
-          <Link to="/classes" className="text-coral-600 hover:text-coral-700 text-sm font-medium flex items-center gap-1">
+          <Link
+            to="/classes"
+            className="text-sm font-medium flex items-center gap-1 hover:opacity-80"
+            style={{ color: primaryColor }}
+          >
             View All <ChevronRight className="w-4 h-4" />
           </Link>
         </div>
@@ -337,13 +357,15 @@ export default function Dashboard() {
             return (
               <div
                 key={liveClass.id}
-                className={`p-4 rounded-xl border transition-all ${
-                  isLive
-                    ? 'bg-gradient-to-br from-red-50 to-orange-50 border-red-200 ring-2 ring-red-200'
-                    : isPast
-                      ? 'bg-gray-50 border-gray-200 opacity-60'
-                      : 'bg-white border-gray-200 hover:border-coral-200 hover:shadow-md'
-                }`}
+                className="p-4 rounded-xl border transition-all"
+                style={{
+                  background: isLive
+                    ? `linear-gradient(to bottom right, ${colorPresets[colorPreset]?.light}, white)`
+                    : isPast ? '#f9fafb' : 'white',
+                  borderColor: isLive ? primaryColor : isPast ? '#e5e7eb' : '#e5e7eb',
+                  opacity: isPast ? 0.6 : 1,
+                  boxShadow: isLive ? `0 0 0 2px ${primaryColor}40` : undefined
+                }}
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-2">
@@ -353,7 +375,10 @@ export default function Dashboard() {
                     </span>
                   </div>
                   {isLive && (
-                    <span className="flex items-center gap-1 px-2 py-0.5 bg-red-500 text-white text-xs font-medium rounded-full animate-pulse">
+                    <span
+                      className="flex items-center gap-1 px-2 py-0.5 text-white text-xs font-medium rounded-full animate-pulse"
+                      style={{ backgroundColor: primaryColor }}
+                    >
                       <span className="w-1.5 h-1.5 bg-white rounded-full"></span>
                       LIVE
                     </span>
@@ -376,11 +401,8 @@ export default function Dashboard() {
                       href={liveClass.zoomLink || '#'}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                        isLive
-                          ? 'bg-red-500 hover:bg-red-600 text-white'
-                          : 'bg-coral-500 hover:bg-coral-600 text-white'
-                      }`}
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors text-white hover:opacity-90"
+                      style={{ backgroundColor: primaryColor }}
                     >
                       <PlayCircle className="w-4 h-4" />
                       {isLive ? 'Join Now' : 'Join'}
@@ -399,7 +421,11 @@ export default function Dashboard() {
     <div className="card h-full">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-display font-semibold text-gray-900">Today's Habits</h2>
-        <Link to="/habits" className="text-coral-600 hover:text-coral-700 text-sm font-medium flex items-center gap-1">
+        <Link
+          to="/habits"
+          className="text-sm font-medium flex items-center gap-1 hover:opacity-80"
+          style={{ color: primaryColor }}
+        >
           View All <ChevronRight className="w-4 h-4" />
         </Link>
       </div>
@@ -442,7 +468,12 @@ export default function Dashboard() {
     if (!upcomingClass) return null;
 
     return (
-      <div className="card bg-gradient-to-br from-navy-800 to-navy-900 text-white h-full">
+      <div
+        className="card text-white h-full"
+        style={{
+          background: `linear-gradient(to bottom right, ${colorPresets[colorPreset]?.dark}, ${primaryColor})`
+        }}
+      >
         <div className="flex items-start justify-between mb-4">
           <div>
             <p className="text-sm text-white/60 mb-1">Next Live Class</p>
@@ -459,7 +490,7 @@ export default function Dashboard() {
           </div>
           <Link
             to="/classes"
-            className="flex items-center gap-2 px-4 py-2 bg-coral-500 hover:bg-coral-600 rounded-xl text-sm font-medium transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-xl text-sm font-medium transition-colors backdrop-blur-sm"
           >
             <PlayCircle className="w-4 h-4" />
             Join Class
@@ -473,7 +504,11 @@ export default function Dashboard() {
     <div className="card h-full">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-display font-semibold text-gray-900">Course Progress</h2>
-        <Link to="/courses" className="text-coral-600 hover:text-coral-700 text-sm font-medium flex items-center gap-1">
+        <Link
+          to="/courses"
+          className="text-sm font-medium flex items-center gap-1 hover:opacity-80"
+          style={{ color: primaryColor }}
+        >
           View All <ChevronRight className="w-4 h-4" />
         </Link>
       </div>
@@ -482,7 +517,13 @@ export default function Dashboard() {
           const progress = Math.round((course.completedSessions / course.sessions) * 100);
           return (
             <div key={course.id} className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-coral-100 to-coral-200 flex items-center justify-center text-coral-600 font-bold text-sm">
+              <div
+                className="w-12 h-12 rounded-xl flex items-center justify-center font-bold text-sm"
+                style={{
+                  background: `linear-gradient(to bottom right, ${colorPresets[colorPreset]?.light}, ${colorPresets[colorPreset]?.light}aa)`,
+                  color: primaryColor
+                }}
+              >
                 {progress}%
               </div>
               <div className="flex-1">
@@ -490,8 +531,11 @@ export default function Dashboard() {
                 <div className="flex items-center gap-2 mt-1">
                   <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-gradient-to-r from-coral-400 to-coral-500 rounded-full transition-all duration-500"
-                      style={{ width: `${progress}%` }}
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{
+                        width: `${progress}%`,
+                        background: `linear-gradient(to right, ${primaryColor}, ${colorPresets[colorPreset]?.colors[1]})`
+                      }}
                     />
                   </div>
                   <span className="text-xs text-gray-500">
@@ -513,11 +557,21 @@ export default function Dashboard() {
       <div className="card">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-display font-semibold text-gray-900">Latest Journal Entry</h2>
-          <Link to="/journal" className="text-coral-600 hover:text-coral-700 text-sm font-medium flex items-center gap-1">
+          <Link
+            to="/journal"
+            className="text-sm font-medium flex items-center gap-1 hover:opacity-80"
+            style={{ color: primaryColor }}
+          >
             View All <ChevronRight className="w-4 h-4" />
           </Link>
         </div>
-        <div className="p-4 bg-cream-50 rounded-xl border border-cream-200">
+        <div
+          className="p-4 rounded-xl border"
+          style={{
+            backgroundColor: colorPresets[colorPreset]?.light,
+            borderColor: `${primaryColor}30`
+          }}
+        >
           <div className="flex items-center gap-2 mb-2">
             <span className="text-sm text-gray-500">{format(new Date(journalEntries[0].date), 'MMMM d, yyyy')}</span>
             <span className={`badge ${getMoodBadgeClass(journalEntries[0].mood)}`}>
@@ -669,7 +723,8 @@ export default function Dashboard() {
             key={widget.id}
             className={`${getWidgetClasses(widget.size)} transition-all duration-300 ${
               draggedWidget === widget.id ? 'opacity-50' : ''
-            } ${editMode ? 'ring-2 ring-coral-200 ring-dashed rounded-2xl' : ''}`}
+            } ${editMode ? 'ring-2 ring-dashed rounded-2xl' : ''}`}
+            style={editMode ? { ['--tw-ring-color' as string]: `${primaryColor}40` } : undefined}
             draggable={editMode}
             onDragStart={(e) => handleDragStart(e, widget.id)}
             onDragOver={handleDragOver}
@@ -727,7 +782,13 @@ export default function Dashboard() {
                     onClick={() => addWidget(widget.type)}
                     className="flex items-start gap-4 p-4 bg-gray-50 hover:bg-gray-100 rounded-xl text-left transition-colors"
                   >
-                    <div className="w-12 h-12 bg-coral-100 rounded-xl flex items-center justify-center text-coral-600 flex-shrink-0">
+                    <div
+                      className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+                      style={{
+                        backgroundColor: colorPresets[colorPreset]?.light,
+                        color: primaryColor
+                      }}
+                    >
                       <Plus className="w-6 h-6" />
                     </div>
                     <div>

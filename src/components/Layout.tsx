@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { formatDistanceToNow } from 'date-fns';
 import HelpDesk from './HelpDesk';
 
@@ -66,6 +67,7 @@ const notificationIcons: Record<string, React.ElementType> = {
 export default function Layout() {
   const navigate = useNavigate();
   const { signOut } = useAuth();
+  const { colorPreset, colorPresets, primaryColor } = useTheme();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -204,7 +206,12 @@ export default function Layout() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-rose-50 via-white to-orange-50">
+    <div
+      className="min-h-screen"
+      style={{
+        background: `linear-gradient(to bottom right, ${colorPresets[colorPreset]?.light}60, white, ${colorPresets[colorPreset]?.light}40)`
+      }}
+    >
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
         <div
@@ -223,7 +230,10 @@ export default function Layout() {
           {/* Logo */}
           <div className="flex items-center justify-between p-6 border-b border-gray-100">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-coral-400 to-coral-600 flex items-center justify-center">
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center"
+                style={{ background: `linear-gradient(to bottom right, ${primaryColor}, ${colorPresets[colorPreset]?.dark})` }}
+              >
                 <Flame className="w-6 h-6 text-white" />
               </div>
               <span className="text-xl font-display font-semibold text-gray-900">
@@ -241,12 +251,15 @@ export default function Layout() {
           {/* User Profile */}
           <div className="p-6 border-b border-gray-100">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-coral-200 to-coral-400 flex items-center justify-center text-white font-semibold text-lg">
+              <div
+                className="w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold text-lg"
+                style={{ background: `linear-gradient(to bottom right, ${colorPresets[colorPreset]?.light}, ${primaryColor})` }}
+              >
                 {user?.name?.charAt(0) || 'U'}
               </div>
               <div>
                 <p className="font-medium text-gray-900">Hello, {user?.name || 'User'}!</p>
-                <div className="flex items-center gap-1 text-sm text-coral-600">
+                <div className="flex items-center gap-1 text-sm" style={{ color: primaryColor }}>
                   <Flame className="w-4 h-4" />
                   <span>{user?.streak || 0} day streak</span>
                 </div>
@@ -336,13 +349,18 @@ export default function Layout() {
                             onClick={() => handleSearchSelect(result.link)}
                             className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 transition-colors text-left"
                           >
-                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                              result.type === 'page' ? 'bg-coral-100 text-coral-600' :
-                              result.type === 'habit' ? 'bg-sage-100 text-sage-600' :
-                              result.type === 'course' ? 'bg-purple-100 text-purple-600' :
-                              result.type === 'class' ? 'bg-blue-100 text-blue-600' :
-                              'bg-amber-100 text-amber-600'
-                            }`}>
+                            <div
+                              className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                                result.type === 'habit' ? 'bg-sage-100 text-sage-600' :
+                                result.type === 'course' ? 'bg-purple-100 text-purple-600' :
+                                result.type === 'class' ? 'bg-blue-100 text-blue-600' :
+                                result.type === 'journal' ? 'bg-amber-100 text-amber-600' : ''
+                              }`}
+                              style={result.type === 'page' ? {
+                                backgroundColor: colorPresets[colorPreset]?.light,
+                                color: primaryColor
+                              } : undefined}
+                            >
                               {result.type === 'page' && <LayoutDashboard className="w-4 h-4" />}
                               {result.type === 'habit' && <Target className="w-4 h-4" />}
                               {result.type === 'course' && <GraduationCap className="w-4 h-4" />}
@@ -379,7 +397,10 @@ export default function Layout() {
                 >
                   <Bell className="w-5 h-5 text-gray-600" />
                   {unreadCount > 0 && (
-                    <span className="absolute top-1 right-1 w-5 h-5 bg-coral-500 text-white text-xs font-medium rounded-full flex items-center justify-center">
+                    <span
+                      className="absolute top-1 right-1 w-5 h-5 text-white text-xs font-medium rounded-full flex items-center justify-center"
+                      style={{ backgroundColor: primaryColor }}
+                    >
                       {unreadCount}
                     </span>
                   )}
@@ -393,7 +414,8 @@ export default function Layout() {
                       {unreadCount > 0 && (
                         <button
                           onClick={markAllNotificationsRead}
-                          className="text-sm text-coral-600 hover:text-coral-700 font-medium"
+                          className="text-sm font-medium hover:opacity-80"
+                          style={{ color: primaryColor }}
                         >
                           Mark all read
                         </button>
@@ -406,9 +428,10 @@ export default function Layout() {
                           return (
                             <div
                               key={notification.id}
-                              className={`flex items-start gap-3 p-4 hover:bg-gray-50 transition-colors cursor-pointer ${
-                                !notification.read ? 'bg-coral-50/50' : ''
-                              }`}
+                              className="flex items-start gap-3 p-4 hover:bg-gray-50 transition-colors cursor-pointer"
+                              style={{
+                                backgroundColor: !notification.read ? `${colorPresets[colorPreset]?.light}80` : undefined
+                              }}
                               onClick={() => handleNotificationClick(notification)}
                             >
                               <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
@@ -477,7 +500,11 @@ export default function Layout() {
                     setProfileOpen(!profileOpen);
                     setNotificationsOpen(false);
                   }}
-                  className="w-10 h-10 rounded-full bg-gradient-to-br from-coral-200 to-coral-400 flex items-center justify-center text-white font-semibold hover:ring-2 hover:ring-coral-200 transition-all"
+                  className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold hover:ring-2 transition-all"
+                  style={{
+                    background: `linear-gradient(to bottom right, ${colorPresets[colorPreset]?.light}, ${primaryColor})`,
+                    ['--tw-ring-color' as string]: `${primaryColor}40`
+                  }}
                 >
                   {user?.name?.charAt(0) || 'U'}
                 </button>
@@ -487,7 +514,10 @@ export default function Layout() {
                   <div className="absolute top-full right-0 mt-2 w-64 bg-white rounded-xl shadow-elevated border border-gray-100 overflow-hidden z-50">
                     <div className="p-4 border-b border-gray-100">
                       <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-coral-200 to-coral-400 flex items-center justify-center text-white font-semibold text-lg">
+                        <div
+                          className="w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold text-lg"
+                          style={{ background: `linear-gradient(to bottom right, ${colorPresets[colorPreset]?.light}, ${primaryColor})` }}
+                        >
                           {user?.name?.charAt(0) || 'U'}
                         </div>
                         <div>
@@ -560,11 +590,10 @@ export default function Layout() {
             <NavLink
               key={item.name}
               to={item.href}
-              className={({ isActive }) =>
-                `flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${
-                  isActive ? 'text-coral-600' : 'text-gray-500'
-                }`
-              }
+              className="flex flex-col items-center gap-1 p-2 rounded-lg transition-colors"
+              style={({ isActive }) => ({
+                color: isActive ? primaryColor : '#6b7280'
+              })}
             >
               <item.icon className="w-5 h-5" />
               <span className="text-xs font-medium">{item.name.split(' ')[0]}</span>

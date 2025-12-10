@@ -42,7 +42,7 @@ const avatarOptions = [
 
 export default function Settings() {
   const { user, setUser } = useStore();
-  const { colorPreset, setColorPreset, isDark, toggleDark, colorPresets } = useTheme();
+  const { colorPreset, setColorPreset, isDark, toggleDark, colorPresets, primaryColor } = useTheme();
   const [name, setName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
   const [selectedAvatar, setSelectedAvatar] = useState(user?.avatar || 'gradient-coral');
@@ -118,7 +118,10 @@ export default function Settings() {
       );
     }
     return (
-      <div className="w-full h-full rounded-full bg-gradient-to-br from-coral-200 to-coral-400 flex items-center justify-center text-white text-2xl font-bold">
+      <div
+        className="w-full h-full rounded-full flex items-center justify-center text-white text-2xl font-bold"
+        style={{ background: `linear-gradient(to bottom right, ${colorPresets[colorPreset]?.light}, ${primaryColor})` }}
+      >
         {name.charAt(0) || 'U'}
       </div>
     );
@@ -168,7 +171,8 @@ export default function Settings() {
             <p className="text-sm text-gray-500">Member since {user?.joinDate}</p>
             <button
               onClick={() => setShowAvatarModal(true)}
-              className="text-sm text-coral-600 hover:text-coral-700 mt-1"
+              className="text-sm mt-1 hover:opacity-80"
+              style={{ color: primaryColor }}
             >
               Change avatar
             </button>
@@ -253,9 +257,8 @@ export default function Settings() {
             </div>
             <button
               onClick={toggleDark}
-              className={`relative w-12 h-7 rounded-full transition-colors ${
-                isDark ? 'bg-coral-500' : 'bg-gray-200'
-              }`}
+              className="relative w-12 h-7 rounded-full transition-colors"
+              style={{ backgroundColor: isDark ? primaryColor : '#e5e7eb' }}
             >
               <div
                 className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-transform ${
@@ -373,11 +376,12 @@ export default function Settings() {
                     [item.key]: !notifications[item.key as keyof typeof notifications],
                   })
                 }
-                className={`relative w-12 h-7 rounded-full transition-colors ${
-                  notifications[item.key as keyof typeof notifications]
-                    ? 'bg-coral-500'
-                    : 'bg-gray-200'
-                }`}
+                className="relative w-12 h-7 rounded-full transition-colors"
+                style={{
+                  backgroundColor: notifications[item.key as keyof typeof notifications]
+                    ? primaryColor
+                    : '#e5e7eb'
+                }}
               >
                 <div
                   className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-transform ${
@@ -463,7 +467,21 @@ export default function Settings() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Upload Custom Avatar
                 </label>
-                <label className="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-coral-300 hover:bg-coral-50 transition-colors">
+                <label
+                  className="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer transition-colors"
+                  style={{
+                    ['--hover-border' as string]: primaryColor,
+                    ['--hover-bg' as string]: colorPresets[colorPreset]?.light
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = primaryColor;
+                    e.currentTarget.style.backgroundColor = colorPresets[colorPreset]?.light;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = '#e5e7eb';
+                    e.currentTarget.style.backgroundColor = '';
+                  }}
+                >
                   <Upload className="w-5 h-5 text-gray-400" />
                   <span className="text-sm text-gray-500">Click to upload image</span>
                   <input
@@ -489,9 +507,12 @@ export default function Settings() {
                         setCustomAvatarUrl(null);
                       }}
                       className={`w-12 h-12 rounded-full transition-all ${
-                        selectedAvatar === avatar.id ? 'ring-2 ring-coral-500 ring-offset-2' : ''
+                        selectedAvatar === avatar.id ? 'ring-2 ring-offset-2' : ''
                       }`}
-                      style={{ background: `linear-gradient(135deg, ${avatar.colors[0]}, ${avatar.colors[1]})` }}
+                      style={{
+                        background: `linear-gradient(135deg, ${avatar.colors[0]}, ${avatar.colors[1]})`,
+                        ['--tw-ring-color' as string]: selectedAvatar === avatar.id ? primaryColor : undefined
+                      }}
                     />
                   ))}
                 </div>
@@ -533,8 +554,12 @@ export default function Settings() {
                     setShowColorModal(false);
                   }}
                   className={`w-full flex items-center gap-4 p-4 rounded-xl transition-colors ${
-                    colorPreset === key ? 'bg-coral-50 ring-2 ring-coral-200' : 'hover:bg-gray-50'
+                    colorPreset === key ? 'ring-2' : 'hover:bg-gray-50'
                   }`}
+                  style={colorPreset === key ? {
+                    backgroundColor: preset.light,
+                    ['--tw-ring-color' as string]: `${preset.colors[0]}40`
+                  } : undefined}
                 >
                   <div className="flex -space-x-1">
                     {preset.colors.map((color, i) => (
@@ -547,7 +572,7 @@ export default function Settings() {
                   </div>
                   <span className="font-medium text-gray-900">{preset.name}</span>
                   {colorPreset === key && (
-                    <Check className="w-5 h-5 text-coral-600 ml-auto" />
+                    <Check className="w-5 h-5 ml-auto" style={{ color: preset.colors[0] }} />
                   )}
                 </button>
               ))}
@@ -577,9 +602,11 @@ export default function Settings() {
                     setLanguage(lang);
                     setShowLanguageModal(false);
                   }}
-                  className={`w-full flex items-center justify-between p-4 rounded-xl transition-colors ${
-                    language === lang ? 'bg-coral-50 text-coral-600' : 'hover:bg-gray-50'
-                  }`}
+                  className="w-full flex items-center justify-between p-4 rounded-xl transition-colors hover:bg-gray-50"
+                  style={language === lang ? {
+                    backgroundColor: colorPresets[colorPreset]?.light,
+                    color: primaryColor
+                  } : undefined}
                 >
                   <span>{lang}</span>
                   {language === lang && <Check className="w-5 h-5" />}
@@ -627,9 +654,8 @@ export default function Settings() {
                       profileVisible: !privacySettings.profileVisible,
                     })
                   }
-                  className={`relative w-12 h-7 rounded-full transition-colors ${
-                    privacySettings.profileVisible ? 'bg-coral-500' : 'bg-gray-200'
-                  }`}
+                  className="relative w-12 h-7 rounded-full transition-colors"
+                  style={{ backgroundColor: privacySettings.profileVisible ? primaryColor : '#e5e7eb' }}
                 >
                   <div
                     className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-transform ${
@@ -655,9 +681,8 @@ export default function Settings() {
                       showProgress: !privacySettings.showProgress,
                     })
                   }
-                  className={`relative w-12 h-7 rounded-full transition-colors ${
-                    privacySettings.showProgress ? 'bg-coral-500' : 'bg-gray-200'
-                  }`}
+                  className="relative w-12 h-7 rounded-full transition-colors"
+                  style={{ backgroundColor: privacySettings.showProgress ? primaryColor : '#e5e7eb' }}
                 >
                   <div
                     className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-transform ${
@@ -683,9 +708,8 @@ export default function Settings() {
                       shareData: !privacySettings.shareData,
                     })
                   }
-                  className={`relative w-12 h-7 rounded-full transition-colors ${
-                    privacySettings.shareData ? 'bg-coral-500' : 'bg-gray-200'
-                  }`}
+                  className="relative w-12 h-7 rounded-full transition-colors"
+                  style={{ backgroundColor: privacySettings.shareData ? primaryColor : '#e5e7eb' }}
                 >
                   <div
                     className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-transform ${
@@ -728,7 +752,10 @@ export default function Settings() {
                 href="#"
                 className="flex items-center gap-4 p-4 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors"
               >
-                <div className="w-12 h-12 bg-coral-100 rounded-full flex items-center justify-center text-coral-600">
+                <div
+                  className="w-12 h-12 rounded-full flex items-center justify-center"
+                  style={{ backgroundColor: colorPresets[colorPreset]?.light, color: primaryColor }}
+                >
                   <MessageCircle className="w-6 h-6" />
                 </div>
                 <div>

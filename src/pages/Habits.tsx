@@ -21,6 +21,7 @@ import {
   Sun
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
+import { useTheme } from '../contexts/ThemeContext';
 import { format, addDays, subDays, startOfWeek, isSameDay } from 'date-fns';
 
 const habitIcons: Record<string, React.ElementType> = {
@@ -56,6 +57,7 @@ const colorOptions = [
 
 export default function Habits() {
   const { habits, toggleHabitCompletion, addHabit, deleteHabit } = useStore();
+  const { colorPreset, colorPresets, primaryColor } = useTheme();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showAddModal, setShowAddModal] = useState(false);
   const [newHabit, setNewHabit] = useState({
@@ -116,8 +118,11 @@ export default function Habits() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="stat-card">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl bg-coral-100 flex items-center justify-center">
-              <Target className="w-5 h-5 text-coral-600" />
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center"
+              style={{ backgroundColor: colorPresets[colorPreset]?.light }}
+            >
+              <Target className="w-5 h-5" style={{ color: primaryColor }} />
             </div>
           </div>
           <p className="text-2xl font-bold text-gray-900">{totalHabits}</p>
@@ -190,15 +195,18 @@ export default function Habits() {
                 key={dayString}
                 onClick={() => setSelectedDate(day)}
                 className={`flex flex-col items-center p-3 rounded-xl transition-all ${
-                  isSelected
-                    ? 'bg-coral-500 text-white'
-                    : isToday
-                    ? 'bg-coral-50 text-coral-600'
-                    : 'hover:bg-gray-100 text-gray-600'
+                  !isSelected && !isToday ? 'hover:bg-gray-100 text-gray-600' : ''
                 }`}
+                style={{
+                  backgroundColor: isSelected ? primaryColor : isToday ? colorPresets[colorPreset]?.light : undefined,
+                  color: isSelected ? 'white' : isToday ? primaryColor : undefined
+                }}
               >
                 <span className="text-xs font-medium mb-1">{format(day, 'EEE')}</span>
-                <span className={`text-lg font-bold ${isSelected ? '' : isToday ? 'text-coral-600' : 'text-gray-900'}`}>
+                <span
+                  className={`text-lg font-bold ${isSelected ? '' : !isToday ? 'text-gray-900' : ''}`}
+                  style={{ color: isToday && !isSelected ? primaryColor : undefined }}
+                >
                   {format(day, 'd')}
                 </span>
                 {allCompleted && (
@@ -326,9 +334,14 @@ export default function Habits() {
                       onClick={() => setNewHabit({ ...newHabit, icon: option.id })}
                       className={`p-3 rounded-xl flex items-center justify-center transition-all ${
                         newHabit.icon === option.id
-                          ? 'bg-coral-100 text-coral-600 ring-2 ring-coral-500'
+                          ? 'ring-2'
                           : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                       }`}
+                      style={newHabit.icon === option.id ? {
+                        backgroundColor: colorPresets[colorPreset]?.light,
+                        color: primaryColor,
+                        ['--tw-ring-color' as string]: primaryColor
+                      } : undefined}
                     >
                       <option.icon className="w-5 h-5" />
                     </button>

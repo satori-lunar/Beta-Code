@@ -1,79 +1,68 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 
-interface ThemeColors {
-  primary: string;
-  secondary: string;
-  accent: string;
+interface ColorPreset {
+  name: string;
+  colors: string[];
 }
 
 interface ThemeContextType {
-  theme: 'light' | 'dark';
-  colors: ThemeColors;
-  setTheme: (theme: 'light' | 'dark') => void;
-  setColors: (colors: ThemeColors) => void;
-  presets: { name: string; colors: ThemeColors }[];
-  applyPreset: (preset: string) => void;
+  colorPreset: string;
+  setColorPreset: (preset: string) => void;
+  isDark: boolean;
+  toggleDark: () => void;
+  colorPresets: Record<string, ColorPreset>;
 }
 
-const defaultColors: ThemeColors = {
-  primary: '#f97316', // coral
-  secondary: '#84cc16', // sage
-  accent: '#0ea5e9', // sky
+export const colorPresets: Record<string, ColorPreset> = {
+  coral: { name: 'Coral', colors: ['#f97316', '#ec4899', '#f43f5e'] },
+  ocean: { name: 'Ocean', colors: ['#0ea5e9', '#06b6d4', '#14b8a6'] },
+  forest: { name: 'Forest', colors: ['#22c55e', '#10b981', '#84cc16'] },
+  sunset: { name: 'Sunset', colors: ['#f59e0b', '#ef4444', '#f97316'] },
+  lavender: { name: 'Lavender', colors: ['#a855f7', '#8b5cf6', '#ec4899'] },
+  midnight: { name: 'Midnight', colors: ['#6366f1', '#8b5cf6', '#1e293b'] },
 };
-
-const colorPresets = [
-  { name: 'Coral', colors: { primary: '#f97316', secondary: '#84cc16', accent: '#0ea5e9' } },
-  { name: 'Ocean', colors: { primary: '#0ea5e9', secondary: '#14b8a6', accent: '#8b5cf6' } },
-  { name: 'Forest', colors: { primary: '#22c55e', secondary: '#84cc16', accent: '#f59e0b' } },
-  { name: 'Sunset', colors: { primary: '#f43f5e', secondary: '#f97316', accent: '#eab308' } },
-  { name: 'Lavender', colors: { primary: '#8b5cf6', secondary: '#ec4899', accent: '#06b6d4' } },
-  { name: 'Midnight', colors: { primary: '#6366f1', secondary: '#8b5cf6', accent: '#ec4899' } },
-];
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<'light' | 'dark'>(() => {
-    const saved = localStorage.getItem('theme');
-    return (saved as 'light' | 'dark') || 'light';
+  const [colorPreset, setColorPresetState] = useState<string>(() => {
+    const saved = localStorage.getItem('colorPreset');
+    return saved || 'coral';
   });
 
-  const [colors, setColorsState] = useState<ThemeColors>(() => {
-    const saved = localStorage.getItem('themeColors');
-    return saved ? JSON.parse(saved) : defaultColors;
+  const [isDark, setIsDark] = useState<boolean>(() => {
+    const saved = localStorage.getItem('isDark');
+    return saved === 'true';
   });
 
   useEffect(() => {
-    localStorage.setItem('theme', theme);
-    document.documentElement.classList.toggle('dark', theme === 'dark');
-  }, [theme]);
-
-  useEffect(() => {
-    localStorage.setItem('themeColors', JSON.stringify(colors));
-    // Update CSS variables
-    document.documentElement.style.setProperty('--color-primary', colors.primary);
-    document.documentElement.style.setProperty('--color-secondary', colors.secondary);
-    document.documentElement.style.setProperty('--color-accent', colors.accent);
-  }, [colors]);
-
-  const setTheme = (newTheme: 'light' | 'dark') => {
-    setThemeState(newTheme);
-  };
-
-  const setColors = (newColors: ThemeColors) => {
-    setColorsState(newColors);
-  };
-
-  const applyPreset = (presetName: string) => {
-    const preset = colorPresets.find(p => p.name === presetName);
+    localStorage.setItem('colorPreset', colorPreset);
+    const preset = colorPresets[colorPreset];
     if (preset) {
-      setColorsState(preset.colors);
+      document.documentElement.style.setProperty('--color-primary', preset.colors[0]);
+      document.documentElement.style.setProperty('--color-secondary', preset.colors[1]);
+      document.documentElement.style.setProperty('--color-accent', preset.colors[2]);
+    }
+  }, [colorPreset]);
+
+  useEffect(() => {
+    localStorage.setItem('isDark', String(isDark));
+    document.documentElement.classList.toggle('dark', isDark);
+  }, [isDark]);
+
+  const setColorPreset = (preset: string) => {
+    if (colorPresets[preset]) {
+      setColorPresetState(preset);
     }
   };
 
+  const toggleDark = () => {
+    setIsDark(prev => !prev);
+  };
+
   return (
-    <ThemeContext.Provider value={{ theme, colors, setTheme, setColors, presets: colorPresets, applyPreset }}>
+    <ThemeContext.Provider value={{ colorPreset, setColorPreset, isDark, toggleDark, colorPresets }}>
       {children}
     </ThemeContext.Provider>
   );

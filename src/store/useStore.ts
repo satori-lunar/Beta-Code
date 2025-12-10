@@ -2,7 +2,8 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type {
   User, Habit, NutritionEntry, WeightEntry,
-  JournalEntry, Course, LiveClass, RecordedSession, CalendarEvent, Notification
+  JournalEntry, Course, LiveClass, RecordedSession, CalendarEvent, Notification,
+  HealthMetrics, ConnectedDevice
 } from '../types';
 
 interface AppState {
@@ -52,6 +53,12 @@ interface AppState {
   markNotificationRead: (id: string) => void;
   markAllNotificationsRead: () => void;
   deleteNotification: (id: string) => void;
+
+  // Health Metrics
+  healthMetrics: HealthMetrics;
+  updateHealthMetric: <K extends keyof HealthMetrics>(key: K, value: HealthMetrics[K]) => void;
+  connectedDevices: ConnectedDevice[];
+  toggleDeviceConnection: (deviceId: string) => void;
 }
 
 // Mock data
@@ -223,6 +230,41 @@ export const useStore = create<AppState>()(
       })),
       deleteNotification: (id) => set((state) => ({
         notifications: state.notifications.filter(n => n.id !== id)
+      })),
+
+      // Health Metrics
+      healthMetrics: {
+        heartRate: { value: 72, unit: 'bpm', lastUpdated: new Date().toISOString() },
+        bloodPressure: { systolic: 120, diastolic: 80, unit: 'mmHg', lastUpdated: new Date().toISOString() },
+        bodyTemperature: { value: 98.6, unit: '°F', lastUpdated: new Date().toISOString() },
+        oxygenSaturation: { value: 98, unit: '%', lastUpdated: new Date().toISOString() },
+        respiratoryRate: { value: 16, unit: 'breaths/min', lastUpdated: new Date().toISOString() },
+        bmi: { value: 22.5, category: 'Normal', lastUpdated: new Date().toISOString() },
+        bodyFat: { value: 18, unit: '%', lastUpdated: new Date().toISOString() },
+        height: { value: 170, unit: 'cm', lastUpdated: new Date().toISOString() },
+        weight: { value: 68, unit: 'kg', lastUpdated: new Date().toISOString() },
+        sleepHours: { value: 7.5, quality: 'good', lastUpdated: new Date().toISOString() },
+        steps: { value: 8500, goal: 10000, lastUpdated: new Date().toISOString() },
+        activeMinutes: { value: 45, goal: 60, lastUpdated: new Date().toISOString() },
+        caloriesBurned: { value: 1850, goal: 2200, lastUpdated: new Date().toISOString() },
+        stressLevel: { value: 4, scale: 10, lastUpdated: new Date().toISOString() },
+        energyLevel: { value: 7, scale: 10, lastUpdated: new Date().toISOString() },
+        hydration: { value: 1500, goal: 2000, unit: 'ml', lastUpdated: new Date().toISOString() },
+      },
+      updateHealthMetric: (key, value) => set((state) => ({
+        healthMetrics: { ...state.healthMetrics, [key]: value }
+      })),
+      connectedDevices: [
+        { id: 'fitbit', name: 'Fitbit', type: 'fitbit', connected: false, lastSync: null, icon: 'watch' },
+        { id: 'apple_watch', name: 'Apple Watch', type: 'apple_watch', connected: false, lastSync: null, icon: 'watch' },
+        { id: 'garmin', name: 'Garmin', type: 'garmin', connected: false, lastSync: null, icon: 'watch' },
+        { id: 'google_fit', name: 'Google Fit', type: 'google_fit', connected: false, lastSync: null, icon: 'smartphone' },
+        { id: 'samsung', name: 'Samsung Health', type: 'samsung', connected: false, lastSync: null, icon: 'watch' },
+      ],
+      toggleDeviceConnection: (deviceId) => set((state) => ({
+        connectedDevices: state.connectedDevices.map(d =>
+          d.id === deviceId ? { ...d, connected: !d.connected, lastSync: !d.connected ? new Date().toISOString() : d.lastSync } : d
+        )
       })),
     }),
     {

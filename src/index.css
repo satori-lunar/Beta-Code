@@ -2,6 +2,56 @@
 @import "tailwindcss";
 @config "../tailwind.config.js";
 
+:root {
+  --theme-primary: #f86f4d;
+  --theme-primary-light: #fff5f3;
+  --theme-primary-dark: #e54d2a;
+  --theme-secondary: #ec4899;
+  --theme-accent: #f43f5e;
+}
+
+/* Theme color classes that use CSS variables */
+.theme-bg-primary {
+  background-color: var(--theme-primary) !important;
+}
+
+.theme-bg-primary-light {
+  background-color: var(--theme-primary-light) !important;
+}
+
+.theme-text-primary {
+  color: var(--theme-primary) !important;
+}
+
+.theme-border-primary {
+  border-color: var(--theme-primary) !important;
+}
+
+.theme-gradient {
+  background: linear-gradient(to right, var(--theme-primary), var(--theme-secondary)) !important;
+}
+
+.theme-gradient-br {
+  background: linear-gradient(to bottom right, var(--theme-primary), var(--theme-secondary)) !important;
+}
+
+.theme-ring-primary {
+  --tw-ring-color: var(--theme-primary) !important;
+}
+
+/* Hover states */
+.hover\:theme-bg-primary:hover {
+  background-color: var(--theme-primary) !important;
+}
+
+.hover\:theme-bg-primary-dark:hover {
+  background-color: var(--theme-primary-dark) !important;
+}
+
+.hover\:theme-text-primary:hover {
+  color: var(--theme-primary) !important;
+}
+
 @layer base {
   html {
     font-family: 'Inter', system-ui, sans-serif;
@@ -22,9 +72,12 @@
   }
 
   .btn-primary {
-    @apply bg-coral-500 text-white px-6 py-3 rounded-xl font-medium
-           hover:bg-coral-600 transition-colors duration-200
-           focus:outline-none focus:ring-2 focus:ring-coral-500 focus:ring-offset-2;
+    background-color: var(--theme-primary);
+    @apply text-white px-6 py-3 rounded-xl font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2;
+  }
+
+  .btn-primary:hover {
+    background-color: var(--theme-primary-dark);
   }
 
   .btn-secondary {
@@ -39,9 +92,12 @@
   }
 
   .input {
-    @apply w-full px-4 py-3 rounded-xl border border-gray-200
-           focus:border-coral-400 focus:ring-2 focus:ring-coral-100
-           transition-all duration-200 outline-none;
+    @apply w-full px-4 py-3 rounded-xl border border-gray-200 transition-all duration-200 outline-none;
+  }
+
+  .input:focus {
+    border-color: var(--theme-primary);
+    box-shadow: 0 0 0 2px var(--theme-primary-light);
   }
 
   .badge {
@@ -61,12 +117,18 @@
   }
 
   .nav-item {
-    @apply flex items-center gap-3 px-4 py-3 rounded-xl text-gray-600
-           hover:bg-coral-50 hover:text-coral-600 transition-all duration-200;
+    @apply flex items-center gap-3 px-4 py-3 rounded-xl text-gray-600 transition-all duration-200;
+  }
+
+  .nav-item:hover {
+    background-color: var(--theme-primary-light);
+    color: var(--theme-primary);
   }
 
   .nav-item-active {
-    @apply bg-coral-50 text-coral-600 font-medium;
+    background-color: var(--theme-primary-light) !important;
+    color: var(--theme-primary) !important;
+    @apply font-medium;
   }
 
   .stat-card {
@@ -80,7 +142,7 @@
 }
 
 @utility text-gradient {
-  background-image: linear-gradient(to right, var(--color-coral-500), var(--color-primary-500));
+  background-image: linear-gradient(to right, var(--theme-primary), var(--theme-secondary));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;

@@ -21,9 +21,12 @@ import {
   Settings,
   Plus,
   GripVertical,
-  X
+  X,
+  Palette,
+  Check
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
+import { useTheme } from '../contexts/ThemeContext';
 import { format, isToday, parseISO } from 'date-fns';
 
 const badgeIcons: Record<string, React.ElementType> = {
@@ -66,12 +69,14 @@ const availableWidgets = [
 
 export default function Dashboard() {
   const { user, habits, courses, liveClasses, weightEntries, journalEntries } = useStore();
+  const { colorPreset, setColorPreset, colorPresets, primaryColor } = useTheme();
   const [widgets, setWidgets] = useState<WidgetConfig[]>(() => {
     const saved = localStorage.getItem('dashboardWidgets');
     return saved ? JSON.parse(saved) : defaultWidgets;
   });
   const [editMode, setEditMode] = useState(false);
   const [showAddWidget, setShowAddWidget] = useState(false);
+  const [showThemePicker, setShowThemePicker] = useState(false);
   const [draggedWidget, setDraggedWidget] = useState<string | null>(null);
 
   const today = format(new Date(), 'yyyy-MM-dd');
@@ -182,7 +187,12 @@ export default function Dashboard() {
 
   // Widget Components
   const WelcomeWidget = () => (
-    <div className="bg-gradient-to-r from-coral-500 to-primary-500 rounded-3xl p-6 lg:p-8 text-white">
+    <div
+      className="rounded-3xl p-6 lg:p-8 text-white"
+      style={{
+        background: `linear-gradient(to right, ${primaryColor}, ${colorPresets[colorPreset]?.colors[1] || primaryColor})`
+      }}
+    >
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
         <div>
           <h1 className="text-2xl lg:text-3xl font-display font-bold mb-2">
@@ -548,24 +558,83 @@ export default function Dashboard() {
     <div className="space-y-6 pb-20 lg:pb-0">
       {/* Edit Mode Controls */}
       <div className="flex items-center justify-end gap-2">
+        {/* Theme Picker Button */}
+        <div className="relative">
+          <button
+            onClick={() => setShowThemePicker(!showThemePicker)}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl transition-colors bg-gray-100 text-gray-600 hover:bg-gray-200"
+          >
+            <Palette className="w-5 h-5" style={{ color: primaryColor }} />
+            <span className="hidden sm:inline">Theme</span>
+          </button>
+
+          {/* Theme Picker Dropdown */}
+          {showThemePicker && (
+            <div className="absolute right-0 top-12 z-50 bg-white rounded-2xl shadow-xl border border-gray-100 p-4 w-64">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="font-semibold text-gray-900">Color Theme</h4>
+                <button
+                  onClick={() => setShowThemePicker(false)}
+                  className="w-6 h-6 rounded-full hover:bg-gray-100 flex items-center justify-center"
+                >
+                  <X className="w-4 h-4 text-gray-500" />
+                </button>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                {Object.entries(colorPresets).map(([key, preset]) => (
+                  <button
+                    key={key}
+                    onClick={() => {
+                      setColorPreset(key);
+                      setShowThemePicker(false);
+                    }}
+                    className={`relative flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${
+                      colorPreset === key ? 'ring-2 ring-offset-1' : 'hover:bg-gray-50'
+                    }`}
+                    style={{
+                      ['--tw-ring-color' as string]: colorPreset === key ? preset.colors[0] : undefined
+                    }}
+                  >
+                    <div className="flex -space-x-1">
+                      {preset.colors.slice(0, 2).map((color, i) => (
+                        <div
+                          key={i}
+                          className="w-5 h-5 rounded-full border-2 border-white shadow-sm"
+                          style={{ backgroundColor: color }}
+                        />
+                      ))}
+                    </div>
+                    <span className="text-xs text-gray-600">{preset.name}</span>
+                    {colorPreset === key && (
+                      <div
+                        className="absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center"
+                        style={{ backgroundColor: preset.colors[0] }}
+                      >
+                        <Check className="w-3 h-3 text-white" />
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
         <button
           onClick={() => setShowAddWidget(true)}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-colors ${
-            editMode
-              ? 'bg-coral-500 text-white hover:bg-coral-600'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-          }`}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl transition-colors theme-bg-primary text-white hover:theme-bg-primary-dark"
+          style={{ backgroundColor: editMode ? primaryColor : undefined }}
         >
           <Plus className="w-5 h-5" />
           <span className="hidden sm:inline">Add Widget</span>
         </button>
         <button
           onClick={() => setEditMode(!editMode)}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-colors ${
-            editMode
-              ? 'bg-coral-100 text-coral-600'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-          }`}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl transition-colors"
+          style={{
+            backgroundColor: editMode ? colorPresets[colorPreset]?.light : '#f3f4f6',
+            color: editMode ? primaryColor : '#4b5563'
+          }}
         >
           <Settings className="w-5 h-5" />
           <span className="hidden sm:inline">{editMode ? 'Done' : 'Customize'}</span>
@@ -573,11 +642,20 @@ export default function Dashboard() {
       </div>
 
       {editMode && (
-        <div className="p-3 bg-coral-50 border border-coral-200 rounded-xl text-sm text-coral-700 flex items-center justify-between">
+        <div
+          className="p-3 rounded-xl text-sm flex items-center justify-between"
+          style={{
+            backgroundColor: colorPresets[colorPreset]?.light,
+            borderColor: primaryColor,
+            color: primaryColor,
+            border: '1px solid'
+          }}
+        >
           <span><strong>Edit Mode:</strong> Drag to reorder. Click size to resize. Click × to remove.</span>
           <button
             onClick={resetToDefault}
-            className="text-coral-600 hover:text-coral-700 font-medium"
+            className="font-medium hover:opacity-80"
+            style={{ color: primaryColor }}
           >
             Reset to Default
           </button>

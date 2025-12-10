@@ -16,10 +16,10 @@ export default function SignIn() {
     setLoading(true)
     setError('')
 
-    const { error } = await signIn(email, password)
+    const { error: signInError } = await signIn(email, password)
     
-    if (error) {
-      setError(error.message)
+    if (signInError) {
+      setError(signInError.message)
       setLoading(false)
     } else {
       navigate('/')

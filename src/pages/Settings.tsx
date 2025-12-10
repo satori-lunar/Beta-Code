@@ -22,10 +22,6 @@ import {
   Activity,
   Watch,
   Smartphone,
-  Link2,
-  CheckCircle,
-  AlertCircle,
-  Upload,
   Sparkles
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
@@ -101,18 +97,6 @@ export default function Settings() {
           full_name: name,
           avatar_url: selectedAvatar 
         });
-    }
-  };
-
-  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setCustomAvatarUrl(reader.result as string);
-        setSelectedAvatar('custom');
-      };
-      reader.readAsDataURL(file);
     }
   };
 

@@ -35,7 +35,7 @@ import {
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { useTheme } from '../contexts/ThemeContext';
-import { format, formatDistanceToNow, startOfWeek, addDays } from 'date-fns';
+import { format, startOfWeek, addDays } from 'date-fns';
 import ComingSoonModal from '../components/ComingSoonModal';
 
 type MetricKey = 'heartRate' | 'bloodPressure' | 'bodyTemperature' | 'oxygenSaturation' |
@@ -60,11 +60,6 @@ const metricConfigs: MetricConfig[] = [
   { key: 'sleepHours', label: 'Sleep', icon: Moon, color: '#6366f1', position: { bottom: '25%', left: '15%' } },
   { key: 'steps', label: 'Steps', icon: Footprints, color: '#22c55e', position: { bottom: '15%', right: '15%' } },
 ];
-
-const deviceIcons: Record<string, React.ElementType> = {
-  watch: Watch,
-  smartphone: Smartphone,
-};
 
 // Weekly activity mock data
 const generateWeeklyData = () => {
@@ -94,7 +89,7 @@ const workoutTypes = [
 ];
 
 export default function HealthDashboard() {
-  const { healthMetrics, updateHealthMetric, connectedDevices, toggleDeviceConnection } = useStore();
+  const { healthMetrics, updateHealthMetric, connectedDevices } = useStore();
   const { colorPreset, colorPresets, primaryColor } = useTheme();
   const [editingMetric, setEditingMetric] = useState<MetricKey | null>(null);
   const [showDevicesPanel, setShowDevicesPanel] = useState(false);

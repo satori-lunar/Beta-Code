@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Check, Palette, User, Glasses, Smile, Shirt } from 'lucide-react';
+import { X, Check, Palette, User, Glasses, Smile } from 'lucide-react';
 
 // Avatar customization options
 const skinTones = [

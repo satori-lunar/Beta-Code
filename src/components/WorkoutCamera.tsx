@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import {
-  Camera,
   CameraOff,
   Play,
   Pause,
@@ -10,7 +9,6 @@ import {
   Minimize2,
   Volume2,
   VolumeX,
-  Timer,
   Flame,
   Target,
   TrendingUp,
@@ -47,7 +45,6 @@ const workoutTypes: WorkoutType[] = [
 interface WorkoutCameraProps {
   onClose: () => void;
   onWorkoutComplete?: (data: WorkoutData) => void;
-  primaryColor: string;
 }
 
 interface WorkoutData {
@@ -57,7 +54,7 @@ interface WorkoutData {
   calories: number;
 }
 
-export default function WorkoutCamera({ onClose, onWorkoutComplete, primaryColor }: WorkoutCameraProps) {
+export default function WorkoutCamera({ onClose, onWorkoutComplete }: WorkoutCameraProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);

@@ -18,7 +18,6 @@ import {
   ChevronRight,
   TrendingDown,
   Play,
-  Pause,
   Camera,
   Timer,
   Flame,
@@ -29,8 +28,7 @@ import {
   ChevronLeft,
   Dumbbell,
   PersonStanding,
-  Hand,
-  CircleDot
+  Hand
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { useTheme } from '../contexts/ThemeContext';
@@ -1013,7 +1011,6 @@ export default function HealthDashboard() {
         <div className="space-y-6">
           {showWorkoutCamera ? (
             <WorkoutCamera
-              primaryColor={primaryColor}
               onClose={() => {
                 setShowWorkoutCamera(false);
                 setIsWorkoutActive(false);

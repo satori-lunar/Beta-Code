@@ -3,6 +3,18 @@ import type { ReactNode } from 'react';
 import type { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 
+// DEMO MODE: Set to true to bypass Supabase auth
+const DEMO_MODE = true;
+
+const DEMO_USER: User = {
+  id: 'demo-user-123',
+  email: 'demo@example.com',
+  app_metadata: {},
+  user_metadata: { name: 'Demo User' },
+  aud: 'authenticated',
+  created_at: new Date().toISOString(),
+} as User;
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
@@ -15,17 +27,27 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(DEMO_MODE ? DEMO_USER : null);
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!DEMO_MODE);
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    if (DEMO_MODE) {
       setLoading(false);
-    });
+      return;
+    }
+
+    // Get initial session
+    supabase.auth.getSession()
+      .then(({ data: { session } }) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        setLoading(false);
+      })
+      .catch(() => {
+        // Supabase unavailable - continue without auth
+        setLoading(false);
+      });
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -40,6 +62,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signUp = async (email: string, password: string, name: string) => {
+    if (DEMO_MODE) {
+      setUser(DEMO_USER);
+      return { error: null };
+    }
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -51,6 +77,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signIn = async (email: string, password: string) => {
+    if (DEMO_MODE) {
+      setUser(DEMO_USER);
+      return { error: null };
+    }
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password
@@ -59,6 +89,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    if (DEMO_MODE) {
+      setUser(null);
+      return;
+    }
     await supabase.auth.signOut();
   };
 

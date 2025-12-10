@@ -42,6 +42,15 @@ const workoutTypes: WorkoutType[] = [
   { id: 'custom', name: 'Custom', icon: Heart, color: '#78716c', countLabel: 'Reps', countUnit: 'reps', caloriesPerUnit: 0.3 },
 ];
 
+interface RunConfig {
+  type: 'laps' | 'time' | 'distance';
+  targetLaps?: number;
+  targetTime?: number;
+  targetDistance?: number;
+  lapDistance?: number;
+  targetPace?: number; // seconds per lap
+}
+
 interface WorkoutCameraProps {
   onClose: () => void;
   onWorkoutComplete?: (data: WorkoutData) => void;
@@ -73,8 +82,27 @@ export default function WorkoutCamera({ onClose, onWorkoutComplete }: WorkoutCam
   const [count, setCount] = useState(0);
   const [calories, setCalories] = useState(0);
   
-  const [heartRate, setHeartRate] = useState(72);
   const [motionDetected, setMotionDetected] = useState(false);
+  
+  // Running-specific states
+  const [showRunConfig, setShowRunConfig] = useState(false);
+  const [runConfig, setRunConfig] = useState<RunConfig | null>(null);
+  const [currentPace, setCurrentPace] = useState(0);
+  const [lapTimes, setLapTimes] = useState<number[]>([]);
+  const [lastLapTime, setLastLapTime] = useState(0);
+  const [coachingMessage, setCoachingMessage] = useState('');
+  const [audioEnabled, setAudioEnabled] = useState(true);
+  
+  // Speech synthesis
+  const speak = (text: string) => {
+    if (!audioEnabled || typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+    
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
+    utterance.volume = 1.0;
+    window.speechSynthesis.speak(utterance);
+  };
   
   // Previous frame for motion detection
   const prevFrameRef = useRef<ImageData | null>(null);
@@ -204,15 +232,47 @@ export default function WorkoutCamera({ onClose, onWorkoutComplete }: WorkoutCam
         setCalories(prev => prev + selectedWorkout.caloriesPerUnit);
       }
       
-      // Simulate heart rate changes during workout
-      setHeartRate(prev => {
-        const target = 120 + Math.random() * 30;
-        return Math.round(prev + (target - prev) * 0.1);
-      });
+      // Running coaching
+      if (selectedWorkout.id === 'running' && runConfig) {
+        const elapsed = workoutTime + 1;
+        
+        // Calculate current pace if we have lap times
+        if (lapTimes.length > 0 && runConfig.targetPace) {
+          const avgPace = lapTimes.reduce((a, b) => a + b, 0) / lapTimes.length;
+          setCurrentPace(avgPace);
+          
+          const paceVariance = avgPace - runConfig.targetPace;
+          
+          // Provide coaching every 30 seconds
+          if (elapsed % 30 === 0) {
+            if (paceVariance > 10) {
+              setCoachingMessage('Speed up! 🏃');
+              speak('Speed up');
+            } else if (paceVariance < -10) {
+              setCoachingMessage('Slow down! 🐢');
+              speak('Slow down');
+            } else {
+              setCoachingMessage('Great pace! 💪');
+              speak('Great pace');
+            }
+            
+            setTimeout(() => setCoachingMessage(''), 5000);
+          }
+        }
+        
+        // Check if target reached
+        if (runConfig.type === 'time' && runConfig.targetTime && elapsed >= runConfig.targetTime) {
+          stopWorkout();
+          speak('Workout complete! Great job!');
+        } else if (runConfig.type === 'laps' && runConfig.targetLaps && count >= runConfig.targetLaps) {
+          stopWorkout();
+          speak('All laps completed! Great job!');
+        }
+      }
     }, 1000);
     
     return () => clearInterval(interval);
-  }, [isWorkoutActive, isPaused, selectedWorkout]);
+  }, [isWorkoutActive, isPaused, selectedWorkout, workoutTime, runConfig, lapTimes, count]);
 
   // Format time
   const formatTime = (seconds: number) => {
@@ -223,14 +283,44 @@ export default function WorkoutCamera({ onClose, onWorkoutComplete }: WorkoutCam
 
   // Start workout
   const startWorkout = () => {
+    // For running, show config first
+    if (selectedWorkout.id === 'running' && !runConfig) {
+      setShowRunConfig(true);
+      return;
+    }
+    
     setIsWorkoutActive(true);
     setIsPaused(false);
     setWorkoutTime(0);
     setCount(0);
     setCalories(0);
+    setLapTimes([]);
+    setLastLapTime(0);
+    setCurrentPace(0);
+    setCoachingMessage('');
     prevFrameRef.current = null;
     motionCountRef.current = 0;
     lastCountTimeRef.current = 0;
+    
+    if (selectedWorkout.id === 'running') {
+      speak('Workout starting. Good luck!');
+    }
+  };
+  
+  // Complete a lap (for running)
+  const completeLap = () => {
+    const lapTime = workoutTime - lastLapTime;
+    setLapTimes(prev => [...prev, lapTime]);
+    setLastLapTime(workoutTime);
+    setCount(prev => prev + 1);
+    setCalories(prev => prev + selectedWorkout.caloriesPerUnit);
+    
+    // Announce lap
+    speak(`Lap ${count + 1} complete. Time: ${Math.floor(lapTime / 60)} minutes ${lapTime % 60} seconds`);
+    
+    // Show lap time briefly
+    setCoachingMessage(`Lap ${count + 1}: ${Math.floor(lapTime / 60)}:${(lapTime % 60).toString().padStart(2, '0')}`);
+    setTimeout(() => setCoachingMessage(''), 5000);
   };
 
   // Stop workout
@@ -330,31 +420,58 @@ export default function WorkoutCamera({ onClose, onWorkoutComplete }: WorkoutCam
           </button>
         </div>
         
+        {/* Coaching message overlay */}
+        {coachingMessage && (
+          <div className="absolute top-20 left-1/2 -translate-x-1/2">
+            <div className="bg-black/80 backdrop-blur-sm rounded-full px-6 py-3 shadow-lg">
+              <p className="text-white text-lg font-bold">{coachingMessage}</p>
+            </div>
+          </div>
+        )}
+        
         {/* Workout stats overlay */}
         {isWorkoutActive && (
           <div className="absolute bottom-4 left-4 right-4">
             <div className="bg-black/70 backdrop-blur-sm rounded-xl p-4">
-              <div className="grid grid-cols-4 gap-4 text-center">
-                <div>
-                  <div className="text-3xl font-bold text-white">{formatTime(workoutTime)}</div>
-                  <div className="text-xs text-gray-400">Duration</div>
-                </div>
-                <div>
-                  <div className="text-3xl font-bold" style={{ color: selectedWorkout.color }}>{count}</div>
-                  <div className="text-xs text-gray-400">{selectedWorkout.countLabel}</div>
-                </div>
-                <div>
-                  <div className="text-3xl font-bold text-orange-400">{Math.round(calories)}</div>
-                  <div className="text-xs text-gray-400">Calories</div>
-                </div>
-                <div>
-                  <div className="text-3xl font-bold text-red-400 flex items-center justify-center gap-1">
-                    <Heart className="w-5 h-5 animate-pulse" />
-                    {heartRate}
+              {selectedWorkout.id === 'running' && runConfig ? (
+                <div className="grid grid-cols-4 gap-4 text-center">
+                  <div>
+                    <div className="text-3xl font-bold text-white">{formatTime(workoutTime)}</div>
+                    <div className="text-xs text-gray-400">Time</div>
                   </div>
-                  <div className="text-xs text-gray-400">BPM</div>
+                  <div>
+                    <div className="text-3xl font-bold" style={{ color: selectedWorkout.color }}>
+                      {count}/{runConfig.targetLaps || '∞'}
+                    </div>
+                    <div className="text-xs text-gray-400">Laps</div>
+                  </div>
+                  <div>
+                    <div className="text-3xl font-bold text-blue-400">
+                      {currentPace > 0 ? `${Math.floor(currentPace / 60)}:${(currentPace % 60).toString().padStart(2, '0')}` : '--:--'}
+                    </div>
+                    <div className="text-xs text-gray-400">Pace/Lap</div>
+                  </div>
+                  <div>
+                    <div className="text-3xl font-bold text-orange-400">{Math.round(calories)}</div>
+                    <div className="text-xs text-gray-400">Calories</div>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <div className="text-3xl font-bold text-white">{formatTime(workoutTime)}</div>
+                    <div className="text-xs text-gray-400">Duration</div>
+                  </div>
+                  <div>
+                    <div className="text-3xl font-bold" style={{ color: selectedWorkout.color }}>{count}</div>
+                    <div className="text-xs text-gray-400">{selectedWorkout.countLabel}</div>
+                  </div>
+                  <div>
+                    <div className="text-3xl font-bold text-orange-400">{Math.round(calories)}</div>
+                    <div className="text-xs text-gray-400">Calories</div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -457,8 +574,20 @@ export default function WorkoutCamera({ onClose, onWorkoutComplete }: WorkoutCam
           )}
         </div>
         
-        {/* Manual count adjustment */}
-        {isWorkoutActive && selectedWorkout.id !== 'plank' && (
+        {/* Running-specific controls */}
+        {isWorkoutActive && selectedWorkout.id === 'running' && (
+          <div className="mt-4">
+            <button
+              onClick={completeLap}
+              className="w-full py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-medium transition-colors text-lg"
+            >
+              ✓ Complete Lap {count + 1}
+            </button>
+          </div>
+        )}
+        
+        {/* Manual count adjustment for non-running workouts */}
+        {isWorkoutActive && selectedWorkout.id !== 'plank' && selectedWorkout.id !== 'running' && (
           <div className="mt-4 flex items-center justify-center gap-4">
             <span className="text-gray-400 text-sm">Manual adjust:</span>
             <button
@@ -486,7 +615,7 @@ export default function WorkoutCamera({ onClose, onWorkoutComplete }: WorkoutCam
         <div className="mt-4 p-3 bg-gray-700/50 rounded-xl">
           <p className="text-sm text-gray-400 text-center">
             {selectedWorkout.id === 'running' 
-              ? '🏃 Tap +1 each time you complete a lap. Motion detection tracks your activity.'
+              ? '🏃 Press "Complete Lap" button each time you finish a lap. Voice coaching will guide your pace!'
               : selectedWorkout.id === 'plank'
               ? '🧘 Hold your plank position. Time is automatically tracked.'
               : `💪 Motion detection will auto-count ${selectedWorkout.countLabel.toLowerCase()}. Use manual buttons if needed.`
@@ -494,6 +623,120 @@ export default function WorkoutCamera({ onClose, onWorkoutComplete }: WorkoutCam
           </p>
         </div>
       </div>
+      
+      {/* Running Configuration Modal */}
+      {showRunConfig && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-gray-800 rounded-2xl w-full max-w-md p-6">
+            <h3 className="text-2xl font-bold text-white mb-4">Setup Your Run</h3>
+            
+            <div className="space-y-4">
+              {/* Run type */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Run Type</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => setRunConfig({ type: 'laps', targetLaps: 4, lapDistance: 400, targetPace: 120 })}
+                    className="p-4 rounded-xl bg-gray-700 hover:bg-gray-600 text-white transition-colors"
+                  >
+                    <div className="text-lg font-bold">🏃 Laps</div>
+                    <div className="text-xs text-gray-400">Set number of laps</div>
+                  </button>
+                  <button
+                    onClick={() => setRunConfig({ type: 'time', targetTime: 1200, targetPace: 120 })}
+                    className="p-4 rounded-xl bg-gray-700 hover:bg-gray-600 text-white transition-colors"
+                  >
+                    <div className="text-lg font-bold">⏱️ Time</div>
+                    <div className="text-xs text-gray-400">Run for set time</div>
+                  </button>
+                </div>
+              </div>
+              
+              {runConfig && (
+                <>
+                  {/* Target laps */}
+                  {runConfig.type === 'laps' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Number of Laps: {runConfig.targetLaps}
+                      </label>
+                      <input
+                        type="range"
+                        min="1"
+                        max="20"
+                        value={runConfig.targetLaps || 4}
+                        onChange={(e) => setRunConfig({ ...runConfig, targetLaps: parseInt(e.target.value) })}
+                        className="w-full"
+                      />
+                    </div>
+                  )}
+                  
+                  {/* Target time */}
+                  {runConfig.type === 'time' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Duration: {Math.floor((runConfig.targetTime || 0) / 60)} minutes
+                      </label>
+                      <input
+                        type="range"
+                        min="300"
+                        max="3600"
+                        step="300"
+                        value={runConfig.targetTime || 1200}
+                        onChange={(e) => setRunConfig({ ...runConfig, targetTime: parseInt(e.target.value) })}
+                        className="w-full"
+                      />
+                    </div>
+                  )}
+                  
+                  {/* Target pace */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Target Pace: {Math.floor((runConfig.targetPace || 120) / 60)}:{((runConfig.targetPace || 120) % 60).toString().padStart(2, '0')}/lap
+                    </label>
+                    <input
+                      type="range"
+                      min="60"
+                      max="300"
+                      step="15"
+                      value={runConfig.targetPace || 120}
+                      onChange={(e) => setRunConfig({ ...runConfig, targetPace: parseInt(e.target.value) })}
+                      className="w-full"
+                    />
+                    <div className="flex justify-between text-xs text-gray-400 mt-1">
+                      <span>Fast (1:00)</span>
+                      <span>Moderate (2:00)</span>
+                      <span>Easy (5:00)</span>
+                    </div>
+                  </div>
+                  
+                  {/* Buttons */}
+                  <div className="flex gap-3 mt-6">
+                    <button
+                      onClick={() => {
+                        setShowRunConfig(false);
+                        setRunConfig(null);
+                      }}
+                      className="flex-1 px-4 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-xl font-medium transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowRunConfig(false);
+                        startWorkout();
+                      }}
+                      className="flex-1 px-4 py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-medium transition-colors"
+                    >
+                      Start Run
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

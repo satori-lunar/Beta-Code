@@ -3,8 +3,8 @@ import type { ReactNode } from 'react';
 import type { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 
-// DEMO MODE: Set to true to bypass Supabase auth
-const DEMO_MODE = true;
+// DEMO MODE: Set to true to bypass Supabase auth (for testing only)
+const DEMO_MODE = false;
 
 const DEMO_USER: User = {
   id: 'demo-user-123',
@@ -39,7 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Get initial session
     supabase.auth.getSession()
-      .then(({ data: { session } }: { data: { session: Session | null } }) => {
+      .then(({ data: { session } }) => {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
@@ -51,7 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event: string, session: Session | null) => {
+      async (_event: any, session: any) => {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);

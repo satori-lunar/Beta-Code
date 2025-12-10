@@ -6,561 +6,460 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-export interface Database {
+export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "13.0.5"
+  }
   public: {
     Tables: {
-      users: {
+      activity_log: {
         Row: {
+          action: string
+          created_at: string | null
+          description: string | null
           id: string
-          email: string
-          name: string
-          avatar_url: string | null
-          join_date: string
-          streak: number
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id: string
-          email: string
-          name: string
-          avatar_url?: string | null
-          join_date?: string
-          streak?: number
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          email?: string
-          name?: string
-          avatar_url?: string | null
-          join_date?: string
-          streak?: number
-          created_at?: string
-          updated_at?: string
-        }
-      }
-      badges: {
-        Row: {
-          id: string
-          name: string
-          description: string
-          icon: string
-          category: string
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          name: string
-          description: string
-          icon: string
-          category: string
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          name?: string
-          description?: string
-          icon?: string
-          category?: string
-          created_at?: string
-        }
-      }
-      user_badges: {
-        Row: {
-          id: string
+          ip_address: string | null
+          metadata: Json | null
+          user_agent: string | null
           user_id: string
-          badge_id: string
-          earned_date: string
-          created_at: string
         }
         Insert: {
+          action: string
+          created_at?: string | null
+          description?: string | null
           id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          user_agent?: string | null
           user_id: string
-          badge_id: string
-          earned_date?: string
-          created_at?: string
         }
         Update: {
+          action?: string
+          created_at?: string | null
+          description?: string | null
           id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          user_agent?: string | null
           user_id?: string
-          badge_id?: string
-          earned_date?: string
-          created_at?: string
         }
-      }
-      habits: {
-        Row: {
-          id: string
-          user_id: string
-          name: string
-          icon: string
-          color: string
-          frequency: string
-          target_days: number[] | null
-          streak: number
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          name: string
-          icon: string
-          color: string
-          frequency?: string
-          target_days?: number[] | null
-          streak?: number
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          name?: string
-          icon?: string
-          color?: string
-          frequency?: string
-          target_days?: number[] | null
-          streak?: number
-          created_at?: string
-          updated_at?: string
-        }
-      }
-      habit_completions: {
-        Row: {
-          id: string
-          habit_id: string
-          user_id: string
-          completed_date: string
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          habit_id: string
-          user_id: string
-          completed_date: string
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          habit_id?: string
-          user_id?: string
-          completed_date?: string
-          created_at?: string
-        }
-      }
-      weight_entries: {
-        Row: {
-          id: string
-          user_id: string
-          weight: number
-          unit: string
-          notes: string | null
-          date: string
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          weight: number
-          unit?: string
-          notes?: string | null
-          date: string
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          weight?: number
-          unit?: string
-          notes?: string | null
-          date?: string
-          created_at?: string
-        }
-      }
-      journal_entries: {
-        Row: {
-          id: string
-          user_id: string
-          title: string
-          content: string
-          mood: string
-          tags: string[]
-          gratitude: string[] | null
-          date: string
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          title: string
-          content: string
-          mood: string
-          tags?: string[]
-          gratitude?: string[] | null
-          date: string
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          title?: string
-          content?: string
-          mood?: string
-          tags?: string[]
-          gratitude?: string[] | null
-          date?: string
-          created_at?: string
-          updated_at?: string
-        }
-      }
-      nutrition_entries: {
-        Row: {
-          id: string
-          user_id: string
-          date: string
-          total_calories: number
-          total_protein: number
-          total_carbs: number
-          total_fat: number
-          water_intake: number
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          date: string
-          total_calories?: number
-          total_protein?: number
-          total_carbs?: number
-          total_fat?: number
-          water_intake?: number
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          date?: string
-          total_calories?: number
-          total_protein?: number
-          total_carbs?: number
-          total_fat?: number
-          water_intake?: number
-          created_at?: string
-          updated_at?: string
-        }
-      }
-      meals: {
-        Row: {
-          id: string
-          nutrition_entry_id: string
-          user_id: string
-          type: string
-          name: string
-          calories: number
-          protein: number
-          carbs: number
-          fat: number
-          time: string
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          nutrition_entry_id: string
-          user_id: string
-          type: string
-          name: string
-          calories: number
-          protein: number
-          carbs: number
-          fat: number
-          time: string
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          nutrition_entry_id?: string
-          user_id?: string
-          type?: string
-          name?: string
-          calories?: number
-          protein?: number
-          carbs?: number
-          fat?: number
-          time?: string
-          created_at?: string
-        }
-      }
-      courses: {
-        Row: {
-          id: string
-          title: string
-          description: string
-          thumbnail_url: string | null
-          instructor: string
-          duration: string
-          sessions: number
-          category: string
-          level: string
-          tags: string[]
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          title: string
-          description: string
-          thumbnail_url?: string | null
-          instructor: string
-          duration: string
-          sessions: number
-          category: string
-          level: string
-          tags?: string[]
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          title?: string
-          description?: string
-          thumbnail_url?: string | null
-          instructor?: string
-          duration?: string
-          sessions?: number
-          category?: string
-          level?: string
-          tags?: string[]
-          created_at?: string
-        }
-      }
-      user_course_progress: {
-        Row: {
-          id: string
-          user_id: string
-          course_id: string
-          completed_sessions: number
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          course_id: string
-          completed_sessions?: number
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          course_id?: string
-          completed_sessions?: number
-          created_at?: string
-          updated_at?: string
-        }
-      }
-      live_classes: {
-        Row: {
-          id: string
-          title: string
-          description: string
-          instructor: string
-          scheduled_at: string
-          duration: number
-          zoom_link: string | null
-          thumbnail_url: string | null
-          category: string
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          title: string
-          description: string
-          instructor: string
-          scheduled_at: string
-          duration: number
-          zoom_link?: string | null
-          thumbnail_url?: string | null
-          category: string
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          title?: string
-          description?: string
-          instructor?: string
-          scheduled_at?: string
-          duration?: number
-          zoom_link?: string | null
-          thumbnail_url?: string | null
-          category?: string
-          created_at?: string
-        }
-      }
-      recorded_sessions: {
-        Row: {
-          id: string
-          title: string
-          description: string
-          instructor: string
-          recorded_at: string
-          duration: number
-          video_url: string
-          thumbnail_url: string | null
-          category: string
-          views: number
-          tags: string[]
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          title: string
-          description: string
-          instructor: string
-          recorded_at: string
-          duration: number
-          video_url: string
-          thumbnail_url?: string | null
-          category: string
-          views?: number
-          tags?: string[]
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          title?: string
-          description?: string
-          instructor?: string
-          recorded_at?: string
-          duration?: number
-          video_url?: string
-          thumbnail_url?: string | null
-          category?: string
-          views?: number
-          tags?: string[]
-          created_at?: string
-        }
-      }
-      user_favorite_sessions: {
-        Row: {
-          id: string
-          user_id: string
-          session_id: string
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          session_id: string
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          session_id?: string
-          created_at?: string
-        }
+        Relationships: []
       }
       calendar_events: {
         Row: {
-          id: string
-          user_id: string
-          title: string
+          color: string | null
+          created_at: string | null
           date: string
-          time: string | null
-          type: string
-          color: string
           description: string | null
-          created_at: string
+          id: string
+          time: string | null
+          title: string
+          type: string
+          user_id: string
         }
         Insert: {
-          id?: string
-          user_id: string
-          title: string
+          color?: string | null
+          created_at?: string | null
           date: string
-          time?: string | null
-          type: string
-          color: string
           description?: string | null
-          created_at?: string
+          id?: string
+          time?: string | null
+          title: string
+          type: string
+          user_id: string
         }
         Update: {
-          id?: string
-          user_id?: string
-          title?: string
+          color?: string | null
+          created_at?: string | null
           date?: string
-          time?: string | null
-          type?: string
-          color?: string
           description?: string | null
-          created_at?: string
-        }
-      }
-      notifications: {
-        Row: {
-          id: string
-          user_id: string
-          title: string
-          message: string
-          type: string
-          read: boolean
-          link: string | null
-          created_at: string
-        }
-        Insert: {
           id?: string
-          user_id: string
-          title: string
-          message: string
-          type: string
-          read?: boolean
-          link?: string | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
+          time?: string | null
           title?: string
-          message?: string
           type?: string
-          read?: boolean
-          link?: string | null
-          created_at?: string
+          user_id?: string
         }
+        Relationships: []
       }
-      help_tickets: {
+      course_progress: {
         Row: {
+          completed_sessions: number | null
+          course_id: string
+          created_at: string | null
           id: string
+          last_session_date: string | null
+          updated_at: string | null
           user_id: string
-          subject: string
-          message: string
-          status: string
-          created_at: string
-          updated_at: string
         }
         Insert: {
+          completed_sessions?: number | null
+          course_id: string
+          created_at?: string | null
           id?: string
+          last_session_date?: string | null
+          updated_at?: string | null
           user_id: string
-          subject: string
-          message: string
-          status?: string
-          created_at?: string
-          updated_at?: string
         }
         Update: {
+          completed_sessions?: number | null
+          course_id?: string
+          created_at?: string | null
           id?: string
+          last_session_date?: string | null
+          updated_at?: string | null
           user_id?: string
-          subject?: string
-          message?: string
-          status?: string
-          created_at?: string
-          updated_at?: string
         }
+        Relationships: []
+      }
+      dashboard_settings: {
+        Row: {
+          created_at: string | null
+          email_notifications: boolean | null
+          id: string
+          language: string | null
+          notifications_enabled: boolean | null
+          settings_json: Json | null
+          theme: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          email_notifications?: boolean | null
+          id?: string
+          language?: string | null
+          notifications_enabled?: boolean | null
+          settings_json?: Json | null
+          theme?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          email_notifications?: boolean | null
+          id?: string
+          language?: string | null
+          notifications_enabled?: boolean | null
+          settings_json?: Json | null
+          theme?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      favorite_sessions: {
+        Row: {
+          created_at: string | null
+          id: string
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          session_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      habits: {
+        Row: {
+          color: string | null
+          completed_dates: Json | null
+          created_at: string | null
+          frequency: string | null
+          icon: string | null
+          id: string
+          name: string
+          streak: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          color?: string | null
+          completed_dates?: Json | null
+          created_at?: string | null
+          frequency?: string | null
+          icon?: string | null
+          id?: string
+          name: string
+          streak?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          color?: string | null
+          completed_dates?: Json | null
+          created_at?: string | null
+          frequency?: string | null
+          icon?: string | null
+          id?: string
+          name?: string
+          streak?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      health_metrics: {
+        Row: {
+          active_minutes: Json | null
+          blood_pressure: Json | null
+          bmi: Json | null
+          body_fat: Json | null
+          body_temperature: Json | null
+          calories_burned: Json | null
+          energy_level: Json | null
+          heart_rate: Json | null
+          height: Json | null
+          hydration: Json | null
+          id: string
+          oxygen_saturation: Json | null
+          respiratory_rate: Json | null
+          sleep_hours: Json | null
+          steps: Json | null
+          stress_level: Json | null
+          updated_at: string | null
+          user_id: string
+          weight: Json | null
+        }
+        Insert: {
+          active_minutes?: Json | null
+          blood_pressure?: Json | null
+          bmi?: Json | null
+          body_fat?: Json | null
+          body_temperature?: Json | null
+          calories_burned?: Json | null
+          energy_level?: Json | null
+          heart_rate?: Json | null
+          height?: Json | null
+          hydration?: Json | null
+          id?: string
+          oxygen_saturation?: Json | null
+          respiratory_rate?: Json | null
+          sleep_hours?: Json | null
+          steps?: Json | null
+          stress_level?: Json | null
+          updated_at?: string | null
+          user_id: string
+          weight?: Json | null
+        }
+        Update: {
+          active_minutes?: Json | null
+          blood_pressure?: Json | null
+          bmi?: Json | null
+          body_fat?: Json | null
+          body_temperature?: Json | null
+          calories_burned?: Json | null
+          energy_level?: Json | null
+          heart_rate?: Json | null
+          height?: Json | null
+          hydration?: Json | null
+          id?: string
+          oxygen_saturation?: Json | null
+          respiratory_rate?: Json | null
+          sleep_hours?: Json | null
+          steps?: Json | null
+          stress_level?: Json | null
+          updated_at?: string | null
+          user_id?: string
+          weight?: Json | null
+        }
+        Relationships: []
+      }
+      journal_entries: {
+        Row: {
+          content: string
+          created_at: string | null
+          date: string
+          gratitude: string[] | null
+          id: string
+          mood: string | null
+          tags: string[] | null
+          title: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          date: string
+          gratitude?: string[] | null
+          id?: string
+          mood?: string | null
+          tags?: string[] | null
+          title?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          date?: string
+          gratitude?: string[] | null
+          id?: string
+          mood?: string | null
+          tags?: string[] | null
+          title?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      nutrition_entries: {
+        Row: {
+          calories: number | null
+          carbs: number | null
+          created_at: string | null
+          date: string
+          fat: number | null
+          id: string
+          meal_type: string
+          name: string
+          notes: string | null
+          protein: number | null
+          user_id: string
+        }
+        Insert: {
+          calories?: number | null
+          carbs?: number | null
+          created_at?: string | null
+          date: string
+          fat?: number | null
+          id?: string
+          meal_type: string
+          name: string
+          notes?: string | null
+          protein?: number | null
+          user_id: string
+        }
+        Update: {
+          calories?: number | null
+          carbs?: number | null
+          created_at?: string | null
+          date?: string
+          fat?: number | null
+          id?: string
+          meal_type?: string
+          name?: string
+          notes?: string | null
+          protein?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_badges: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          description: string | null
+          earned_date: string | null
+          icon: string | null
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          earned_date?: string | null
+          icon?: string | null
+          id?: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          earned_date?: string | null
+          icon?: string | null
+          id?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          created_at: string | null
+          email: string | null
+          full_name: string | null
+          goal_weight: number | null
+          goal_weight_unit: string | null
+          id: string
+          join_date: string | null
+          streak: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          goal_weight?: number | null
+          goal_weight_unit?: string | null
+          id: string
+          join_date?: string | null
+          streak?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          goal_weight?: number | null
+          goal_weight_unit?: string | null
+          id?: string
+          join_date?: string | null
+          streak?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      weight_entries: {
+        Row: {
+          created_at: string | null
+          date: string
+          id: string
+          notes: string | null
+          unit: string | null
+          user_id: string
+          weight: number
+        }
+        Insert: {
+          created_at?: string | null
+          date: string
+          id?: string
+          notes?: string | null
+          unit?: string | null
+          user_id: string
+          weight: number
+        }
+        Update: {
+          created_at?: string | null
+          date?: string
+          id?: string
+          notes?: string | null
+          unit?: string | null
+          user_id?: string
+          weight?: number
+        }
+        Relationships: []
       }
     }
     Views: {
@@ -572,5 +471,131 @@ export interface Database {
     Enums: {
       [_ in never]: never
     }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
 }
+
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
+export const Constants = {
+  public: {
+    Enums: {},
+  },
+} as const

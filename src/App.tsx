@@ -14,8 +14,8 @@ import Calendar from './pages/Calendar';
 import Classes from './pages/Classes';
 import Settings from './pages/Settings';
 import Badges from './pages/Badges';
-import Login from './pages/Login';
-import Signup from './pages/Signup';
+import SignIn from './pages/SignIn';
+import SignUp from './pages/SignUp';
 
 function App() {
   return (
@@ -24,8 +24,8 @@ function App() {
         <Router>
           <Routes>
             {/* Public routes */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
+            <Route path="/signin" element={<SignIn />} />
+            <Route path="/signup" element={<SignUp />} />
 
             {/* Protected routes */}
             <Route

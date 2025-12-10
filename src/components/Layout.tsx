@@ -92,7 +92,7 @@ export default function Layout() {
 
   const handleSignOut = async () => {
     await signOut();
-    navigate('/login');
+    navigate('/signin');
   };
 
   const unreadCount = notifications.filter(n => !n.read).length;

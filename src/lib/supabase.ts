@@ -1,19 +1,21 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js'
+import type { Database } from '../types/database'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn('Supabase credentials not found. Running in offline mode with mock data.');
+if (!supabaseUrl) {
+  throw new Error(
+    'Missing VITE_SUPABASE_URL environment variable. ' +
+    'Please create a .env.local file with VITE_SUPABASE_URL=your-project-url'
+  )
 }
 
-// Create an untyped client for flexibility
-// Once you have your Supabase project set up, you can add types back
-export const supabase = createClient(
-  supabaseUrl || 'https://placeholder.supabase.co',
-  supabaseAnonKey || 'placeholder-key'
-);
+if (!supabaseAnonKey) {
+  throw new Error(
+    'Missing VITE_SUPABASE_ANON_KEY environment variable. ' +
+    'Please create a .env.local file with VITE_SUPABASE_ANON_KEY=your-anon-key'
+  )
+}
 
-export const isSupabaseConfigured = () => {
-  return !!(supabaseUrl && supabaseAnonKey);
-};
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey)

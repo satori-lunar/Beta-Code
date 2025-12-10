@@ -140,3 +140,38 @@ export interface SearchResult {
   type: 'habit' | 'course' | 'class' | 'journal' | 'page';
   link: string;
 }
+
+export interface HealthMetrics {
+  // Vital Signs
+  heartRate: { value: number; unit: 'bpm'; lastUpdated: string } | null;
+  bloodPressure: { systolic: number; diastolic: number; unit: 'mmHg'; lastUpdated: string } | null;
+  bodyTemperature: { value: number; unit: '°F' | '°C'; lastUpdated: string } | null;
+  oxygenSaturation: { value: number; unit: '%'; lastUpdated: string } | null;
+  respiratoryRate: { value: number; unit: 'breaths/min'; lastUpdated: string } | null;
+
+  // Body Composition
+  bmi: { value: number; category: string; lastUpdated: string } | null;
+  bodyFat: { value: number; unit: '%'; lastUpdated: string } | null;
+  height: { value: number; unit: 'cm' | 'ft'; lastUpdated: string } | null;
+  weight: { value: number; unit: 'kg' | 'lbs'; lastUpdated: string } | null;
+
+  // Sleep & Activity
+  sleepHours: { value: number; quality: 'poor' | 'fair' | 'good' | 'excellent'; lastUpdated: string } | null;
+  steps: { value: number; goal: number; lastUpdated: string } | null;
+  activeMinutes: { value: number; goal: number; lastUpdated: string } | null;
+  caloriesBurned: { value: number; goal: number; lastUpdated: string } | null;
+
+  // Wellness Scores
+  stressLevel: { value: number; scale: 10; lastUpdated: string } | null;
+  energyLevel: { value: number; scale: 10; lastUpdated: string } | null;
+  hydration: { value: number; goal: number; unit: 'ml'; lastUpdated: string } | null;
+}
+
+export interface ConnectedDevice {
+  id: string;
+  name: string;
+  type: 'fitbit' | 'apple_watch' | 'garmin' | 'samsung' | 'google_fit' | 'manual';
+  connected: boolean;
+  lastSync: string | null;
+  icon: string;
+}

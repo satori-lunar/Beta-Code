@@ -1,8 +1,22 @@
 import { createClient } from '@supabase/supabase-js'
 import { Database } from './supabase-types'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://qbsrmbxuwacpqquorqaq.supabase.co'
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_7gzuByfAfjneqR2O_u-eLQ_FltzyIX3'
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+if (!supabaseUrl) {
+  throw new Error(
+    'Missing NEXT_PUBLIC_SUPABASE_URL environment variable. ' +
+    'Please add NEXT_PUBLIC_SUPABASE_URL to your .env file'
+  )
+}
+
+if (!supabaseAnonKey) {
+  throw new Error(
+    'Missing NEXT_PUBLIC_SUPABASE_ANON_KEY environment variable. ' +
+    'Please add NEXT_PUBLIC_SUPABASE_ANON_KEY to your .env file'
+  )
+}
 
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey)
 

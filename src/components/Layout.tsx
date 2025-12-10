@@ -21,14 +21,17 @@ import {
   Check,
   Trash2,
   User,
-  Clock
+  Clock,
+  Activity
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
+import { useAuth } from '../contexts/AuthContext';
 import { formatDistanceToNow } from 'date-fns';
 import HelpDesk from './HelpDesk';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
+  { name: 'Health', href: '/health', icon: Activity },
   { name: 'Habits', href: '/habits', icon: Target },
   { name: 'Nutrition', href: '/nutrition', icon: Apple },
   { name: 'Weight Log', href: '/weight', icon: Scale },
@@ -40,6 +43,7 @@ const navigation = [
 
 const pages = [
   { name: 'Dashboard', description: 'View your wellness overview', href: '/' },
+  { name: 'Health', description: 'Track health metrics and BMI', href: '/health' },
   { name: 'Habits', description: 'Track your daily habits', href: '/habits' },
   { name: 'Nutrition', description: 'Log meals and water intake', href: '/nutrition' },
   { name: 'Weight Log', description: 'Track your weight progress', href: '/weight' },
@@ -61,6 +65,7 @@ const notificationIcons: Record<string, React.ElementType> = {
 
 export default function Layout() {
   const navigate = useNavigate();
+  const { signOut } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -82,6 +87,11 @@ export default function Layout() {
     markAllNotificationsRead,
     deleteNotification
   } = useStore();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/login');
+  };
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
@@ -272,7 +282,7 @@ export default function Layout() {
               <Settings className="w-5 h-5" />
               <span>Settings</span>
             </NavLink>
-            <button className="nav-item w-full text-red-500 hover:bg-red-50 hover:text-red-600">
+            <button onClick={handleSignOut} className="nav-item w-full text-red-500 hover:bg-red-50 hover:text-red-600">
               <LogOut className="w-5 h-5" />
               <span>Log Out</span>
             </button>
@@ -525,7 +535,7 @@ export default function Layout() {
                       </button>
                     </div>
                     <div className="p-2 border-t border-gray-100">
-                      <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-red-50 text-red-600 transition-colors">
+                      <button onClick={handleSignOut} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-red-50 text-red-600 transition-colors">
                         <LogOut className="w-5 h-5" />
                         <span>Log Out</span>
                       </button>

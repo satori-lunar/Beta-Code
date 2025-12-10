@@ -19,11 +19,14 @@ import {
   ResponsiveContainer,
   ReferenceLine
 } from 'recharts';
-import { useStore } from '../store/useStore';
+import { useAuth } from '../contexts/AuthContext';
+import { useWeightEntries } from '../hooks/useSupabaseData';
+import { supabase } from '../lib/supabase';
 import { format, parseISO } from 'date-fns';
 
 export default function WeightLog() {
-  const { weightEntries, addWeightEntry, deleteWeightEntry } = useStore();
+  const { user } = useAuth();
+  const { data: weightEntries = [], loading, refetch } = useWeightEntries();
   const [showAddModal, setShowAddModal] = useState(false);
   const [newEntry, setNewEntry] = useState({
     weight: '',
@@ -56,22 +59,24 @@ export default function WeightLog() {
   const goalWeight = 65;
   const toGoal = latestWeight ? (latestWeight.weight - goalWeight).toFixed(1) : null;
 
-  const handleAddEntry = () => {
-    if (newEntry.weight) {
-      addWeightEntry({
-        id: Date.now().toString(),
-        date: newEntry.date,
-        weight: parseFloat(newEntry.weight),
-        unit: 'kg',
-        notes: newEntry.notes || undefined,
-      });
-      setNewEntry({
-        weight: '',
-        date: format(new Date(), 'yyyy-MM-dd'),
-        notes: '',
-      });
-      setShowAddModal(false);
-    }
+  const handleAddEntry = async () => {
+    if (!user || !newEntry.weight) return;
+
+    await supabase.from('weight_entries').insert({
+      user_id: user.id,
+      date: newEntry.date,
+      weight: parseFloat(newEntry.weight),
+      unit: 'kg',
+      notes: newEntry.notes || null,
+    });
+
+    refetch();
+    setNewEntry({
+      weight: '',
+      date: format(new Date(), 'yyyy-MM-dd'),
+      notes: '',
+    });
+    setShowAddModal(false);
   };
 
   return (
@@ -241,7 +246,10 @@ export default function WeightLog() {
                   )}
                 </div>
                 <button
-                  onClick={() => deleteWeightEntry(entry.id)}
+                  onClick={async () => {
+                    await supabase.from('weight_entries').delete().eq('id', entry.id);
+                    refetch();
+                  }}
                   className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                 >
                   <Trash2 className="w-4 h-4" />

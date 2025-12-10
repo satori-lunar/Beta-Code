@@ -20,8 +20,10 @@ import {
   Moon,
   Sun
 } from 'lucide-react';
-import { useStore } from '../store/useStore';
+import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { useHabits } from '../hooks/useSupabaseData';
+import { supabase } from '../lib/supabase';
 import { format, addDays, subDays, startOfWeek, isSameDay } from 'date-fns';
 
 const habitIcons: Record<string, React.ElementType> = {
@@ -56,7 +58,8 @@ const colorOptions = [
 ];
 
 export default function Habits() {
-  const { habits, toggleHabitCompletion, addHabit, deleteHabit } = useStore();
+  const { user } = useAuth();
+  const { data: habits = [], loading, refetch } = useHabits();
   const { colorPreset, colorPresets, primaryColor } = useTheme();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showAddModal, setShowAddModal] = useState(false);
@@ -70,29 +73,47 @@ export default function Habits() {
   const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 
-  const completedToday = habits.filter(h => h.completedDates.includes(dateString)).length;
+  const completedToday = habits.filter(h => {
+    const completedDates = h.completed_dates as any;
+    return Array.isArray(completedDates) && completedDates.includes(dateString);
+  }).length;
   const totalHabits = habits.length;
   const completionRate = totalHabits > 0 ? Math.round((completedToday / totalHabits) * 100) : 0;
 
-  const handleToggle = (habitId: string) => {
-    toggleHabitCompletion(habitId, dateString);
+  const handleToggle = async (habitId: string) => {
+    if (!user) return;
+    
+    const habit = habits.find(h => h.id === habitId);
+    if (!habit) return;
+
+    const completedDates = (habit.completed_dates as any) || [];
+    const newCompletedDates = completedDates.includes(dateString)
+      ? completedDates.filter((d: string) => d !== dateString)
+      : [...completedDates, dateString];
+
+    await supabase
+      .from('habits')
+      .update({ completed_dates: newCompletedDates })
+      .eq('id', habitId);
+    
+    refetch();
   };
 
-  const handleAddHabit = () => {
-    if (newHabit.name.trim()) {
-      addHabit({
-        id: Date.now().toString(),
-        name: newHabit.name,
-        icon: newHabit.icon,
-        color: newHabit.color,
-        frequency: 'daily',
-        completedDates: [],
-        streak: 0,
-        createdAt: new Date().toISOString(),
-      });
-      setNewHabit({ name: '', icon: 'target', color: colorOptions[0] });
-      setShowAddModal(false);
-    }
+  const handleAddHabit = async () => {
+    if (!user || !newHabit.name.trim()) return;
+
+    await supabase.from('habits').insert({
+      user_id: user.id,
+      name: newHabit.name,
+      icon: newHabit.icon,
+      color: newHabit.color,
+      frequency: 'daily',
+      completed_dates: []
+    });
+    
+    refetch();
+    setNewHabit({ name: '', icon: 'target', color: colorOptions[0] });
+    setShowAddModal(false);
   };
 
   return (
@@ -273,9 +294,10 @@ export default function Habits() {
                     <Circle className="w-7 h-7 text-gray-300" />
                   )}
                   <button
-                    onClick={(e) => {
+                    onClick={async (e) => {
                       e.stopPropagation();
-                      deleteHabit(habit.id);
+                      await supabase.from('habits').delete().eq('id', habit.id);
+                      refetch();
                     }}
                     className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                   >

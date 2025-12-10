@@ -25,8 +25,9 @@ import {
   Palette,
   Check
 } from 'lucide-react';
-import { useStore } from '../store/useStore';
+import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { useHabits, useWeightEntries, useJournalEntries, useUserBadges } from '../hooks/useSupabaseData';
 import { format, isToday, parseISO } from 'date-fns';
 
 const badgeIcons: Record<string, React.ElementType> = {
@@ -68,7 +69,11 @@ const availableWidgets = [
 ];
 
 export default function Dashboard() {
-  const { user, habits, courses, liveClasses, weightEntries, journalEntries } = useStore();
+  const { user } = useAuth();
+  const { data: habits = [], loading: habitsLoading } = useHabits();
+  const { data: weightEntries = [], loading: weightLoading } = useWeightEntries();
+  const { data: journalEntries = [], loading: journalLoading } = useJournalEntries();
+  const { data: userBadges = [], loading: badgesLoading } = useUserBadges();
   const { colorPreset, setColorPreset, colorPresets, primaryColor } = useTheme();
   const [widgets, setWidgets] = useState<WidgetConfig[]>(() => {
     const saved = localStorage.getItem('dashboardWidgets');
@@ -81,9 +86,14 @@ export default function Dashboard() {
 
   const today = format(new Date(), 'yyyy-MM-dd');
 
-  const completedHabitsToday = habits.filter(h =>
-    h.completedDates.includes(today)
-  ).length;
+  // For now, use empty arrays for data not yet in Supabase
+  const courses: any[] = [];
+  const liveClasses: any[] = [];
+
+  const completedHabitsToday = habits.filter(h => {
+    const completedDates = h.completed_dates as any;
+    return Array.isArray(completedDates) && completedDates.includes(today);
+  }).length;
 
   const upcomingClass = liveClasses.find(c => new Date(c.scheduledAt) > new Date());
 
@@ -92,8 +102,8 @@ export default function Dashboard() {
     return isToday(classDate);
   }).sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime());
 
-  const latestWeight = weightEntries[weightEntries.length - 1];
-  const previousWeight = weightEntries[weightEntries.length - 2];
+  const latestWeight = weightEntries[0]; // Already sorted descending by date
+  const previousWeight = weightEntries[1];
   const weightChange = latestWeight && previousWeight
     ? (latestWeight.weight - previousWeight.weight).toFixed(1)
     : null;
@@ -196,7 +206,7 @@ export default function Dashboard() {
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
         <div>
           <h1 className="text-2xl lg:text-3xl font-display font-bold mb-2">
-            Good {getGreeting()}, {user?.name}!
+            Good {getGreeting()}, {user?.user_metadata?.name || user?.email?.split('@')[0] || 'there'}!
           </h1>
           <p className="text-white/80">
             You're doing great! Keep up with your wellness journey.
@@ -206,15 +216,15 @@ export default function Dashboard() {
           <div className="text-center">
             <div className="flex items-center justify-center gap-2 mb-1">
               <Flame className="w-8 h-8 text-yellow-300 animate-pulse-slow" />
-              <span className="text-4xl font-bold">{user?.streak || 0}</span>
+              <span className="text-4xl font-bold">{completedHabitsToday}</span>
             </div>
-            <p className="text-sm text-white/80">Day Streak</p>
+            <p className="text-sm text-white/80">Habits Today</p>
           </div>
           <div className="w-px h-16 bg-white/20" />
           <div className="text-center">
             <div className="flex items-center justify-center gap-2 mb-1">
               <Award className="w-8 h-8 text-yellow-300" />
-              <span className="text-4xl font-bold">{user?.badges?.length || 0}</span>
+              <span className="text-4xl font-bold">{userBadges.length}</span>
             </div>
             <p className="text-sm text-white/80">Badges</p>
           </div>
@@ -236,8 +246,8 @@ export default function Dashboard() {
         </Link>
       </div>
       <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
-        {user?.badges?.map((badge) => {
-          const IconComponent = badgeIcons[badge.icon] || Award;
+        {userBadges.map((badge) => {
+          const IconComponent = badgeIcons[badge.icon || ''] || Award;
           return (
             <div
               key={badge.id}

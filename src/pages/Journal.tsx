@@ -10,7 +10,9 @@ import {
   Tag,
   Clock
 } from 'lucide-react';
-import { useStore } from '../store/useStore';
+import { useAuth } from '../contexts/AuthContext';
+import { useJournalEntries } from '../hooks/useSupabaseData';
+import { supabase } from '../lib/supabase';
 import { format, parseISO } from 'date-fns';
 
 const moodOptions = [
@@ -24,7 +26,8 @@ const moodOptions = [
 type Mood = 'great' | 'good' | 'neutral' | 'low' | 'bad';
 
 export default function Journal() {
-  const { journalEntries, addJournalEntry, updateJournalEntry, deleteJournalEntry } = useStore();
+  const { user } = useAuth();
+  const { data: journalEntries = [], loading, refetch } = useJournalEntries();
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingEntry, setEditingEntry] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -46,30 +49,27 @@ export default function Journal() {
     return matchesSearch && matchesMood;
   });
 
-  const handleSaveEntry = () => {
-    if (newEntry.title.trim() && newEntry.content.trim()) {
-      const entryData = {
-        title: newEntry.title,
-        content: newEntry.content,
-        mood: newEntry.mood,
-        tags: newEntry.tags.split(',').map((t) => t.trim()).filter(Boolean),
-        gratitude: newEntry.gratitude.filter(Boolean),
-      };
+  const handleSaveEntry = async () => {
+    if (!user || !newEntry.title.trim() || !newEntry.content.trim()) return;
 
-      if (editingEntry) {
-        updateJournalEntry(editingEntry, entryData);
-      } else {
-        addJournalEntry({
-          id: Date.now().toString(),
-          date: format(new Date(), 'yyyy-MM-dd'),
-          ...entryData,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        });
-      }
+    const entryData = {
+      title: newEntry.title,
+      content: newEntry.content,
+      mood: newEntry.mood,
+      tags: newEntry.tags.split(',').map((t) => t.trim()).filter(Boolean),
+      gratitude: newEntry.gratitude.filter(Boolean),
+      date: format(new Date(), 'yyyy-MM-dd'),
+      user_id: user.id,
+    };
 
-      resetForm();
+    if (editingEntry) {
+      await supabase.from('journal_entries').update(entryData).eq('id', editingEntry);
+    } else {
+      await supabase.from('journal_entries').insert(entryData);
     }
+
+    refetch();
+    resetForm();
   };
 
   const resetForm = () => {
@@ -191,7 +191,10 @@ export default function Journal() {
                   <Edit3 className="w-4 h-4" />
                 </button>
                 <button
-                  onClick={() => deleteJournalEntry(entry.id)}
+                  onClick={async () => {
+                    await supabase.from('journal_entries').delete().eq('id', entry.id);
+                    refetch();
+                  }}
                   className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                 >
                   <Trash2 className="w-4 h-4" />

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Play,
   Pause,
@@ -193,8 +193,6 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
   const [lastCoachingTime, setLastCoachingTime] = useState(0);
   const [coachingInterval, setCoachingInterval] = useState(45); // seconds between coaching
   
-  // Confetti ref
-  const confettiRef = useRef<HTMLCanvasElement>(null);
   
   // Speech synthesis
   const speak = useCallback((text: string) => {

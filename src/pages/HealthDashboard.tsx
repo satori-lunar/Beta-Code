@@ -42,7 +42,8 @@ import { useStore } from '../store/useStore';
 import { useTheme } from '../contexts/ThemeContext';
 import { format, formatDistanceToNow } from 'date-fns';
 import ComingSoonModal from '../components/ComingSoonModal';
-import GuidedCardio, { WorkoutPreset, WorkoutData } from '../components/GuidedCardio';
+import GuidedCardio from '../components/GuidedCardio';
+import type { WorkoutPreset, WorkoutData } from '../components/GuidedCardio';
 import { useWorkoutPresets, useWorkoutHistory } from '../hooks/useSupabaseData';
 
 type MetricKey = 'heartRate' | 'bloodPressure' | 'bodyTemperature' | 'oxygenSaturation' |
@@ -83,7 +84,6 @@ export default function HealthDashboard() {
   const [showDevicesPanel, setShowDevicesPanel] = useState(false);
   const [editValues, setEditValues] = useState<Record<string, string>>({});
   const [activeTab, setActiveTab] = useState<TabType>('workout');
-  const [selectedWorkout, setSelectedWorkout] = useState<string | null>(null);
   const [showWorkoutCamera, setShowWorkoutCamera] = useState(false);
   const [selectedPreset, setSelectedPreset] = useState<WorkoutPreset | undefined>(undefined);
 

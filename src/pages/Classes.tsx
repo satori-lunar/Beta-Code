@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Search,
   PlayCircle,
@@ -11,7 +11,7 @@ import {
   ExternalLink,
   Radio
 } from 'lucide-react';
-import { useStore } from '../store/useStore';
+import { useRecordedSessions, useLiveClasses, useFavoriteSessions } from '../hooks/useSupabaseData';
 import { format, parseISO, isAfter, isBefore, addHours } from 'date-fns';
 
 const categories = [
@@ -34,12 +34,59 @@ const classImages: Record<string, string> = {
 };
 
 export default function Classes() {
-  const { liveClasses, recordedSessions, toggleFavorite } = useStore();
+  const { sessions: recordedSessions, loading: sessionsLoading } = useRecordedSessions();
+  const { classes: liveClasses, loading: classesLoading } = useLiveClasses();
+  const { favoriteIds, toggleFavorite } = useFavoriteSessions();
+  
   const [activeTab, setActiveTab] = useState<'live' | 'recorded' | 'favorites'>('live');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
 
   const now = new Date();
+
+  // Helper functions
+  const isClassLive = (scheduledAt: string, duration: number) => {
+    const startTime = parseISO(scheduledAt);
+    const endTime = addHours(startTime, duration / 60);
+    return isAfter(now, startTime) && isBefore(now, endTime);
+  };
+
+  const isClassUpcoming = (scheduledAt: string) => {
+    return isAfter(parseISO(scheduledAt), now);
+  };
+
+  // Map Supabase data to component format
+  const mappedRecordedSessions = useMemo(() => {
+    return (recordedSessions || []).map(session => ({
+      id: session.id,
+      title: session.title,
+      description: session.description || '',
+      instructor: session.instructor,
+      recordedAt: session.recorded_at,
+      duration: session.duration,
+      videoUrl: session.video_url,
+      thumbnail: session.thumbnail_url || '',
+      category: session.category,
+      views: session.views || 0,
+      isFavorite: favoriteIds.has(session.id),
+      tags: session.tags || [],
+    }));
+  }, [recordedSessions, favoriteIds]);
+
+  const mappedLiveClasses = useMemo(() => {
+    return (liveClasses || []).map(cls => ({
+      id: cls.id,
+      title: cls.title,
+      description: cls.description || '',
+      instructor: cls.instructor,
+      scheduledAt: cls.scheduled_at,
+      duration: cls.duration,
+      zoomLink: cls.zoom_link || '#',
+      thumbnail: cls.thumbnail_url || '',
+      category: cls.category,
+      isLive: isClassLive(cls.scheduled_at, cls.duration),
+    }));
+  }, [liveClasses]);
 
   // Filter functions
   const filterBySearch = (title: string, description: string) =>
@@ -50,25 +97,17 @@ export default function Classes() {
     selectedCategory === 'All' || category === selectedCategory;
 
   // Filtered data
-  const filteredLiveClasses = liveClasses.filter(
+  const filteredLiveClasses = mappedLiveClasses.filter(
     (c) => filterBySearch(c.title, c.description) && filterByCategory(c.category)
   );
 
-  const filteredRecordedSessions = recordedSessions.filter(
+  const filteredRecordedSessions = mappedRecordedSessions.filter(
     (s) => filterBySearch(s.title, s.description) && filterByCategory(s.category)
   );
 
-  const favoriteSessions = recordedSessions.filter((s) => s.isFavorite);
+  const favoriteSessions = mappedRecordedSessions.filter((s) => s.isFavorite);
 
-  const isClassLive = (scheduledAt: string, duration: number) => {
-    const startTime = parseISO(scheduledAt);
-    const endTime = addHours(startTime, duration / 60);
-    return isAfter(now, startTime) && isBefore(now, endTime);
-  };
-
-  const isClassUpcoming = (scheduledAt: string) => {
-    return isAfter(parseISO(scheduledAt), now);
-  };
+  const loading = sessionsLoading || classesLoading;
 
   return (
     <div className="space-y-8 pb-20 lg:pb-0">
@@ -180,14 +219,19 @@ export default function Classes() {
       {/* Recorded Sessions */}
       {activeTab === 'recorded' && (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredRecordedSessions.map((session) => (
-            <RecordedSessionCard
-              key={session.id}
-              session={session}
-              onToggleFavorite={() => toggleFavorite(session.id)}
-            />
-          ))}
-          {filteredRecordedSessions.length === 0 && (
+          {loading ? (
+            <div className="col-span-full card text-center py-12">
+              <p className="text-gray-500">Loading recordings...</p>
+            </div>
+          ) : filteredRecordedSessions.length > 0 ? (
+            filteredRecordedSessions.map((session) => (
+              <RecordedSessionCard
+                key={session.id}
+                session={session}
+                onToggleFavorite={() => toggleFavorite(session.id)}
+              />
+            ))
+          ) : (
             <div className="col-span-full card text-center py-12">
               <Video className="w-12 h-12 text-gray-300 mx-auto mb-4" />
               <p className="text-gray-500">No recordings found</p>
@@ -199,14 +243,19 @@ export default function Classes() {
       {/* Favorites */}
       {activeTab === 'favorites' && (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {favoriteSessions.map((session) => (
-            <RecordedSessionCard
-              key={session.id}
-              session={session}
-              onToggleFavorite={() => toggleFavorite(session.id)}
-            />
-          ))}
-          {favoriteSessions.length === 0 && (
+          {loading ? (
+            <div className="col-span-full card text-center py-12">
+              <p className="text-gray-500">Loading favorites...</p>
+            </div>
+          ) : favoriteSessions.length > 0 ? (
+            favoriteSessions.map((session) => (
+              <RecordedSessionCard
+                key={session.id}
+                session={session}
+                onToggleFavorite={() => toggleFavorite(session.id)}
+              />
+            ))
+          ) : (
             <div className="col-span-full card text-center py-12">
               <Heart className="w-12 h-12 text-gray-300 mx-auto mb-4" />
               <h3 className="font-semibold text-gray-900 mb-2">No favorites yet</h3>

@@ -50,3 +50,4 @@ npm run dev
 ## Security Note
 Never commit your `.env` file to version control. The `.env` file is already in `.gitignore`.
 
+

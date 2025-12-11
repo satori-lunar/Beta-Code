@@ -290,6 +290,216 @@ export function useHealthMetrics() {
   return { metrics, loading }
 }
 
+// Hook for recorded sessions (available to all authenticated users)
+export function useRecordedSessions() {
+  const { user } = useAuth()
+  const [sessions, setSessions] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
+  const [refetchTrigger, setRefetchTrigger] = useState(0)
+
+  useEffect(() => {
+    if (!user) {
+      setSessions([])
+      setLoading(false)
+      return
+    }
+
+    async function fetchSessions() {
+      try {
+        setLoading(true)
+        const { data, error } = await supabase
+          .from('recorded_sessions')
+          .select('*')
+          .order('recorded_at', { ascending: false })
+
+        if (error) throw error
+        setSessions(data || [])
+      } catch (err) {
+        setError(err as Error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchSessions()
+
+    // Subscribe to changes
+    const channel = supabase
+      .channel('recorded_sessions_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'recorded_sessions',
+        },
+        fetchSessions
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [user, refetchTrigger])
+
+  const refetch = () => setRefetchTrigger(prev => prev + 1)
+
+  return { sessions, loading, error, refetch }
+}
+
+// Hook for live classes (available to all authenticated users)
+export function useLiveClasses() {
+  const { user } = useAuth()
+  const [classes, setClasses] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
+  const [refetchTrigger, setRefetchTrigger] = useState(0)
+
+  useEffect(() => {
+    if (!user) {
+      setClasses([])
+      setLoading(false)
+      return
+    }
+
+    async function fetchClasses() {
+      try {
+        setLoading(true)
+        const { data, error } = await supabase
+          .from('live_classes')
+          .select('*')
+          .order('scheduled_at', { ascending: true })
+
+        if (error) throw error
+        setClasses(data || [])
+      } catch (err) {
+        setError(err as Error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchClasses()
+
+    // Subscribe to changes
+    const channel = supabase
+      .channel('live_classes_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'live_classes',
+        },
+        fetchClasses
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [user, refetchTrigger])
+
+  const refetch = () => setRefetchTrigger(prev => prev + 1)
+
+  return { classes, loading, error, refetch }
+}
+
+// Hook for favorite sessions
+export function useFavoriteSessions() {
+  const { user } = useAuth()
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set())
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
+  const [refetchTrigger, setRefetchTrigger] = useState(0)
+
+  useEffect(() => {
+    if (!user) {
+      setFavoriteIds(new Set())
+      setLoading(false)
+      return
+    }
+
+    async function fetchFavorites() {
+      try {
+        setLoading(true)
+        const { data, error } = await supabase
+          .from('user_favorite_sessions')
+          .select('session_id')
+          .eq('user_id', user.id)
+
+        if (error) throw error
+        setFavoriteIds(new Set((data || []).map(f => f.session_id)))
+      } catch (err) {
+        setError(err as Error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchFavorites()
+
+    // Subscribe to changes
+    const channel = supabase
+      .channel('user_favorite_sessions_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'user_favorite_sessions',
+          filter: `user_id=eq.${user.id}`,
+        },
+        fetchFavorites
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [user, refetchTrigger])
+
+  const toggleFavorite = async (sessionId: string) => {
+    if (!user) return
+
+    const isFavorite = favoriteIds.has(sessionId)
+
+    if (isFavorite) {
+      // Remove from favorites
+      const { error } = await supabase
+        .from('user_favorite_sessions')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('session_id', sessionId)
+
+      if (!error) {
+        setFavoriteIds(prev => {
+          const next = new Set(prev)
+          next.delete(sessionId)
+          return next
+        })
+      }
+    } else {
+      // Add to favorites
+      const { error } = await supabase
+        .from('user_favorite_sessions')
+        .insert({
+          user_id: user.id,
+          session_id: sessionId,
+        })
+
+      if (!error) {
+        setFavoriteIds(prev => new Set(prev).add(sessionId))
+      }
+    }
+  }
+
+  const refetch = () => setRefetchTrigger(prev => prev + 1)
+
+  return { favoriteIds, loading, error, toggleFavorite, refetch }
+}
+
 // Hook for workout presets
 export function useWorkoutPresets() {
   const { user } = useAuth()

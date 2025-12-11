@@ -34,44 +34,7 @@ import {
   Music
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { MapContainer, TileLayer, Polyline, Marker, useMap, useMapEvents } from 'react-leaflet';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-
-// Fix Leaflet default icon issue
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
-});
-
-// Component to update map view when position changes
-function MapUpdater({ center }: { center: [number, number] }) {
-  const map = useMap();
-  useEffect(() => {
-    map.setView(center, map.getZoom());
-  }, [center, map]);
-  return null;
-}
-
-// Component to handle map clicks for goal pin
-function MapClickHandler({ 
-  onClick, 
-  enabled 
-}: { 
-  onClick: (lat: number, lng: number) => void;
-  enabled: boolean;
-}) {
-  useMapEvents({
-    click: (e) => {
-      if (enabled) {
-        onClick(e.latlng.lat, e.latlng.lng);
-      }
-    }
-  });
-  return null;
-}
+import WorkoutMap from './WorkoutMap';
 
 // GPS Coordinate type
 interface GpsCoordinate {
@@ -395,7 +358,6 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
   const [spotifyPlayer, setSpotifyPlayer] = useState<any>(null);
   const [spotifyDeviceId, setSpotifyDeviceId] = useState<string | null>(null);
   const [spotifyVolume, setSpotifyVolume] = useState(50); // 0-100
-  const [isMusicPaused, setIsMusicPaused] = useState(false);
   
   // GPS tracking functions
   const startGpsTracking = useCallback(() => {
@@ -456,6 +418,17 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
         });
 
         setGpsPermission('granted');
+        
+        // Update distance to goal if goal pin is set
+        if (goalPin) {
+          const distToGoal = calculateDistance(
+            newCoord.latitude,
+            newCoord.longitude,
+            goalPin.lat,
+            goalPin.lng
+          );
+          setDistanceToGoal(distToGoal);
+        }
       },
       (error) => {
         console.error('GPS Error:', error);
@@ -488,7 +461,7 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
       },
       options
     );
-  }, []);
+  }, [goalPin]);
 
   const stopGpsTracking = useCallback(() => {
     if (watchIdRef.current !== null) {
@@ -608,12 +581,41 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
     window.speechSynthesis.speak(utterance);
   }, [audioEnabled]);
   
+  // Spotify music control
+  const pauseSpotifyMusic = useCallback(async () => {
+    if (!spotifyEnabled || !spotifyPlayer || !spotifyDeviceId) return;
+    
+    try {
+      // Lower volume to 20% when coach talks
+      await fetch(`https://api.spotify.com/v1/me/player/volume?volume_percent=20&device_id=${spotifyDeviceId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${spotifyPlayer._options.accessToken}`,
+        },
+      });
+      // Restore volume after 4 seconds
+      setTimeout(async () => {
+        if (spotifyEnabled && spotifyDeviceId && spotifyPlayer) {
+          await fetch(`https://api.spotify.com/v1/me/player/volume?volume_percent=${spotifyVolume}&device_id=${spotifyDeviceId}`, {
+            method: 'PUT',
+            headers: {
+              'Authorization': `Bearer ${spotifyPlayer._options.accessToken}`,
+            },
+          });
+        }
+      }, 4000);
+    } catch (error) {
+      console.error('Error controlling Spotify:', error);
+    }
+  }, [spotifyEnabled, spotifyPlayer, spotifyDeviceId, spotifyVolume]);
+  
   // Show coaching message (visual + audio)
   const showCoaching = useCallback((message: string) => {
     setCoachingMessage(message);
     speak(message);
+    pauseSpotifyMusic(); // Lower/pause music when coach talks
     setTimeout(() => setCoachingMessage(''), 4000);
-  }, [speak]);
+  }, [speak, pauseSpotifyMusic]);
   
   // Get random message from category
   const getRandomMessage = (category: keyof typeof coachingMessages) => {
@@ -639,9 +641,55 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
     setTimeout(() => setShowMilestoneFlash(false), 1500);
   }, []);
 
-  // Distance-based milestones (must be after showCoaching, triggerMilestoneFlash, fireConfetti)
+  // Goal-based milestone tracking
+  const [lastGoalProgress, setLastGoalProgress] = useState(0);
+  const [initialDistanceToGoal, setInitialDistanceToGoal] = useState(0);
+
+  // Set initial distance when goal pin is set
   useEffect(() => {
-    if (!isWorkoutActive || !gpsEnabled) return;
+    if (goalPin && currentPosition && initialDistanceToGoal === 0) {
+      const initialDist = calculateDistance(
+        currentPosition.latitude,
+        currentPosition.longitude,
+        goalPin.lat,
+        goalPin.lng
+      );
+      setInitialDistanceToGoal(initialDist);
+    }
+  }, [goalPin, currentPosition, initialDistanceToGoal]);
+
+  // Goal-based milestones - every 25% closer to goal
+  useEffect(() => {
+    if (!isWorkoutActive || !gpsEnabled || !goalPin || initialDistanceToGoal === 0) return;
+
+    const progress = Math.max(0, (initialDistanceToGoal - distanceToGoal) / initialDistanceToGoal);
+    const progressPercent = Math.floor(progress * 100);
+    const milestonePercent = Math.floor(progressPercent / 25); // Every 25%
+
+    if (milestonePercent > lastGoalProgress && progressPercent > 0) {
+      setLastGoalProgress(milestonePercent);
+      setMilestones(m => m + 1);
+      setStreakCount(s => s + 1);
+      triggerMilestoneFlash();
+      
+      const remaining = formatDistance(distanceToGoal);
+      const message = `🎯 ${progressPercent}% to goal! Only ${remaining} left! Keep going!`;
+      showCoaching(message);
+      
+      // Big confetti for reaching goal
+      if (distanceToGoal < 50) {
+        fireConfetti();
+        showCoaching("🎉 GOAL REACHED! You're AMAZING!");
+      } else if (typeof window !== 'undefined') {
+        confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
+      }
+    }
+  }, [distanceToGoal, initialDistanceToGoal, lastGoalProgress, isWorkoutActive, gpsEnabled, goalPin, showCoaching, triggerMilestoneFlash, fireConfetti, formatDistance]);
+
+  
+  // Distance-based milestones (when no goal pin is set)
+  useEffect(() => {
+    if (!isWorkoutActive || !gpsEnabled || goalPin) return;
 
     const currentMilestone = Math.floor(totalDistance / distanceMilestoneInterval);
     if (currentMilestone > lastDistanceMilestone && totalDistance > 0) {
@@ -663,7 +711,7 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
         confetti({ particleCount: 30, spread: 50, origin: { y: 0.7 } });
       }
     }
-  }, [totalDistance, lastDistanceMilestone, distanceMilestoneInterval, isWorkoutActive, gpsEnabled, showCoaching, triggerMilestoneFlash, fireConfetti]);
+  }, [totalDistance, lastDistanceMilestone, distanceMilestoneInterval, isWorkoutActive, gpsEnabled, goalPin, showCoaching, triggerMilestoneFlash, fireConfetti]);
   
   // Workout timer and coaching logic
   useEffect(() => {
@@ -775,6 +823,11 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
     setRouteHistory([]);
     setLastDistanceMilestone(0);
     setCurrentPosition(null);
+    
+    // Reset goal tracking
+    setLastGoalProgress(0);
+    setInitialDistanceToGoal(0);
+    setDistanceToGoal(0);
     
     // Adjust coaching interval based on intensity - more frequent for hype!
     setCoachingInterval(config.intensity === 'intense' ? 35 : config.intensity === 'easy' ? 60 : 45);
@@ -1322,6 +1375,104 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
           </div>
           )}
           
+          {/* Spotify Integration - Outdoor workouts */}
+          {mode === 'outdoor' && (
+            <div className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 rounded-xl p-4 border border-green-500/20">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Music className="w-5 h-5 text-green-400" />
+                  <span className="font-medium text-white">Spotify Music</span>
+                  <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full">OPTIONAL</span>
+                </div>
+                <button
+                  onClick={() => {
+                    if (!spotifyEnabled) {
+                      // Initialize Spotify Web Playback SDK
+                      if (typeof window !== 'undefined' && (window as any).Spotify) {
+                        const token = prompt('Enter your Spotify access token (get from Spotify Developer Dashboard)');
+                        if (token) {
+                          const player = new (window as any).Spotify.Player({
+                            name: 'Workout Player',
+                            getOAuthToken: (cb: (token: string) => void) => cb(token),
+                            volume: spotifyVolume / 100
+                          });
+                          
+                          player.addListener('ready', ({ device_id }: { device_id: string }) => {
+                            setSpotifyDeviceId(device_id);
+                            setSpotifyPlayer(player);
+                            setSpotifyEnabled(true);
+                            showCoaching('🎵 Spotify connected! Music will pause when coach talks.');
+                          });
+                          
+                          player.addListener('not_ready', () => {
+                            setSpotifyEnabled(false);
+                          });
+                          
+                          player.connect();
+                        }
+                      } else {
+                        setCoachingMessage('⚠️ Spotify Web Playback SDK not loaded. Add script tag: <script src="https://sdk.scdn.co/spotify-player.js"></script>');
+                        setTimeout(() => setCoachingMessage(''), 5000);
+                      }
+                    } else {
+                      if (spotifyPlayer) {
+                        spotifyPlayer.disconnect();
+                      }
+                      setSpotifyEnabled(false);
+                      setSpotifyPlayer(null);
+                      setSpotifyDeviceId(null);
+                    }
+                  }}
+                  className={`relative w-14 h-7 rounded-full transition-colors ${
+                    spotifyEnabled ? 'bg-green-500' : 'bg-gray-600'
+                  }`}
+                >
+                  <div className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow-md transition-transform ${
+                    spotifyEnabled ? 'translate-x-8' : 'translate-x-1'
+                  }`} />
+                </button>
+              </div>
+              
+              {spotifyEnabled && (
+                <div className="space-y-2">
+                  <p className="text-xs text-gray-400">
+                    🎵 Music will automatically lower volume when coach speaks
+                  </p>
+                  <div>
+                    <label className="block text-sm text-gray-300 mb-1">
+                      Music Volume: {spotifyVolume}%
+                    </label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={spotifyVolume}
+                      onChange={(e) => {
+                        const vol = parseInt(e.target.value);
+                        setSpotifyVolume(vol);
+                        if (spotifyPlayer && spotifyDeviceId) {
+                          fetch(`https://api.spotify.com/v1/me/player/volume?volume_percent=${vol}&device_id=${spotifyDeviceId}`, {
+                            method: 'PUT',
+                            headers: {
+                              'Authorization': `Bearer ${spotifyPlayer._options.getOAuthToken}`,
+                            },
+                          });
+                        }
+                      }}
+                      className="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer"
+                    />
+                  </div>
+                </div>
+              )}
+              
+              {!spotifyEnabled && (
+                <p className="text-xs text-gray-500">
+                  Connect Spotify to listen to music during your run. Music will pause/lower when coach talks!
+                </p>
+              )}
+            </div>
+          )}
+          
           {/* Intensity */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-3">Intensity</label>
@@ -1542,12 +1693,22 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
               <div className="text-xs text-gray-400">🔥 Calories</div>
             </div>
             
-            {/* Progress/Streak */}
+            {/* Progress/Streak/Goal */}
             <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-4 text-center border border-gray-700">
               <div className="text-2xl sm:text-3xl font-bold text-blue-400">
-                {streakCount > 0 ? `${streakCount}🔥` : `${Math.round(getProgress())}%`}
+                {goalPin && initialDistanceToGoal > 0 
+                  ? `${Math.round(((initialDistanceToGoal - distanceToGoal) / initialDistanceToGoal) * 100)}%`
+                  : streakCount > 0 
+                    ? `${streakCount}🔥` 
+                    : `${Math.round(getProgress())}%`}
               </div>
-              <div className="text-xs text-gray-400">{streakCount > 0 ? 'Streak' : 'Progress'}</div>
+              <div className="text-xs text-gray-400">
+                {goalPin && initialDistanceToGoal > 0 
+                  ? 'To Goal' 
+                  : streakCount > 0 
+                    ? 'Streak' 
+                    : 'Progress'}
+              </div>
             </div>
           </div>
           
@@ -1595,40 +1756,30 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
           {/* Map Display - Outdoor workouts */}
           {mode === 'outdoor' && gpsEnabled && routeHistory.length > 0 && currentPosition && (
             <div className="mb-4">
-              <div className="bg-gray-800 rounded-xl overflow-hidden border border-blue-500/30 h-64">
-                <div className="p-2 bg-blue-500/20 flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-blue-400" />
-                  <span className="text-sm text-blue-400 font-medium">Your Route</span>
-                </div>
-                <MapContainer
-                  center={[currentPosition.latitude, currentPosition.longitude]}
-                  zoom={15}
-                  style={{ height: '100%', width: '100%' }}
-                  className="z-0"
-                >
-                  <TileLayer
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                  />
-                  {routeHistory.length > 1 && (
-                    <Polyline
-                      positions={routeHistory.map(coord => [coord.latitude, coord.longitude])}
-                      color={selectedActivity.color}
-                      weight={4}
-                      opacity={0.8}
-                    />
-                  )}
-                  <Marker
-                    position={[currentPosition.latitude, currentPosition.longitude]}
-                    icon={L.icon({
-                      iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
-                      iconSize: [25, 41],
-                      iconAnchor: [12, 41],
-                    })}
-                  />
-                  <MapUpdater center={[currentPosition.latitude, currentPosition.longitude]} />
-                </MapContainer>
-              </div>
+              <WorkoutMap
+                currentPosition={currentPosition}
+                routeHistory={routeHistory}
+                goalPin={goalPin}
+                mapClickMode={mapClickMode}
+                isFullscreen={isMapFullscreen}
+                activityColor={selectedActivity.color}
+                onGoalPinSet={(lat, lng) => {
+                  setGoalPin({ lat, lng });
+                  setMapClickMode('normal');
+                  const dist = calculateDistance(
+                    currentPosition.latitude,
+                    currentPosition.longitude,
+                    lat,
+                    lng
+                  );
+                  setDistanceToGoal(dist);
+                  showCoaching(`🎯 Goal set! ${formatDistance(dist)} away`);
+                }}
+                onToggleFullscreen={() => setIsMapFullscreen(!isMapFullscreen)}
+                onMapClickModeChange={setMapClickMode}
+                distanceToGoal={distanceToGoal}
+                formatDistance={formatDistance}
+              />
             </div>
           )}
 

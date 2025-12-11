@@ -91,7 +91,6 @@ export default function WorkoutCamera({ onClose, onWorkoutComplete }: WorkoutCam
   const [lapTimes, setLapTimes] = useState<number[]>([]);
   const [lastLapTime, setLastLapTime] = useState(0);
   const [coachingMessage, setCoachingMessage] = useState('');
-  const [audioEnabled, setAudioEnabled] = useState(true);
   
   // Speech synthesis
   const speak = (text: string) => {

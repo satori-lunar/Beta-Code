@@ -120,11 +120,33 @@ BEGIN
     CREATE POLICY "Users can view own profile" 
     ON public.users FOR SELECT 
     USING (auth.uid() = id);
+  END IF;
 
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' 
+    AND tablename = 'users' 
+    AND policyname = 'Users can update own profile'
+  ) THEN
     CREATE POLICY "Users can update own profile" 
     ON public.users FOR UPDATE 
     USING (auth.uid() = id);
   END IF;
+EXCEPTION WHEN OTHERS THEN 
+  -- If pg_policies doesn't exist or query fails, try to create policies anyway
+  -- and catch duplicate policy errors
+  BEGIN
+    CREATE POLICY "Users can view own profile" 
+    ON public.users FOR SELECT 
+    USING (auth.uid() = id);
+  EXCEPTION WHEN duplicate_object THEN NULL;
+  END;
+  BEGIN
+    CREATE POLICY "Users can update own profile" 
+    ON public.users FOR UPDATE 
+    USING (auth.uid() = id);
+  EXCEPTION WHEN duplicate_object THEN NULL;
+  END;
 END $$;
 
 -- RLS Policies
@@ -142,6 +164,13 @@ BEGIN
     ON public.live_classes FOR SELECT 
     TO authenticated USING (true);
   END IF;
+EXCEPTION WHEN OTHERS THEN 
+  BEGIN
+    CREATE POLICY "Live classes are viewable by all" 
+    ON public.live_classes FOR SELECT 
+    TO authenticated USING (true);
+  EXCEPTION WHEN duplicate_object THEN NULL;
+  END;
 END $$;
 
 -- Recorded sessions are readable by all authenticated users
@@ -157,6 +186,13 @@ BEGIN
     ON public.recorded_sessions FOR SELECT 
     TO authenticated USING (true);
   END IF;
+EXCEPTION WHEN OTHERS THEN 
+  BEGIN
+    CREATE POLICY "Recorded sessions are viewable by all" 
+    ON public.recorded_sessions FOR SELECT 
+    TO authenticated USING (true);
+  EXCEPTION WHEN duplicate_object THEN NULL;
+  END;
 END $$;
 
 -- User favorite sessions
@@ -194,5 +230,25 @@ BEGIN
     ON public.user_favorite_sessions FOR DELETE 
     USING (auth.uid() = user_id);
   END IF;
+EXCEPTION WHEN OTHERS THEN 
+  -- Fallback: try creating policies and ignore duplicates
+  BEGIN
+    CREATE POLICY "Users can view own favorites" 
+    ON public.user_favorite_sessions FOR SELECT 
+    USING (auth.uid() = user_id);
+  EXCEPTION WHEN duplicate_object THEN NULL;
+  END;
+  BEGIN
+    CREATE POLICY "Users can create favorites" 
+    ON public.user_favorite_sessions FOR INSERT 
+    WITH CHECK (auth.uid() = user_id);
+  EXCEPTION WHEN duplicate_object THEN NULL;
+  END;
+  BEGIN
+    CREATE POLICY "Users can delete own favorites" 
+    ON public.user_favorite_sessions FOR DELETE 
+    USING (auth.uid() = user_id);
+  EXCEPTION WHEN duplicate_object THEN NULL;
+  END;
 END $$;
 

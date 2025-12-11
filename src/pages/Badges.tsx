@@ -108,7 +108,7 @@ export default function Badges() {
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             {earnedBadges.map((badge) => {
               const IconComponent = badgeIcons[badge.icon || ''] || Award;
-              const colors = categoryColors[badge.category] || categoryColors.special;
+              const colors = categoryColors[badge.category || 'special'] || categoryColors.special;
 
               return (
                 <div

@@ -27,7 +27,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { useHabits, useWeightEntries, useJournalEntries, useUserBadges, useHealthMetrics, useNutritionEntries } from '../hooks/useSupabaseData';
+import { useHabits, useWeightEntries, useJournalEntries, useUserBadges, useHealthMetrics } from '../hooks/useSupabaseData';
 import { format, isToday, parseISO } from 'date-fns';
 
 const badgeIcons: Record<string, React.ElementType> = {
@@ -75,7 +75,6 @@ export default function Dashboard() {
   const { data: journalEntries = [] } = useJournalEntries();
   const { data: userBadges = [] } = useUserBadges();
   const { metrics: healthMetrics } = useHealthMetrics();
-  const { data: nutritionEntries = [] } = useNutritionEntries();
   const { colorPreset, setColorPreset, colorPresets, primaryColor } = useTheme();
   const [widgets, setWidgets] = useState<WidgetConfig[]>(() => {
     const saved = localStorage.getItem('dashboardWidgets');
@@ -276,8 +275,7 @@ export default function Dashboard() {
   );
 
   const StatsWidget = () => {
-    // Get water intake from health metrics or today's nutrition entry
-    const todayNutrition = nutritionEntries.find(e => e.date === today);
+    // Get water intake from health metrics
     const hydration = healthMetrics?.hydration as { value?: number; goal?: number } | null;
     const waterIntake = hydration?.value || 0;
     const waterGoal = hydration?.goal || 2000; // Default 2000ml goal

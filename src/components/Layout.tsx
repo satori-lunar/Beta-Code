@@ -177,11 +177,12 @@ export default function Layout() {
 
     // Search journal entries
     journalEntries.forEach(entry => {
-      if (entry.title.toLowerCase().includes(query) || entry.content.toLowerCase().includes(query)) {
+      const entryTitle = entry.title || 'Untitled';
+      if (entryTitle.toLowerCase().includes(query) || entry.content.toLowerCase().includes(query)) {
         results.push({
           id: `journal-${entry.id}`,
-          title: entry.title,
-          description: `Journal entry - ${entry.mood} mood`,
+          title: entryTitle,
+          description: `Journal entry - ${entry.mood || 'neutral'} mood`,
           type: 'journal',
           link: '/journal'
         });

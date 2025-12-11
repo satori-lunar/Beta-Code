@@ -422,6 +422,7 @@ export function useFavoriteSessions() {
     }
 
     async function fetchFavorites() {
+      if (!user) return
       try {
         setLoading(true)
         const { data, error } = await supabase
@@ -430,7 +431,7 @@ export function useFavoriteSessions() {
           .eq('user_id', user.id)
 
         if (error) throw error
-        setFavoriteIds(new Set((data || []).map(f => f.session_id)))
+        setFavoriteIds(new Set((data || []).map((f: any) => f.session_id)))
       } catch (err) {
         setError(err as Error)
       } finally {

@@ -611,6 +611,120 @@ export type Database = {
         }
         Relationships: []
       }
+      live_classes: {
+        Row: {
+          id: string
+          title: string
+          description: string
+          instructor: string
+          scheduled_at: string
+          duration: number
+          zoom_link: string | null
+          thumbnail_url: string | null
+          category: string
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          title: string
+          description: string
+          instructor: string
+          scheduled_at: string
+          duration: number
+          zoom_link?: string | null
+          thumbnail_url?: string | null
+          category: string
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          title?: string
+          description?: string
+          instructor?: string
+          scheduled_at?: string
+          duration?: number
+          zoom_link?: string | null
+          thumbnail_url?: string | null
+          category?: string
+          created_at?: string | null
+        }
+        Relationships: []
+      }
+      recorded_sessions: {
+        Row: {
+          id: string
+          title: string
+          description: string
+          instructor: string
+          recorded_at: string
+          duration: number
+          video_url: string
+          thumbnail_url: string | null
+          category: string
+          views: number
+          tags: string[]
+          created_at: string | null
+          kajabi_product_id: string | null
+          kajabi_offering_id: string | null
+          synced_from_kajabi: boolean | null
+        }
+        Insert: {
+          id?: string
+          title: string
+          description: string
+          instructor: string
+          recorded_at: string
+          duration: number
+          video_url: string
+          thumbnail_url?: string | null
+          category: string
+          views?: number
+          tags?: string[]
+          created_at?: string | null
+          kajabi_product_id?: string | null
+          kajabi_offering_id?: string | null
+          synced_from_kajabi?: boolean | null
+        }
+        Update: {
+          id?: string
+          title?: string
+          description?: string
+          instructor?: string
+          recorded_at?: string
+          duration?: number
+          video_url?: string
+          thumbnail_url?: string | null
+          category?: string
+          views?: number
+          tags?: string[]
+          created_at?: string | null
+          kajabi_product_id?: string | null
+          kajabi_offering_id?: string | null
+          synced_from_kajabi?: boolean | null
+        }
+        Relationships: []
+      }
+      user_favorite_sessions: {
+        Row: {
+          id: string
+          user_id: string
+          session_id: string
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          session_id: string
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          session_id?: string
+          created_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

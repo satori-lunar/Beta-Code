@@ -25,7 +25,8 @@ import {
   Settings,
   BarChart3,
   ChevronLeft,
-  PersonStanding
+  PersonStanding,
+  Dumbbell
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { useTheme } from '../contexts/ThemeContext';
@@ -93,7 +94,6 @@ export default function HealthDashboard() {
   const [weeklyData] = useState(generateWeeklyData);
   const [heartBeat, setHeartBeat] = useState(false);
   const [isWorkoutActive, setIsWorkoutActive] = useState(false);
-  const [workoutTime, setWorkoutTime] = useState(0);
   const [selectedWorkout, setSelectedWorkout] = useState<string | null>(null);
   const [showWorkoutCamera, setShowWorkoutCamera] = useState(false);
 
@@ -117,13 +117,6 @@ export default function HealthDashboard() {
     }
     return () => { if (interval) clearInterval(interval); };
   }, [isWorkoutActive]);
-
-
-  const formatWorkoutTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
 
   const getMetricDisplay = (key: MetricKey) => {
     switch (key) {

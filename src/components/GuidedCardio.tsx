@@ -459,32 +459,6 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
     return () => stopGpsTracking();
   }, [isWorkoutActive, gpsEnabled, isPaused, startGpsTracking, stopGpsTracking]);
 
-  // Distance-based milestones
-  useEffect(() => {
-    if (!isWorkoutActive || !gpsEnabled) return;
-
-    const currentMilestone = Math.floor(totalDistance / distanceMilestoneInterval);
-    if (currentMilestone > lastDistanceMilestone && totalDistance > 0) {
-      setLastDistanceMilestone(currentMilestone);
-      setMilestones(m => m + 1);
-      setStreakCount(s => s + 1);
-      triggerMilestoneFlash();
-      
-      const distanceKm = (currentMilestone * distanceMilestoneInterval) / 1000;
-      const message = distanceKm >= 1 
-        ? `🎯 ${distanceKm} kilometer${distanceKm > 1 ? 's' : ''} DOWN! Keep CRUSHING it!`
-        : `📍 ${currentMilestone * distanceMilestoneInterval} meters! You're on FIRE!`;
-      showCoaching(message);
-      
-      // Confetti for km milestones
-      if (totalDistance >= (lastDistanceMilestone + 1) * 1000) {
-        fireConfetti();
-      } else if (typeof window !== 'undefined') {
-        confetti({ particleCount: 30, spread: 50, origin: { y: 0.7 } });
-      }
-    }
-  }, [totalDistance, lastDistanceMilestone, distanceMilestoneInterval, isWorkoutActive, gpsEnabled, showCoaching, triggerMilestoneFlash, fireConfetti]);
-  
   // Speech synthesis
   const speak = useCallback((text: string) => {
     if (!audioEnabled || typeof window === 'undefined' || !('speechSynthesis' in window)) return;
@@ -529,6 +503,32 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
     setShowMilestoneFlash(true);
     setTimeout(() => setShowMilestoneFlash(false), 1500);
   }, []);
+
+  // Distance-based milestones (must be after showCoaching, triggerMilestoneFlash, fireConfetti)
+  useEffect(() => {
+    if (!isWorkoutActive || !gpsEnabled) return;
+
+    const currentMilestone = Math.floor(totalDistance / distanceMilestoneInterval);
+    if (currentMilestone > lastDistanceMilestone && totalDistance > 0) {
+      setLastDistanceMilestone(currentMilestone);
+      setMilestones(m => m + 1);
+      setStreakCount(s => s + 1);
+      triggerMilestoneFlash();
+      
+      const distanceKm = (currentMilestone * distanceMilestoneInterval) / 1000;
+      const message = distanceKm >= 1 
+        ? `🎯 ${distanceKm} kilometer${distanceKm > 1 ? 's' : ''} DOWN! Keep CRUSHING it!`
+        : `📍 ${currentMilestone * distanceMilestoneInterval} meters! You're on FIRE!`;
+      showCoaching(message);
+      
+      // Confetti for km milestones
+      if (totalDistance >= (lastDistanceMilestone + 1) * 1000) {
+        fireConfetti();
+      } else if (typeof window !== 'undefined') {
+        confetti({ particleCount: 30, spread: 50, origin: { y: 0.7 } });
+      }
+    }
+  }, [totalDistance, lastDistanceMilestone, distanceMilestoneInterval, isWorkoutActive, gpsEnabled, showCoaching, triggerMilestoneFlash, fireConfetti]);
   
   // Workout timer and coaching logic
   useEffect(() => {

@@ -21,7 +21,6 @@ import {
   Flame,
   Target,
   Plus,
-  ChevronLeft,
   PersonStanding,
   Dumbbell,
   Smile,
@@ -37,7 +36,7 @@ import {
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { useTheme } from '../contexts/ThemeContext';
-import { format, startOfWeek, addDays } from 'date-fns';
+import { format } from 'date-fns';
 import ComingSoonModal from '../components/ComingSoonModal';
 import GuidedCardio from '../components/GuidedCardio';
 
@@ -63,25 +62,6 @@ const metricConfigs: MetricConfig[] = [
   { key: 'sleepHours', label: 'Sleep', icon: Moon, color: '#6366f1', position: { bottom: '25%', left: '15%' } },
   { key: 'steps', label: 'Steps', icon: Footprints, color: '#22c55e', position: { bottom: '15%', right: '15%' } },
 ];
-
-// Weekly activity mock data
-const generateWeeklyData = () => {
-  const today = new Date();
-  const weekStart = startOfWeek(today, { weekStartsOn: 0 });
-  return Array.from({ length: 7 }, (_, i) => {
-    const date = addDays(weekStart, i);
-    const isPast = date <= today;
-    return {
-      day: format(date, 'EEE'),
-      date: format(date, 'd'),
-      steps: isPast ? Math.floor(Math.random() * 8000) + 4000 : 0,
-      calories: isPast ? Math.floor(Math.random() * 300) + 200 : 0,
-      active: isPast ? Math.floor(Math.random() * 45) + 15 : 0,
-      isToday: format(date, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd'),
-    };
-  });
-};
-
 // Workout types - cardio focused
 const workoutTypes = [
   { id: 'walking', name: 'Walking', icon: Footprints, color: '#22c55e' },
@@ -98,8 +78,6 @@ export default function HealthDashboard() {
   const [showDevicesPanel, setShowDevicesPanel] = useState(false);
   const [editValues, setEditValues] = useState<Record<string, string>>({});
   const [activeTab, setActiveTab] = useState<TabType>('workout');
-  const [weeklyData] = useState(generateWeeklyData);
-  const [heartBeat, setHeartBeat] = useState(false);
   const [selectedWorkout, setSelectedWorkout] = useState<string | null>(null);
   const [showWorkoutCamera, setShowWorkoutCamera] = useState(false);
 
@@ -198,33 +176,6 @@ export default function HealthDashboard() {
       }
       default:
         return { value: '--', unit: '', secondary: '' };
-    }
-  };
-
-  const getProgressPercent = (key: MetricKey) => {
-    switch (key) {
-      case 'steps': {
-        const m = healthMetrics.steps;
-        if (!m) return null;
-        return Math.min(100, Math.round((m.value / m.goal) * 100));
-      }
-      case 'activeMinutes': {
-        const m = healthMetrics.activeMinutes;
-        if (!m) return null;
-        return Math.min(100, Math.round((m.value / m.goal) * 100));
-      }
-      case 'caloriesBurned': {
-        const m = healthMetrics.caloriesBurned;
-        if (!m) return null;
-        return Math.min(100, Math.round((m.value / m.goal) * 100));
-      }
-      case 'hydration': {
-        const m = healthMetrics.hydration;
-        if (!m) return null;
-        return Math.min(100, Math.round((m.value / m.goal) * 100));
-      }
-      default:
-        return null;
     }
   };
 

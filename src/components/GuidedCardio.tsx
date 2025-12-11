@@ -37,15 +37,93 @@ interface CardioType {
   caloriesPerMinute: number;
   description: string;
   hypeEmoji: string;
+  videoId?: string; // YouTube video ID for workout guidance
+  tips: string[];
 }
 
 const cardioTypes: CardioType[] = [
-  { id: 'walking', name: 'Walking', icon: Footprints, color: '#22c55e', caloriesPerMinute: 4, description: 'Leisurely pace', hypeEmoji: '🚶' },
-  { id: 'brisk-walk', name: 'Power Walk', icon: Zap, color: '#10b981', caloriesPerMinute: 5.5, description: 'Fast & fierce', hypeEmoji: '⚡' },
-  { id: 'jogging', name: 'Jogging', icon: Wind, color: '#f59e0b', caloriesPerMinute: 8, description: 'Light running', hypeEmoji: '🏃' },
-  { id: 'running', name: 'Running', icon: Flame, color: '#ef4444', caloriesPerMinute: 11, description: 'Steady run', hypeEmoji: '🔥' },
-  { id: 'interval', name: 'Intervals', icon: Target, color: '#8b5cf6', caloriesPerMinute: 10, description: 'Walk/run mix', hypeEmoji: '💪' },
-  { id: 'free-cardio', name: 'Free Cardio', icon: Sparkles, color: '#06b6d4', caloriesPerMinute: 7, description: 'Any activity', hypeEmoji: '✨' },
+  { 
+    id: 'walking', 
+    name: 'Walking', 
+    icon: Footprints, 
+    color: '#22c55e', 
+    caloriesPerMinute: 4, 
+    description: 'Leisurely pace', 
+    hypeEmoji: '🚶',
+    videoId: 'njeZ29umqVE', // Walking workout video
+    tips: ['Keep your head up and look forward', 'Swing your arms naturally', 'Take comfortable strides', 'Breathe deeply and enjoy!']
+  },
+  { 
+    id: 'brisk-walk', 
+    name: 'Power Walk', 
+    icon: Zap, 
+    color: '#10b981', 
+    caloriesPerMinute: 5.5, 
+    description: 'Fast & fierce', 
+    hypeEmoji: '⚡',
+    videoId: 'X3fkMqKbVCE', // Power walking video
+    tips: ['Pump your arms with bent elbows', 'Take quick, short steps', 'Engage your core', 'Push through your heels']
+  },
+  { 
+    id: 'jogging', 
+    name: 'Jogging', 
+    icon: Wind, 
+    color: '#f59e0b', 
+    caloriesPerMinute: 8, 
+    description: 'Light running', 
+    hypeEmoji: '🏃',
+    videoId: 'wCVSv7UxB2E', // Jogging technique
+    tips: ['Land midfoot, not heel', 'Keep shoulders relaxed', 'Find a comfortable pace', 'Breathe rhythmically']
+  },
+  { 
+    id: 'running', 
+    name: 'Running', 
+    icon: Flame, 
+    color: '#ef4444', 
+    caloriesPerMinute: 11, 
+    description: 'Steady run', 
+    hypeEmoji: '🔥',
+    videoId: 'brFHyOtTwH4', // Running form
+    tips: ['Drive your knees forward', 'Keep arms at 90 degrees', 'Stay light on your feet', 'Maintain steady breathing']
+  },
+  { 
+    id: 'interval', 
+    name: 'Intervals', 
+    icon: Target, 
+    color: '#8b5cf6', 
+    caloriesPerMinute: 10, 
+    description: 'Walk/run mix', 
+    hypeEmoji: '💪',
+    videoId: 'VXAK6qvtHRQ', // Interval training
+    tips: ['Alternate between fast and slow', 'Push hard during sprints', 'Recover actively, keep moving', 'Challenge yourself each interval']
+  },
+  { 
+    id: 'free-cardio', 
+    name: 'Free Cardio', 
+    icon: Sparkles, 
+    color: '#06b6d4', 
+    caloriesPerMinute: 7, 
+    description: 'Any activity', 
+    hypeEmoji: '✨',
+    tips: ['Mix it up!', 'Do what feels good', 'Keep moving and have fun', 'Dance, jump, just move!']
+  },
+];
+
+// Free cardio sub-types for variety
+interface FreeCardioOption {
+  id: string;
+  name: string;
+  icon: React.ElementType;
+  color: string;
+  videoId: string;
+  description: string;
+}
+
+const freeCardioOptions: FreeCardioOption[] = [
+  { id: 'dance', name: 'Dance Cardio', icon: Sparkles, color: '#ec4899', videoId: 'ZWk19OVon2k', description: 'Fun dance workout' },
+  { id: 'hiit', name: 'HIIT', icon: Flame, color: '#ef4444', videoId: 'ml6cT4AZdqI', description: 'High intensity bursts' },
+  { id: 'jumprope', name: 'Jump Rope', icon: Zap, color: '#f59e0b', videoId: 'u3zgHI8QnqE', description: 'Cardio skipping' },
+  { id: 'boxing', name: 'Boxing', icon: Target, color: '#8b5cf6', videoId: 'HwBmPLP5kBI', description: 'Punch it out' },
 ];
 
 // Goal types
@@ -172,6 +250,10 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
   // Preset save state
   const [showSavePreset, setShowSavePreset] = useState(false);
   const [presetName, setPresetName] = useState('');
+  
+  // Free cardio sub-option
+  const [selectedFreeCardio, setSelectedFreeCardio] = useState<FreeCardioOption | null>(null);
+  const [showVideo, setShowVideo] = useState(false);
   
   // Workout state
   const [isWorkoutActive, setIsWorkoutActive] = useState(false);
@@ -539,6 +621,7 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
                       onClick={() => {
                         setSelectedActivity(activity);
                         setShowActivityPicker(false);
+                        setSelectedFreeCardio(null);
                       }}
                       className="w-full flex items-center gap-3 p-3 hover:bg-gray-600 transition-colors first:rounded-t-xl last:rounded-b-xl"
                     >
@@ -560,6 +643,90 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
                 </div>
               )}
             </div>
+          </div>
+
+          {/* Free Cardio Options */}
+          {selectedActivity.id === 'free-cardio' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-3">Choose Your Style</label>
+              <div className="grid grid-cols-2 gap-3">
+                {freeCardioOptions.map(option => (
+                  <button
+                    key={option.id}
+                    onClick={() => setSelectedFreeCardio(option)}
+                    className={`p-4 rounded-xl transition-all ${
+                      selectedFreeCardio?.id === option.id
+                        ? 'border-2 shadow-lg'
+                        : 'bg-gray-700 border-2 border-transparent hover:bg-gray-600'
+                    }`}
+                    style={selectedFreeCardio?.id === option.id ? { 
+                      borderColor: option.color,
+                      backgroundColor: `${option.color}15`
+                    } : {}}
+                  >
+                    <option.icon 
+                      className="w-8 h-8 mx-auto mb-2" 
+                      style={{ color: selectedFreeCardio?.id === option.id ? option.color : '#9ca3af' }} 
+                    />
+                    <div className={`font-medium ${selectedFreeCardio?.id === option.id ? 'text-white' : 'text-gray-300'}`}>
+                      {option.name}
+                    </div>
+                    <div className="text-xs text-gray-400">{option.description}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Workout Tips & Video Preview */}
+          <div className="bg-gray-800/50 rounded-xl p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="font-medium text-white flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-yellow-500" />
+                {selectedActivity.id === 'free-cardio' && selectedFreeCardio ? selectedFreeCardio.name : selectedActivity.name} Tips
+              </h4>
+              {(selectedActivity.videoId || selectedFreeCardio?.videoId) && (
+                <button
+                  onClick={() => setShowVideo(!showVideo)}
+                  className="text-sm text-cyan-400 hover:text-cyan-300 flex items-center gap-1"
+                >
+                  {showVideo ? 'Hide' : 'Watch'} Video Guide
+                  <Play className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+            
+            {/* Tips List */}
+            <div className="space-y-2 mb-3">
+              {(selectedActivity.id === 'free-cardio' && selectedFreeCardio ? 
+                ['Follow along with the video', 'Stay hydrated', 'Go at your own pace', 'Have fun!'] :
+                selectedActivity.tips
+              ).map((tip, i) => (
+                <div key={i} className="flex items-center gap-2 text-sm text-gray-400">
+                  <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: selectedActivity.color }} />
+                  {tip}
+                </div>
+              ))}
+            </div>
+
+            {/* Video Embed */}
+            {showVideo && (selectedActivity.videoId || selectedFreeCardio?.videoId) && (
+              <div className="mt-4">
+                <div className="relative w-full pt-[56.25%] bg-gray-900 rounded-lg overflow-hidden">
+                  <iframe
+                    className="absolute inset-0 w-full h-full"
+                    src={`https://www.youtube.com/embed/${selectedFreeCardio?.videoId || selectedActivity.videoId}?modestbranding=1&rel=0`}
+                    title="Workout Guide"
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-2 text-center">
+                  Watch for form tips, then start your workout when ready!
+                </p>
+              </div>
+            )}
           </div>
           
           {/* Goal Type */}

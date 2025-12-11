@@ -45,6 +45,7 @@ import ComingSoonModal from '../components/ComingSoonModal';
 import GuidedCardio from '../components/GuidedCardio';
 import type { WorkoutPreset, WorkoutData } from '../components/GuidedCardio';
 import { useWorkoutPresets, useWorkoutHistory } from '../hooks/useSupabaseData';
+import MindfulnessExercise from '../components/MindfulnessExercise';
 
 type MetricKey = 'heartRate' | 'bloodPressure' | 'bodyTemperature' | 'oxygenSaturation' |
   'respiratoryRate' | 'bmi' | 'bodyFat' | 'height' | 'weight' | 'sleepHours' |
@@ -86,6 +87,7 @@ export default function HealthDashboard() {
   const [activeTab, setActiveTab] = useState<TabType>('workout');
   const [showWorkoutCamera, setShowWorkoutCamera] = useState(false);
   const [selectedPreset, setSelectedPreset] = useState<WorkoutPreset | undefined>(undefined);
+  const [activeMindfulness, setActiveMindfulness] = useState<'breathing' | 'bodyscan' | 'gratitude' | 'meditation' | null>(null);
 
   // Workout presets and history from Supabase
   const { presets, savePreset, deletePreset } = useWorkoutPresets();
@@ -674,17 +676,18 @@ export default function HealthDashboard() {
               </h3>
               <div className="space-y-3">
                 {[
-                  { name: 'Deep Breathing', duration: '2 min', desc: 'Calm your mind', color: '#8b5cf6' },
-                  { name: 'Body Scan', duration: '5 min', desc: 'Release tension', color: '#06b6d4' },
-                  { name: 'Gratitude', duration: '3 min', desc: 'Positive reflection', color: '#f59e0b' },
-                  { name: 'Meditation', duration: '10 min', desc: 'Guided session', color: '#22c55e' },
+                  { id: 'breathing' as const, name: 'Deep Breathing', duration: '2 min', desc: 'Calm your mind', color: '#8b5cf6' },
+                  { id: 'bodyscan' as const, name: 'Body Scan', duration: '3 min', desc: 'Release tension', color: '#06b6d4' },
+                  { id: 'gratitude' as const, name: 'Gratitude', duration: '3 min', desc: 'Positive reflection', color: '#f59e0b' },
+                  { id: 'meditation' as const, name: 'Meditation', duration: '5 min', desc: 'Guided session', color: '#22c55e' },
                 ].map((exercise) => (
                   <button
-                    key={exercise.name}
-                    className="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-gray-50 transition-colors text-left border border-gray-100"
+                    key={exercise.id}
+                    onClick={() => setActiveMindfulness(exercise.id)}
+                    className="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-gray-50 hover:shadow-md transition-all text-left border border-gray-100 group"
                   >
                     <div
-                      className="w-12 h-12 rounded-xl flex items-center justify-center"
+                      className="w-12 h-12 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform"
                       style={{ backgroundColor: `${exercise.color}15` }}
                     >
                       <Brain className="w-6 h-6" style={{ color: exercise.color }} />
@@ -696,7 +699,7 @@ export default function HealthDashboard() {
                     <div className="text-sm font-medium" style={{ color: exercise.color }}>
                       {exercise.duration}
                     </div>
-                    <ChevronRight className="w-5 h-5 text-gray-300" />
+                    <ChevronRight className="w-5 h-5 text-gray-300 group-hover:translate-x-1 transition-transform" />
                   </button>
                 ))}
               </div>
@@ -1204,6 +1207,15 @@ export default function HealthDashboard() {
         feature="Device Connections"
         description="We're working hard to bring you seamless device integrations! Soon you'll be able to connect your Fitbit, Apple Watch, and other fitness devices to automatically sync your health data."
       />
+
+      {/* Mindfulness Exercise Modal */}
+      {activeMindfulness && (
+        <MindfulnessExercise
+          type={activeMindfulness}
+          onClose={() => setActiveMindfulness(null)}
+          onComplete={() => setActiveMindfulness(null)}
+        />
+      )}
     </div>
   );
 }

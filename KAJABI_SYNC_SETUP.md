@@ -33,7 +33,9 @@ If you just need the tables created quickly:
 
 1. Go to Supabase Dashboard → SQL Editor
 2. Copy and paste the contents of `supabase/migrations/CREATE_MISSING_TABLES.sql`
-3. Run the script (this creates all necessary tables and adds Kajabi fields in one go)
+3. Run the script (this creates all necessary tables including `users` if it doesn't exist, and adds Kajabi fields in one go)
+
+**Note**: This script includes the `users` table creation, so it can be run on a fresh database.
 
 ## Step 2: Set Up Environment Variables
 

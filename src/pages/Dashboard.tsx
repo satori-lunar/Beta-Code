@@ -28,7 +28,6 @@ import {
   Sparkles,
   Smile,
   BookOpen,
-  MessageCircle,
   Star
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';

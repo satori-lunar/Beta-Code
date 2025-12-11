@@ -119,7 +119,37 @@ SELECT cron.schedule(
 
 **Note:** Replace `YOUR_ANON_KEY` with your actual Supabase anon key (found in Project Settings → API).
 
-## Step 5: Verify the Sync
+## Step 5: Verify Tables Were Created
+
+After running the migration, verify the tables exist:
+
+### Quick Verification
+
+Run this in Supabase SQL Editor:
+
+```sql
+-- Check if main tables exist
+SELECT table_name 
+FROM information_schema.tables 
+WHERE table_schema = 'public' 
+AND table_name IN ('users', 'recorded_sessions', 'live_classes', 'user_favorite_sessions');
+```
+
+You should see 4 rows returned with the table names.
+
+### Detailed Verification
+
+For a complete verification including columns and RLS policies, run the queries in `supabase/migrations/VERIFY_TABLES.sql`:
+
+1. Open Supabase Dashboard → SQL Editor
+2. Copy and paste the contents of `supabase/migrations/VERIFY_TABLES.sql`
+3. Run the queries to see:
+   - Which tables exist
+   - Whether Kajabi tracking columns were added
+   - If RLS is enabled
+   - What policies are in place
+
+## Step 6: Verify the Sync
 
 ### Check Products:
 ```sql

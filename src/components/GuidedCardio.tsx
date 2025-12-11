@@ -346,9 +346,8 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
   const watchIdRef = useRef<number | null>(null);
   
   // Goal pin/marker state
-  const [goalPin, setGoalPin] = useState<{ lat: number; lng: number } | null>(null);
+  const [goalPin, setGoalPin] = useState<{ lat: number; lng: number; name?: string } | null>(null);
   const [distanceToGoal, setDistanceToGoal] = useState(0); // meters
-  const [mapClickMode, setMapClickMode] = useState<'normal' | 'setGoal'>('normal');
   
   // Fullscreen map state
   const [isMapFullscreen, setIsMapFullscreen] = useState(false);
@@ -1835,12 +1834,10 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
                 currentPosition={currentPosition}
                 routeHistory={routeHistory}
                 goalPin={goalPin}
-                mapClickMode={mapClickMode}
                 isFullscreen={isMapFullscreen}
                 activityColor={selectedActivity.color}
-                onGoalPinSet={(lat, lng) => {
-                  setGoalPin({ lat, lng });
-                  setMapClickMode('normal');
+                onGoalPinSet={(lat, lng, name) => {
+                  setGoalPin({ lat, lng, name });
                   const dist = calculateDistance(
                     currentPosition.latitude,
                     currentPosition.longitude,
@@ -1848,10 +1845,9 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
                     lng
                   );
                   setDistanceToGoal(dist);
-                  showCoaching(`🎯 Goal set! ${formatDistance(dist)} away`);
+                  showCoaching(`🎯 Destination set: ${name || formatDistance(dist)} away`);
                 }}
                 onToggleFullscreen={() => setIsMapFullscreen(!isMapFullscreen)}
-                onMapClickModeChange={setMapClickMode}
                 distanceToGoal={distanceToGoal}
                 formatDistance={formatDistance}
               />

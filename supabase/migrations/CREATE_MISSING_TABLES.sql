@@ -1,5 +1,21 @@
--- Create missing tables for Classes/Recordings functionality
--- Run this in Supabase SQL Editor if you get "relation does not exist" errors
+-- Complete Database Setup Script
+-- Run this in Supabase SQL Editor to set up all required tables
+-- This script is safe to run multiple times (uses IF NOT EXISTS)
+
+-- Enable UUID extension
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- Users table (must exist first, as other tables reference it)
+CREATE TABLE IF NOT EXISTS public.users (
+  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  email TEXT NOT NULL,
+  name TEXT NOT NULL,
+  avatar_url TEXT,
+  join_date DATE DEFAULT CURRENT_DATE,
+  streak INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
 
 -- Live classes
 CREATE TABLE IF NOT EXISTS public.live_classes (
@@ -81,9 +97,35 @@ ON public.recorded_sessions(kajabi_product_id)
 WHERE kajabi_product_id IS NOT NULL AND kajabi_offering_id IS NULL;
 
 -- Enable Row Level Security
+DO $$ 
+BEGIN
+  -- Enable RLS if not already enabled
+  ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
+
 ALTER TABLE public.live_classes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.recorded_sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_favorite_sessions ENABLE ROW LEVEL SECURITY;
+
+-- Basic RLS policy for users table (if it doesn't exist)
+DO $$ 
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' 
+    AND tablename = 'users' 
+    AND policyname = 'Users can view own profile'
+  ) THEN
+    CREATE POLICY "Users can view own profile" 
+    ON public.users FOR SELECT 
+    USING (auth.uid() = id);
+
+    CREATE POLICY "Users can update own profile" 
+    ON public.users FOR UPDATE 
+    USING (auth.uid() = id);
+  END IF;
+END $$;
 
 -- RLS Policies
 

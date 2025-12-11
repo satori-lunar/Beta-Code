@@ -24,9 +24,9 @@ import {
   Clock,
   Activity
 } from 'lucide-react';
-import { useStore } from '../store/useStore';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { useHabits, useJournalEntries, useNotifications } from '../hooks/useSupabaseData';
 import { formatDistanceToNow } from 'date-fns';
 import HelpDesk from './HelpDesk';
 
@@ -79,16 +79,18 @@ export default function Layout() {
   const profileRef = useRef<HTMLDivElement>(null);
 
   const { user } = useAuth();
+  const { data: habits = [] } = useHabits();
+  const { data: journalEntries = [] } = useJournalEntries();
   const {
-    habits,
-    courses,
-    recordedSessions,
-    journalEntries,
-    notifications,
-    markNotificationRead,
-    markAllNotificationsRead,
+    notifications = [],
+    loading: notificationsLoading,
+    markRead,
+    markAllRead,
     deleteNotification
-  } = useStore();
+  } = useNotifications();
+  // User-specific courses/recorded sessions not yet wired to Supabase, avoid showing demo data
+  const courses: any[] = [];
+  const recordedSessions: any[] = [];
 
   const handleSignOut = async () => {
     await signOut();
@@ -198,7 +200,7 @@ export default function Layout() {
   };
 
   const handleNotificationClick = (notification: typeof notifications[0]) => {
-    markNotificationRead(notification.id);
+    markRead(notification.id);
     if (notification.link) {
       navigate(notification.link);
     }
@@ -410,7 +412,7 @@ export default function Layout() {
                       <h3 className="font-semibold text-gray-900">Notifications</h3>
                       {unreadCount > 0 && (
                         <button
-                          onClick={markAllNotificationsRead}
+                          onClick={markAllRead}
                           className="text-sm font-medium hover:opacity-80"
                           style={{ color: primaryColor }}
                         >
@@ -419,7 +421,9 @@ export default function Layout() {
                       )}
                     </div>
                     <div className="max-h-96 overflow-y-auto">
-                      {notifications.length > 0 ? (
+                      {notificationsLoading ? (
+                        <div className="p-8 text-center text-gray-500 text-sm">Loading notifications...</div>
+                      ) : notifications.length > 0 ? (
                         notifications.map((notification) => {
                           const IconComponent = notificationIcons[notification.type] || Bell;
                           return (
@@ -457,7 +461,7 @@ export default function Layout() {
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      markNotificationRead(notification.id);
+                                      markRead(notification.id);
                                     }}
                                     className="p-1 text-gray-400 hover:text-sage-600 rounded"
                                     title="Mark as read"

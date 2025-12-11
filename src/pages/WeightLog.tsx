@@ -20,7 +20,7 @@ import {
   ReferenceLine
 } from 'recharts';
 import { useAuth } from '../contexts/AuthContext';
-import { useWeightEntries } from '../hooks/useSupabaseData';
+import { useWeightEntries, checkFirstTimeBadges } from '../hooks/useSupabaseData';
 import { supabase } from '../lib/supabase';
 import { format, parseISO } from 'date-fns';
 
@@ -62,6 +62,8 @@ export default function WeightLog() {
   const handleAddEntry = async () => {
     if (!user || !newEntry.weight) return;
 
+    const isFirstEntry = weightEntries.length === 0;
+
     await supabase.from('weight_entries').insert({
       user_id: user.id,
       date: newEntry.date,
@@ -69,6 +71,11 @@ export default function WeightLog() {
       unit: 'kg',
       notes: newEntry.notes || null,
     });
+
+    // Check for first weight log badge
+    if (isFirstEntry) {
+      await checkFirstTimeBadges(user.id, 'weight_log');
+    }
 
     refetch();
     setNewEntry({

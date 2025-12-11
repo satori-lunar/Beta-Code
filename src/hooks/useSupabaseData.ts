@@ -4,6 +4,24 @@ import { useAuth } from '../contexts/AuthContext'
 import type { Database } from '../types/database'
 
 type Tables = Database['public']['Tables']
+type NotificationRecord = {
+  id: string
+  title: string
+  message: string
+  type: 'reminder' | 'achievement' | 'class' | 'streak' | 'system'
+  read: boolean
+  link: string | null
+  createdAt: string
+}
+type UserBadge = {
+  id: string
+  badgeId?: string | null
+  name: string
+  description: string | null
+  icon: string | null
+  category: string | null
+  earnedDate: string | null
+}
 
 // Generic hook for fetching user-specific data
 export function useUserData<T>(
@@ -118,9 +136,77 @@ export function useCalendarEvents() {
 }
 
 export function useUserBadges() {
-  return useUserData<Tables['user_badges']['Row']>('user_badges', {
-    orderBy: { column: 'earned_date', ascending: false },
-  })
+  const { user } = useAuth()
+  const [data, setData] = useState<UserBadge[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
+  const [refetchTrigger, setRefetchTrigger] = useState(0)
+
+  useEffect(() => {
+    if (!user) {
+      setData([])
+      setLoading(false)
+      return
+    }
+
+    let isMounted = true
+
+    const fetchBadges = async () => {
+      try {
+        setLoading(true)
+        const { data: result, error } = await supabase
+          .from('user_badges')
+          .select('id, badge_id, earned_date, badges:badge_id (name, description, icon, category), name, description, icon, category')
+          .eq('user_id', user.id)
+          .order('earned_date', { ascending: false })
+
+        if (error) throw error
+
+        if (!isMounted) return
+
+        const mapped: UserBadge[] = (result || []).map((badge: any) => ({
+          id: badge.id,
+          badgeId: badge.badge_id ?? null,
+          name: badge.badges?.name ?? badge.name ?? 'Badge',
+          description: badge.badges?.description ?? badge.description ?? null,
+          icon: badge.badges?.icon ?? badge.icon ?? null,
+          category: badge.badges?.category ?? badge.category ?? null,
+          earnedDate: badge.earned_date ?? null,
+        }))
+
+        setData(mapped)
+      } catch (err) {
+        if (isMounted) setError(err as Error)
+      } finally {
+        if (isMounted) setLoading(false)
+      }
+    }
+
+    fetchBadges()
+
+    const channel = supabase
+      .channel('user_badges_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'user_badges',
+          filter: `user_id=eq.${user.id}`,
+        },
+        fetchBadges
+      )
+      .subscribe()
+
+    return () => {
+      isMounted = false
+      supabase.removeChannel(channel)
+    }
+  }, [user, refetchTrigger])
+
+  const refetch = () => setRefetchTrigger(prev => prev + 1)
+
+  return { data, loading, error, refetch }
 }
 
 // Hook for user profile
@@ -386,5 +472,228 @@ export function useWorkoutHistory(limit = 10) {
   }
 
   return { history, loading, saveWorkout }
+}
+
+// Hook for notifications
+export function useNotifications(limit = 50) {
+  const { user } = useAuth()
+  const [notifications, setNotifications] = useState<NotificationRecord[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
+  const [refetchTrigger, setRefetchTrigger] = useState(0)
+
+  useEffect(() => {
+    if (!user) {
+      setNotifications([])
+      setLoading(false)
+      return
+    }
+
+    let isMounted = true
+
+    const fetchNotifications = async () => {
+      try {
+        setLoading(true)
+        const { data, error } = await supabase
+          .from('notifications')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(limit)
+
+        if (error) throw error
+        if (!isMounted) return
+
+        setNotifications(
+          (data || []).map((n: any) => ({
+            id: n.id,
+            title: n.title,
+            message: n.message,
+            type: n.type,
+            read: Boolean(n.read),
+            link: n.link ?? null,
+            createdAt: n.created_at,
+          }))
+        )
+      } catch (err) {
+        if (isMounted) setError(err as Error)
+      } finally {
+        if (isMounted) setLoading(false)
+      }
+    }
+
+    fetchNotifications()
+
+    const channel = supabase
+      .channel('notifications_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`,
+        },
+        fetchNotifications
+      )
+      .subscribe()
+
+    return () => {
+      isMounted = false
+      supabase.removeChannel(channel)
+    }
+  }, [user, limit, refetchTrigger])
+
+  const markRead = async (id: string) => {
+    if (!user) return
+    await supabase.from('notifications').update({ read: true }).eq('id', id).eq('user_id', user.id)
+    setRefetchTrigger((prev) => prev + 1)
+  }
+
+  const markAllRead = async () => {
+    if (!user) return
+    await supabase.from('notifications').update({ read: true }).eq('user_id', user.id)
+    setRefetchTrigger((prev) => prev + 1)
+  }
+
+  const deleteNotification = async (id: string) => {
+    if (!user) return
+    await supabase.from('notifications').delete().eq('id', id).eq('user_id', user.id)
+    setRefetchTrigger((prev) => prev + 1)
+  }
+
+  const refetch = () => setRefetchTrigger(prev => prev + 1)
+
+  return { notifications, loading, error, markRead, markAllRead, deleteNotification, refetch }
+}
+
+// Helper function to create a notification
+export async function createNotification(
+  userId: string,
+  notification: {
+    title: string
+    message: string
+    type: 'reminder' | 'achievement' | 'class' | 'streak' | 'system'
+    link?: string
+  }
+) {
+  const { error } = await supabase.from('notifications').insert({
+    user_id: userId,
+    title: notification.title,
+    message: notification.message,
+    type: notification.type,
+    link: notification.link || null,
+    read: false,
+  })
+  return !error
+}
+
+// Helper function to award a badge to a user
+export async function awardBadge(
+  userId: string,
+  badge: {
+    name: string
+    description: string
+    icon: string
+    category: string
+  }
+) {
+  // Check if user already has this badge
+  const { data: existing } = await supabase
+    .from('user_badges')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('name', badge.name)
+    .single()
+
+  if (existing) {
+    return { alreadyHas: true, badge: existing }
+  }
+
+  // Award the badge
+  const { data, error } = await supabase
+    .from('user_badges')
+    .insert({
+      user_id: userId,
+      name: badge.name,
+      description: badge.description,
+      icon: badge.icon,
+      category: badge.category,
+      earned_date: new Date().toISOString().split('T')[0],
+    })
+    .select()
+    .single()
+
+  if (!error && data) {
+    // Create a notification for the badge
+    await createNotification(userId, {
+      title: '🏆 New Badge Earned!',
+      message: `Congratulations! You've earned the "${badge.name}" badge: ${badge.description}`,
+      type: 'achievement',
+      link: '/badges',
+    })
+  }
+
+  return { alreadyHas: false, badge: data, error }
+}
+
+// Check and award streak badges
+export async function checkAndAwardStreakBadges(userId: string, streak: number) {
+  const streakBadges = [
+    { minStreak: 7, name: '7 Day Streak', description: 'Complete habits for 7 days straight', icon: 'flame' },
+    { minStreak: 14, name: '14 Day Streak', description: 'Complete habits for 14 days straight', icon: 'flame' },
+    { minStreak: 30, name: '30 Day Streak', description: 'Complete habits for 30 days straight', icon: 'crown' },
+    { minStreak: 60, name: '60 Day Streak', description: 'Complete habits for 60 days straight', icon: 'trophy' },
+    { minStreak: 100, name: 'Century Streak', description: 'Complete habits for 100 days straight', icon: 'star' },
+  ]
+
+  for (const badge of streakBadges) {
+    if (streak >= badge.minStreak) {
+      await awardBadge(userId, {
+        name: badge.name,
+        description: badge.description,
+        icon: badge.icon,
+        category: 'streak',
+      })
+    }
+  }
+}
+
+// Check and award first-time badges
+export async function checkFirstTimeBadges(
+  userId: string,
+  action: 'habit_complete' | 'journal_entry' | 'weight_log' | 'workout_complete'
+) {
+  const firstTimeBadges: Record<string, { name: string; description: string; icon: string; category: string }> = {
+    habit_complete: {
+      name: 'First Habit',
+      description: 'Complete your first habit',
+      icon: 'target',
+      category: 'habit',
+    },
+    journal_entry: {
+      name: 'Dear Diary',
+      description: 'Write your first journal entry',
+      icon: 'book',
+      category: 'mindfulness',
+    },
+    weight_log: {
+      name: 'Track Star',
+      description: 'Log your first weight entry',
+      icon: 'star',
+      category: 'special',
+    },
+    workout_complete: {
+      name: 'First Workout',
+      description: 'Complete your first workout',
+      icon: 'dumbbell',
+      category: 'workout',
+    },
+  }
+
+  const badge = firstTimeBadges[action]
+  if (badge) {
+    await awardBadge(userId, badge)
+  }
 }
 

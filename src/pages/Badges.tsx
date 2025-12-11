@@ -10,10 +10,11 @@ import {
   Trophy,
   Target,
   Zap,
-  Crown
+  Crown,
+  BookOpen
 } from 'lucide-react';
-import { useStore } from '../store/useStore';
 import { format, parseISO } from 'date-fns';
+import { useUserBadges, useUserProfile } from '../hooks/useSupabaseData';
 
 const badgeIcons: Record<string, React.ElementType> = {
   flame: Flame,
@@ -27,6 +28,7 @@ const badgeIcons: Record<string, React.ElementType> = {
   target: Target,
   zap: Zap,
   crown: Crown,
+  book: BookOpen,
 };
 
 const categoryColors: Record<string, { bg: string; text: string; border: string }> = {
@@ -48,8 +50,9 @@ const lockedBadges = [
 ];
 
 export default function Badges() {
-  const { user } = useStore();
-  const earnedBadges = user?.badges || [];
+  const { data: earnedBadges = [], loading: badgesLoading } = useUserBadges();
+  const { profile, loading: profileLoading } = useUserProfile();
+  const streak = profile?.streak || 0;
 
   return (
     <div className="space-y-8 pb-20 lg:pb-0">
@@ -89,7 +92,7 @@ export default function Badges() {
               <Flame className="w-5 h-5 text-coral-600" />
             </div>
           </div>
-          <p className="text-2xl font-bold text-gray-900">{user?.streak || 0}</p>
+          <p className="text-2xl font-bold text-gray-900">{streak}</p>
           <p className="text-sm text-gray-500">Current Streak</p>
         </div>
       </div>
@@ -99,10 +102,12 @@ export default function Badges() {
         <h2 className="text-xl font-display font-semibold text-gray-900 mb-6">
           Earned Badges
         </h2>
-        {earnedBadges.length > 0 ? (
+        {badgesLoading || profileLoading ? (
+          <div className="text-center py-12 text-gray-500">Loading your badges...</div>
+        ) : earnedBadges.length > 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             {earnedBadges.map((badge) => {
-              const IconComponent = badgeIcons[badge.icon] || Award;
+              const IconComponent = badgeIcons[badge.icon || ''] || Award;
               const colors = categoryColors[badge.category] || categoryColors.special;
 
               return (

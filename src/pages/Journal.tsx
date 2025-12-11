@@ -11,7 +11,7 @@ import {
   Clock
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { useJournalEntries } from '../hooks/useSupabaseData';
+import { useJournalEntries, checkFirstTimeBadges } from '../hooks/useSupabaseData';
 import { supabase } from '../lib/supabase';
 import { format, parseISO } from 'date-fns';
 
@@ -62,10 +62,17 @@ export default function Journal() {
       user_id: user.id,
     };
 
+    const isNewEntry = !editingEntry;
+
     if (editingEntry) {
       await supabase.from('journal_entries').update(entryData).eq('id', editingEntry);
     } else {
       await supabase.from('journal_entries').insert(entryData);
+    }
+
+    // Check for first journal entry badge (only for new entries)
+    if (isNewEntry && journalEntries.length === 0) {
+      await checkFirstTimeBadges(user.id, 'journal_entry');
     }
 
     refetch();

@@ -461,6 +461,66 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          id: string
+          user_id: string
+          title: string
+          message: string
+          type: 'reminder' | 'achievement' | 'class' | 'streak' | 'system'
+          read: boolean
+          link: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          title: string
+          message: string
+          type: 'reminder' | 'achievement' | 'class' | 'streak' | 'system'
+          read?: boolean
+          link?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          title?: string
+          message?: string
+          type?: 'reminder' | 'achievement' | 'class' | 'streak' | 'system'
+          read?: boolean
+          link?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      badges: {
+        Row: {
+          id: string
+          name: string
+          description: string
+          icon: string
+          category: 'streak' | 'habit' | 'workout' | 'nutrition' | 'mindfulness' | 'special'
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          name: string
+          description: string
+          icon: string
+          category: 'streak' | 'habit' | 'workout' | 'nutrition' | 'mindfulness' | 'special'
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          name?: string
+          description?: string
+          icon?: string
+          category?: 'streak' | 'habit' | 'workout' | 'nutrition' | 'mindfulness' | 'special'
+          created_at?: string | null
+        }
+        Relationships: []
+      }
       workout_presets: {
         Row: {
           id: string

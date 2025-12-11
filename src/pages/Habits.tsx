@@ -22,9 +22,45 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { useHabits } from '../hooks/useSupabaseData';
+import { useHabits, checkAndAwardStreakBadges, checkFirstTimeBadges } from '../hooks/useSupabaseData';
 import { supabase } from '../lib/supabase';
-import { format, addDays, subDays, startOfWeek, isSameDay } from 'date-fns';
+import { format, addDays, subDays, startOfWeek, isSameDay, parseISO, differenceInDays } from 'date-fns';
+
+// Calculate streak from completed dates
+function calculateStreak(completedDates: string[]): number {
+  if (!completedDates || completedDates.length === 0) return 0;
+  
+  // Sort dates in descending order (most recent first)
+  const sortedDates = [...completedDates].sort((a, b) => 
+    new Date(b).getTime() - new Date(a).getTime()
+  );
+  
+  const today = format(new Date(), 'yyyy-MM-dd');
+  const yesterday = format(subDays(new Date(), 1), 'yyyy-MM-dd');
+  
+  // Streak must include today or yesterday to be active
+  if (sortedDates[0] !== today && sortedDates[0] !== yesterday) {
+    return 0;
+  }
+  
+  let streak = 1;
+  let currentDate = parseISO(sortedDates[0]);
+  
+  for (let i = 1; i < sortedDates.length; i++) {
+    const nextDate = parseISO(sortedDates[i]);
+    const diff = differenceInDays(currentDate, nextDate);
+    
+    if (diff === 1) {
+      streak++;
+      currentDate = nextDate;
+    } else if (diff > 1) {
+      break;
+    }
+    // If diff === 0, it's the same date (shouldn't happen with unique dates)
+  }
+  
+  return streak;
+}
 
 const habitIcons: Record<string, React.ElementType> = {
   brain: Brain,
@@ -87,14 +123,34 @@ export default function Habits() {
     if (!habit) return;
 
     const completedDates = (habit.completed_dates as any) || [];
-    const newCompletedDates = completedDates.includes(dateString)
-      ? completedDates.filter((d: string) => d !== dateString)
-      : [...completedDates, dateString];
+    const isCompleting = !completedDates.includes(dateString);
+    const newCompletedDates = isCompleting
+      ? [...completedDates, dateString]
+      : completedDates.filter((d: string) => d !== dateString);
+
+    // Calculate the new streak based on the updated completed dates
+    const newStreak = calculateStreak(newCompletedDates);
 
     await supabase
       .from('habits')
-      .update({ completed_dates: newCompletedDates })
+      .update({ 
+        completed_dates: newCompletedDates,
+        streak: newStreak
+      })
       .eq('id', habitId);
+    
+    // Check for badges when completing a habit
+    if (isCompleting) {
+      // Check for first habit badge (only if this is truly the first completion)
+      if (completedDates.length === 0) {
+        await checkFirstTimeBadges(user.id, 'habit_complete');
+      }
+      
+      // Check for streak badges
+      if (newStreak > 0) {
+        await checkAndAwardStreakBadges(user.id, newStreak);
+      }
+    }
     
     refetch();
   };

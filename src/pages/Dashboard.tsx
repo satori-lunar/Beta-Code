@@ -27,7 +27,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { useHabits, useWeightEntries, useJournalEntries, useUserBadges } from '../hooks/useSupabaseData';
+import { useHabits, useWeightEntries, useJournalEntries, useUserBadges, useHealthMetrics, useNutritionEntries } from '../hooks/useSupabaseData';
 import { format, isToday, parseISO } from 'date-fns';
 
 const badgeIcons: Record<string, React.ElementType> = {
@@ -74,6 +74,8 @@ export default function Dashboard() {
   const { data: weightEntries = [] } = useWeightEntries();
   const { data: journalEntries = [] } = useJournalEntries();
   const { data: userBadges = [] } = useUserBadges();
+  const { metrics: healthMetrics } = useHealthMetrics();
+  const { data: nutritionEntries = [] } = useNutritionEntries();
   const { colorPreset, setColorPreset, colorPresets, primaryColor } = useTheme();
   const [widgets, setWidgets] = useState<WidgetConfig[]>(() => {
     const saved = localStorage.getItem('dashboardWidgets');
@@ -273,66 +275,93 @@ export default function Dashboard() {
     </div>
   );
 
-  const StatsWidget = () => (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-      <div className="stat-card">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-10 h-10 rounded-xl bg-sage-100 flex items-center justify-center">
-            <Target className="w-5 h-5 text-sage-600" />
-          </div>
-          <span className="text-sm text-gray-500">Today's Habits</span>
-        </div>
-        <p className="text-2xl font-bold text-gray-900">
-          {completedHabitsToday}/{habits.length}
-        </p>
-        <p className="text-xs text-gray-500 mt-1">
-          {habits.length > 0 ? Math.round((completedHabitsToday / habits.length) * 100) : 0}% complete
-        </p>
-      </div>
+  const StatsWidget = () => {
+    // Get water intake from health metrics or today's nutrition entry
+    const todayNutrition = nutritionEntries.find(e => e.date === today);
+    const hydration = healthMetrics?.hydration as { value?: number; goal?: number } | null;
+    const waterIntake = hydration?.value || 0;
+    const waterGoal = hydration?.goal || 2000; // Default 2000ml goal
+    const waterPercentage = waterGoal > 0 ? Math.round((waterIntake / waterGoal) * 100) : 0;
 
-      <div className="stat-card">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center">
-            <Droplet className="w-5 h-5 text-blue-600" />
-          </div>
-          <span className="text-sm text-gray-500">Water Intake</span>
-        </div>
-        <p className="text-2xl font-bold text-gray-900">1,750ml</p>
-        <p className="text-xs text-gray-500 mt-1">87% of daily goal</p>
-      </div>
+    // Get sleep from health metrics
+    const sleepData = healthMetrics?.sleep_hours as { value?: number; goal?: number } | null;
+    const sleepHours = sleepData?.value || 0;
+    const sleepGoal = sleepData?.goal || 8;
+    const sleepFormatted = sleepHours > 0 
+      ? `${Math.floor(sleepHours)}:${String(Math.round((sleepHours % 1) * 60)).padStart(2, '0')}h`
+      : '--';
 
-      <div className="stat-card">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center">
-            <Moon className="w-5 h-5 text-purple-600" />
+    return (
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="stat-card">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-xl bg-sage-100 flex items-center justify-center">
+              <Target className="w-5 h-5 text-sage-600" />
+            </div>
+            <span className="text-sm text-gray-500">Today's Habits</span>
           </div>
-          <span className="text-sm text-gray-500">Sleep</span>
-        </div>
-        <p className="text-2xl font-bold text-gray-900">7:49h</p>
-        <p className="text-xs text-gray-500 mt-1">Ideal: 8:20h</p>
-      </div>
-
-      <div className="stat-card">
-        <div className="flex items-center gap-3 mb-3">
-          <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center"
-            style={{ backgroundColor: colorPresets[colorPreset]?.light }}
-          >
-            <TrendingUp className="w-5 h-5" style={{ color: primaryColor }} />
-          </div>
-          <span className="text-sm text-gray-500">Weight</span>
-        </div>
-        <p className="text-2xl font-bold text-gray-900">
-          {latestWeight?.weight || '--'}{latestWeight?.unit || ''}
-        </p>
-        {weightChange && (
-          <p className={`text-xs mt-1 ${Number(weightChange) < 0 ? 'text-green-600' : 'text-gray-500'}`}>
-            {Number(weightChange) < 0 ? '' : '+'}{weightChange} {latestWeight?.unit} this week
+          <p className="text-2xl font-bold text-gray-900">
+            {completedHabitsToday}/{habits.length}
           </p>
-        )}
+          <p className="text-xs text-gray-500 mt-1">
+            {habits.length > 0 ? Math.round((completedHabitsToday / habits.length) * 100) : 0}% complete
+          </p>
+        </div>
+
+        <div className="stat-card">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center">
+              <Droplet className="w-5 h-5 text-blue-600" />
+            </div>
+            <span className="text-sm text-gray-500">Water Intake</span>
+          </div>
+          <p className="text-2xl font-bold text-gray-900">
+            {waterIntake > 0 ? `${waterIntake.toLocaleString()}ml` : '--'}
+          </p>
+          <p className="text-xs text-gray-500 mt-1">
+            {waterIntake > 0 ? `${waterPercentage}% of ${waterGoal}ml goal` : 'No data logged'}
+          </p>
+        </div>
+
+        <div className="stat-card">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center">
+              <Moon className="w-5 h-5 text-purple-600" />
+            </div>
+            <span className="text-sm text-gray-500">Sleep</span>
+          </div>
+          <p className="text-2xl font-bold text-gray-900">{sleepFormatted}</p>
+          <p className="text-xs text-gray-500 mt-1">
+            {sleepHours > 0 ? `Goal: ${sleepGoal}h` : 'No data logged'}
+          </p>
+        </div>
+
+        <div className="stat-card">
+          <div className="flex items-center gap-3 mb-3">
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center"
+              style={{ backgroundColor: colorPresets[colorPreset]?.light }}
+            >
+              <TrendingUp className="w-5 h-5" style={{ color: primaryColor }} />
+            </div>
+            <span className="text-sm text-gray-500">Weight</span>
+          </div>
+          <p className="text-2xl font-bold text-gray-900">
+            {latestWeight?.weight || '--'}{latestWeight?.unit ? ` ${latestWeight.unit}` : ''}
+          </p>
+          {weightChange ? (
+            <p className={`text-xs mt-1 ${Number(weightChange) < 0 ? 'text-green-600' : 'text-gray-500'}`}>
+              {Number(weightChange) < 0 ? '' : '+'}{weightChange} {latestWeight?.unit} this week
+            </p>
+          ) : (
+            <p className="text-xs text-gray-500 mt-1">
+              {latestWeight ? 'Log more to track progress' : 'No data logged'}
+            </p>
+          )}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const LiveClassesWidget = () => {
     if (todaysClasses.length === 0) return null;

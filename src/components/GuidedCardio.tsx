@@ -371,10 +371,11 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
       return;
     }
 
+    // Mobile-friendly options - longer timeout, allow cached positions initially
     const options: PositionOptions = {
       enableHighAccuracy: true,
-      timeout: 10000,
-      maximumAge: 0
+      timeout: 30000, // Increased from 10s to 30s for mobile GPS acquisition
+      maximumAge: 5000 // Allow 5 second old positions initially
     };
 
     watchIdRef.current = navigator.geolocation.watchPosition(
@@ -402,8 +403,9 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
               newCoord.latitude, newCoord.longitude
             );
             
-            // Only add if moved more than accuracy threshold (reduce GPS jitter)
-            if (distance > Math.max(newCoord.accuracy, 5)) {
+            // More lenient threshold for mobile (GPS can be less accurate)
+            const threshold = Math.max(newCoord.accuracy * 0.5, 3); // Use 50% of accuracy or 3m minimum
+            if (distance > threshold) {
               setTotalDistance(d => d + distance);
               
               // Calculate speed from distance if device speed not available
@@ -424,8 +426,31 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
       },
       (error) => {
         console.error('GPS Error:', error);
+        let errorMessage = 'GPS error';
+        
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            setGpsPermission('denied');
+            errorMessage = 'Location permission denied. Please enable in browser settings.';
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage = 'Location unavailable. Check your GPS settings.';
+            break;
+          case error.TIMEOUT:
+            errorMessage = 'GPS timeout. Trying again...';
+            // Retry with less strict options
+            setTimeout(() => {
+              if (watchIdRef.current === null) {
+                startGpsTracking();
+              }
+            }, 2000);
+            break;
+        }
+        
+        // Show user-friendly error message
         if (error.code === error.PERMISSION_DENIED) {
-          setGpsPermission('denied');
+          setCoachingMessage(`⚠️ ${errorMessage}`);
+          setTimeout(() => setCoachingMessage(''), 5000);
         }
       },
       options
@@ -439,24 +464,46 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
     }
   }, []);
 
-  // Request GPS permission
+  // Request GPS permission - improved for mobile
   const requestGpsPermission = useCallback(async () => {
     if (!navigator.geolocation) {
       setGpsPermission('denied');
       return;
     }
 
+    // Check if HTTPS (required for mobile)
+    const isSecure = window.location.protocol === 'https:' || window.location.hostname === 'localhost';
+    if (!isSecure) {
+      setCoachingMessage('⚠️ GPS requires HTTPS on mobile. Please use a secure connection.');
+      setTimeout(() => setCoachingMessage(''), 5000);
+      setGpsPermission('denied');
+      return;
+    }
+
     try {
       await new Promise<GeolocationPosition>((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: true,
-          timeout: 10000
-        });
+        navigator.geolocation.getCurrentPosition(
+          resolve, 
+          reject, 
+          {
+            enableHighAccuracy: true,
+            timeout: 30000, // Longer timeout for mobile
+            maximumAge: 10000 // Allow cached positions
+          }
+        );
       });
       setGpsPermission('granted');
       setGpsEnabled(true);
-    } catch {
-      setGpsPermission('denied');
+    } catch (error: any) {
+      if (error.code === error.PERMISSION_DENIED) {
+        setGpsPermission('denied');
+        setCoachingMessage('⚠️ Please enable location permissions in your browser settings.');
+        setTimeout(() => setCoachingMessage(''), 5000);
+      } else {
+        setGpsPermission('denied');
+        setCoachingMessage('⚠️ Could not access location. Check your GPS settings.');
+        setTimeout(() => setCoachingMessage(''), 5000);
+      }
     }
   }, []);
 

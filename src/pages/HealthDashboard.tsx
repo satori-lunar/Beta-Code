@@ -26,7 +26,17 @@ import {
   BarChart3,
   ChevronLeft,
   PersonStanding,
-  Dumbbell
+  Dumbbell,
+  Smile,
+  Frown,
+  Meh,
+  Sun,
+  CloudRain,
+  Sparkles,
+  BookOpen,
+  Coffee,
+  Battery,
+  Lightbulb
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { useTheme } from '../contexts/ThemeContext';
@@ -46,7 +56,7 @@ interface MetricConfig {
   position?: { top?: string; left?: string; right?: string; bottom?: string };
 }
 
-type TabType = 'overview' | 'activity' | 'workout' | 'body';
+type TabType = 'workout' | 'mind' | 'body' | 'overview';
 
 const metricConfigs: MetricConfig[] = [
   { key: 'heartRate', label: 'Heart Rate', icon: Heart, color: '#ef4444', position: { top: '25%', left: '15%' } },
@@ -90,7 +100,7 @@ export default function HealthDashboard() {
   const [editingMetric, setEditingMetric] = useState<MetricKey | null>(null);
   const [showDevicesPanel, setShowDevicesPanel] = useState(false);
   const [editValues, setEditValues] = useState<Record<string, string>>({});
-  const [activeTab, setActiveTab] = useState<TabType>('overview');
+  const [activeTab, setActiveTab] = useState<TabType>('workout');
   const [weeklyData] = useState(generateWeeklyData);
   const [heartBeat, setHeartBeat] = useState(false);
   const [selectedWorkout, setSelectedWorkout] = useState<string | null>(null);
@@ -681,12 +691,12 @@ export default function HealthDashboard() {
     </svg>
   );
 
-  // Tab Navigation
+  // Tab Navigation - Workout and Mental Health focused
   const tabs: { id: TabType; label: string; icon: React.ElementType }[] = [
-    { id: 'overview', label: 'Overview', icon: Activity },
-    { id: 'activity', label: 'Activity', icon: BarChart3 },
     { id: 'workout', label: 'Workout', icon: Dumbbell },
+    { id: 'mind', label: 'Mind', icon: Brain },
     { id: 'body', label: 'Body', icon: PersonStanding },
+    { id: 'overview', label: 'Metrics', icon: Activity },
   ];
 
   return (
@@ -733,210 +743,102 @@ export default function HealthDashboard() {
 
       {/* Tab Content */}
       {activeTab === 'overview' && (
-        <div className="grid grid-cols-12 gap-6">
-          {/* Heart Rate Card */}
-          <div className="col-span-12 lg:col-span-6 xl:col-span-4">
-            <div className="card p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">Heart Rate</h3>
-                <button
-                  onClick={() => openEditModal('heartRate')}
-                  className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-                >
-                  <Edit3 className="w-4 h-4 text-gray-400" />
-                </button>
+        <div className="space-y-6">
+          {/* Coming Soon Hero */}
+          <div className="card p-8 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 border border-indigo-100">
+            <div className="text-center max-w-2xl mx-auto">
+              <div className="w-20 h-20 mx-auto bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg">
+                <Watch className="w-10 h-10 text-white" />
               </div>
-              <AnimatedHeart />
-              <div className="mt-6">
-                <ECGWaveform />
+              <h2 className="text-2xl font-display font-bold text-gray-900 mb-3">
+                Device Integration Coming Soon!
+              </h2>
+              <p className="text-gray-600 mb-6">
+                We're working on connecting your favorite health devices like Fitbit, Apple Watch, Garmin, and more. 
+                Once connected, you'll see real-time metrics here automatically.
+              </p>
+              <div className="flex flex-wrap justify-center gap-3 mb-6">
+                {['Fitbit', 'Apple Watch', 'Garmin', 'Oura Ring', 'Whoop'].map((device) => (
+                  <span key={device} className="px-3 py-1.5 bg-white rounded-full text-sm font-medium text-gray-600 shadow-sm">
+                    {device}
+                  </span>
+                ))}
               </div>
-              <div className="mt-4 flex items-center justify-between text-sm text-gray-500">
-                <span>Resting: 62 bpm</span>
-                <span>Max: 180 bpm</span>
-              </div>
+              <button
+                onClick={() => setShowDevicesPanel(true)}
+                className="px-6 py-3 rounded-xl text-white font-medium shadow-lg hover:shadow-xl transition-all"
+                style={{ backgroundColor: primaryColor }}
+              >
+                Get Notified When Available
+              </button>
             </div>
           </div>
 
-          {/* Activity Rings */}
-          <div className="col-span-12 lg:col-span-6 xl:col-span-4">
-            <div className="card p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold text-gray-900">Daily Goals</h3>
-                <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors">
-                  <Settings className="w-4 h-4 text-gray-400" />
-                </button>
+          {/* What You'll Get */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[
+              { 
+                icon: Heart, 
+                title: 'Real-Time Heart Rate', 
+                desc: 'Continuous heart rate monitoring from your wearable device',
+                color: '#ef4444'
+              },
+              { 
+                icon: Footprints, 
+                title: 'Auto Step Tracking', 
+                desc: 'Steps, distance, and calories synced automatically',
+                color: '#22c55e'
+              },
+              { 
+                icon: Moon, 
+                title: 'Sleep Analysis', 
+                desc: 'Detailed sleep stages and quality scores each night',
+                color: '#6366f1'
+              },
+            ].map((feature) => (
+              <div key={feature.title} className="card p-6 text-center">
+                <div 
+                  className="w-14 h-14 mx-auto rounded-xl flex items-center justify-center mb-4"
+                  style={{ backgroundColor: `${feature.color}15` }}
+                >
+                  <feature.icon className="w-7 h-7" style={{ color: feature.color }} />
+                </div>
+                <h3 className="font-semibold text-gray-900 mb-2">{feature.title}</h3>
+                <p className="text-sm text-gray-500">{feature.desc}</p>
               </div>
-              <TripleRing />
-              <div className="mt-6 grid grid-cols-3 gap-2">
-                <button
-                  onClick={() => openEditModal('caloriesBurned')}
-                  className="p-3 rounded-xl bg-red-50 hover:bg-red-100 transition-colors text-center"
-                >
-                  <Flame className="w-5 h-5 text-red-500 mx-auto mb-1" />
-                  <div className="text-sm font-semibold text-gray-900">{getMetricDisplay('caloriesBurned').value}</div>
-                  <div className="text-xs text-gray-500">cal</div>
-                </button>
-                <button
-                  onClick={() => openEditModal('activeMinutes')}
-                  className="p-3 rounded-xl bg-green-50 hover:bg-green-100 transition-colors text-center"
-                >
-                  <Timer className="w-5 h-5 text-green-500 mx-auto mb-1" />
-                  <div className="text-sm font-semibold text-gray-900">{getMetricDisplay('activeMinutes').value}</div>
-                  <div className="text-xs text-gray-500">min</div>
-                </button>
-                <button
-                  onClick={() => openEditModal('steps')}
-                  className="p-3 rounded-xl bg-cyan-50 hover:bg-cyan-100 transition-colors text-center"
-                >
-                  <Footprints className="w-5 h-5 text-cyan-500 mx-auto mb-1" />
-                  <div className="text-sm font-semibold text-gray-900">{getMetricDisplay('steps').value}</div>
-                  <div className="text-xs text-gray-500">steps</div>
-                </button>
-              </div>
-            </div>
+            ))}
           </div>
 
-          {/* Quick Stats */}
-          <div className="col-span-12 xl:col-span-4">
-            <div className="card p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Vitals</h3>
-              <div className="space-y-3">
-                {[
-                  { key: 'bloodPressure' as MetricKey, icon: Activity, color: '#8b5cf6', label: 'Blood Pressure' },
-                  { key: 'oxygenSaturation' as MetricKey, icon: Wind, color: '#06b6d4', label: 'O2 Saturation' },
-                  { key: 'bodyTemperature' as MetricKey, icon: Thermometer, color: '#f59e0b', label: 'Temperature' },
-                  { key: 'sleepHours' as MetricKey, icon: Moon, color: '#6366f1', label: 'Sleep' },
-                ].map(item => {
-                  const display = getMetricDisplay(item.key);
-                  return (
+          {/* Manual Entry Option */}
+          <div className="card p-6">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
+                <Edit3 className="w-6 h-6 text-amber-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-gray-900 mb-1">Manual Entry Available Now</h3>
+                <p className="text-gray-500 text-sm mb-4">
+                  While we build device integrations, you can still track your health metrics manually. 
+                  Click any metric below to log your data.
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {[
+                    { key: 'steps' as MetricKey, icon: Footprints, label: 'Steps', color: '#22c55e' },
+                    { key: 'sleepHours' as MetricKey, icon: Moon, label: 'Sleep', color: '#6366f1' },
+                    { key: 'hydration' as MetricKey, icon: Droplets, label: 'Water', color: '#06b6d4' },
+                    { key: 'heartRate' as MetricKey, icon: Heart, label: 'Heart Rate', color: '#ef4444' },
+                  ].map(item => (
                     <button
                       key={item.key}
                       onClick={() => openEditModal(item.key)}
-                      className="w-full flex items-center gap-4 p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors"
+                      className="p-4 rounded-xl hover:shadow-md transition-all text-center border border-gray-100"
+                      style={{ backgroundColor: `${item.color}08` }}
                     >
-                      <div
-                        className="w-10 h-10 rounded-xl flex items-center justify-center"
-                        style={{ backgroundColor: `${item.color}15` }}
-                      >
-                        <item.icon className="w-5 h-5" style={{ color: item.color }} />
-                      </div>
-                      <div className="flex-1 text-left">
-                        <div className="text-sm text-gray-500">{item.label}</div>
-                        <div className="flex items-baseline gap-1">
-                          <span className="text-lg font-semibold text-gray-900">{display.value}</span>
-                          <span className="text-sm text-gray-500">{display.unit}</span>
-                        </div>
-                      </div>
-                      <Edit3 className="w-4 h-4 text-gray-300" />
+                      <item.icon className="w-6 h-6 mx-auto mb-2" style={{ color: item.color }} />
+                      <div className="text-sm font-medium text-gray-700">{item.label}</div>
+                      <Plus className="w-4 h-4 mx-auto mt-2 text-gray-400" />
                     </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-
-          {/* Wellness */}
-          <div className="col-span-12 lg:col-span-6">
-            <div className="card p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Wellness</h3>
-              <div className="space-y-4">
-                <button onClick={() => openEditModal('stressLevel')} className="w-full text-left">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <Brain className="w-4 h-4 text-purple-500" />
-                      <span className="text-sm text-gray-700">Stress Level</span>
-                    </div>
-                    <span className="text-sm font-medium" style={{ color: primaryColor }}>
-                      {getMetricDisplay('stressLevel').secondary}
-                    </span>
-                  </div>
-                  <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all"
-                      style={{
-                        width: `${(healthMetrics.stressLevel?.value ?? 0) * 10}%`,
-                        backgroundColor: (healthMetrics.stressLevel?.value ?? 0) <= 3 ? '#22c55e' : (healthMetrics.stressLevel?.value ?? 0) <= 6 ? '#f59e0b' : '#ef4444'
-                      }}
-                    />
-                  </div>
-                </button>
-
-                <button onClick={() => openEditModal('energyLevel')} className="w-full text-left">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <Zap className="w-4 h-4 text-yellow-500" />
-                      <span className="text-sm text-gray-700">Energy Level</span>
-                    </div>
-                    <span className="text-sm font-medium" style={{ color: primaryColor }}>
-                      {getMetricDisplay('energyLevel').secondary}
-                    </span>
-                  </div>
-                  <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all"
-                      style={{
-                        width: `${(healthMetrics.energyLevel?.value || 0) * 10}%`,
-                        backgroundColor: primaryColor
-                      }}
-                    />
-                  </div>
-                </button>
-
-                <button onClick={() => openEditModal('hydration')} className="w-full text-left">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <Droplets className="w-4 h-4 text-blue-500" />
-                      <span className="text-sm text-gray-700">Hydration</span>
-                    </div>
-                    <span className="text-sm font-medium text-gray-600">
-                      {getMetricDisplay('hydration').value}L {getMetricDisplay('hydration').secondary}
-                    </span>
-                  </div>
-                  <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all bg-blue-500"
-                      style={{ width: `${getProgressPercent('hydration') || 0}%` }}
-                    />
-                  </div>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Connected Devices */}
-          <div className="col-span-12 lg:col-span-6">
-            <div className="card p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">Devices</h3>
-                <button
-                  onClick={() => setShowDevicesPanel(true)}
-                  className="text-sm font-medium flex items-center gap-1 hover:opacity-80"
-                  style={{ color: primaryColor }}
-                >
-                  Manage <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-              <div className="space-y-3">
-                <div className="text-center py-6 px-4">
-                  <div className="w-16 h-16 mx-auto bg-gradient-to-br from-indigo-100 to-purple-100 rounded-2xl flex items-center justify-center mb-4">
-                    <Watch className="w-8 h-8 text-indigo-500" />
-                  </div>
-                  <h4 className="font-medium text-gray-900 mb-2">Device Integration Coming Soon!</h4>
-                  <p className="text-sm text-gray-500 mb-4">
-                    We're building connections for Fitbit, Apple Watch, and more. For now, you can manually log your health metrics.
-                  </p>
-                  <button
-                    onClick={() => setShowDevicesPanel(true)}
-                    className="px-4 py-2 rounded-lg text-sm font-medium text-white"
-                    style={{ backgroundColor: primaryColor }}
-                  >
-                    Learn More
-                  </button>
-                </div>
-                <div className="border-t border-gray-100 pt-3">
-                  <p className="text-xs text-gray-400 text-center">
-                    💡 Tip: Click on any health metric to manually update your data!
-                  </p>
+                  ))}
                 </div>
               </div>
             </div>
@@ -944,42 +846,172 @@ export default function HealthDashboard() {
         </div>
       )}
 
-      {activeTab === 'activity' && (
-        <div className="grid grid-cols-12 gap-6">
-          {/* Weekly Chart */}
-          <div className="col-span-12 lg:col-span-8">
-            <div className="card p-6">
-              <ActivityChart />
+      {activeTab === 'mind' && (
+        <div className="space-y-6">
+          {/* Mood Check-in */}
+          <div className="card p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">How are you feeling today?</h3>
+            <p className="text-gray-500 text-sm mb-6">Track your mood to understand patterns and improve your mental wellness.</p>
+            
+            <div className="grid grid-cols-5 gap-3 mb-6">
+              {[
+                { mood: 'great', icon: Sun, label: 'Great', color: '#22c55e', bg: '#dcfce7' },
+                { mood: 'good', icon: Smile, label: 'Good', color: '#84cc16', bg: '#ecfccb' },
+                { mood: 'okay', icon: Meh, label: 'Okay', color: '#f59e0b', bg: '#fef3c7' },
+                { mood: 'low', icon: CloudRain, label: 'Low', color: '#6366f1', bg: '#e0e7ff' },
+                { mood: 'stressed', icon: Frown, label: 'Stressed', color: '#ef4444', bg: '#fee2e2' },
+              ].map((item) => (
+                <button
+                  key={item.mood}
+                  className="p-4 rounded-xl border-2 border-transparent hover:border-gray-200 transition-all text-center"
+                  style={{ backgroundColor: item.bg }}
+                >
+                  <item.icon className="w-8 h-8 mx-auto mb-2" style={{ color: item.color }} />
+                  <div className="text-sm font-medium" style={{ color: item.color }}>{item.label}</div>
+                </button>
+              ))}
+            </div>
+            
+            <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-100">
+              <p className="text-sm text-purple-700">
+                <Lightbulb className="w-4 h-4 inline mr-1" />
+                <span className="font-medium">Tip:</span> Logging your mood daily helps identify patterns and triggers. Even a quick check-in makes a difference!
+              </p>
             </div>
           </div>
 
-          {/* Activity Summary */}
-          <div className="col-span-12 lg:col-span-4 space-y-6">
+          {/* Mindfulness & Self-Care */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Quick Mindfulness */}
             <div className="card p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Today's Progress</h3>
-              <TripleRing />
-            </div>
-
-            <div className="card p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Log</h3>
-              <div className="grid grid-cols-2 gap-3">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-purple-500" />
+                Quick Mindfulness
+              </h3>
+              <div className="space-y-3">
                 {[
-                  { key: 'steps' as MetricKey, icon: Footprints, label: 'Steps', color: '#22c55e' },
-                  { key: 'activeMinutes' as MetricKey, icon: Timer, label: 'Active', color: '#f59e0b' },
-                  { key: 'caloriesBurned' as MetricKey, icon: Flame, label: 'Calories', color: '#ef4444' },
-                  { key: 'hydration' as MetricKey, icon: Droplets, label: 'Water', color: '#06b6d4' },
-                ].map(item => (
+                  { name: 'Deep Breathing', duration: '2 min', desc: 'Calm your mind', color: '#8b5cf6' },
+                  { name: 'Body Scan', duration: '5 min', desc: 'Release tension', color: '#06b6d4' },
+                  { name: 'Gratitude', duration: '3 min', desc: 'Positive reflection', color: '#f59e0b' },
+                  { name: 'Meditation', duration: '10 min', desc: 'Guided session', color: '#22c55e' },
+                ].map((exercise) => (
                   <button
-                    key={item.key}
-                    onClick={() => openEditModal(item.key)}
-                    className="p-4 rounded-xl hover:shadow-md transition-all text-center"
-                    style={{ backgroundColor: `${item.color}10` }}
+                    key={exercise.name}
+                    className="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-gray-50 transition-colors text-left border border-gray-100"
                   >
-                    <item.icon className="w-6 h-6 mx-auto mb-2" style={{ color: item.color }} />
-                    <div className="text-xs text-gray-600">{item.label}</div>
-                    <Plus className="w-4 h-4 mx-auto mt-2 text-gray-400" />
+                    <div
+                      className="w-12 h-12 rounded-xl flex items-center justify-center"
+                      style={{ backgroundColor: `${exercise.color}15` }}
+                    >
+                      <Brain className="w-6 h-6" style={{ color: exercise.color }} />
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-medium text-gray-900">{exercise.name}</div>
+                      <div className="text-sm text-gray-500">{exercise.desc}</div>
+                    </div>
+                    <div className="text-sm font-medium" style={{ color: exercise.color }}>
+                      {exercise.duration}
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-gray-300" />
                   </button>
                 ))}
+              </div>
+            </div>
+
+            {/* Daily Self-Care Checklist */}
+            <div className="card p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <Heart className="w-5 h-5 text-pink-500" />
+                Daily Self-Care
+              </h3>
+              <div className="space-y-3">
+                {[
+                  { name: 'Slept 7+ hours', icon: Moon, color: '#6366f1', checked: false },
+                  { name: 'Drank enough water', icon: Droplets, color: '#06b6d4', checked: false },
+                  { name: 'Moved my body', icon: Footprints, color: '#22c55e', checked: false },
+                  { name: 'Took breaks', icon: Coffee, color: '#f59e0b', checked: false },
+                  { name: 'Connected with someone', icon: Heart, color: '#ec4899', checked: false },
+                  { name: 'Did something I enjoy', icon: Smile, color: '#8b5cf6', checked: false },
+                ].map((item) => (
+                  <label
+                    key={item.name}
+                    className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      className="w-5 h-5 rounded-lg border-2 border-gray-300 text-green-500 focus:ring-green-500"
+                    />
+                    <item.icon className="w-5 h-5" style={{ color: item.color }} />
+                    <span className="text-gray-700">{item.name}</span>
+                  </label>
+                ))}
+              </div>
+              <div className="mt-4 pt-4 border-t border-gray-100">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-500">Today's progress</span>
+                  <span className="font-medium text-gray-900">0 / 6 completed</span>
+                </div>
+                <div className="mt-2 h-2 bg-gray-100 rounded-full overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-green-400 to-emerald-500 rounded-full" style={{ width: '0%' }} />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Energy & Stress Levels */}
+          <div className="card p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <Battery className="w-5 h-5 text-amber-500" />
+              Energy & Stress Tracker
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Energy Level</label>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-400">Low</span>
+                  <input
+                    type="range"
+                    min="1"
+                    max="10"
+                    defaultValue="5"
+                    className="flex-1 h-2 bg-gradient-to-r from-red-200 via-yellow-200 to-green-200 rounded-lg appearance-none cursor-pointer"
+                  />
+                  <span className="text-sm text-gray-400">High</span>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Stress Level</label>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-400">Calm</span>
+                  <input
+                    type="range"
+                    min="1"
+                    max="10"
+                    defaultValue="5"
+                    className="flex-1 h-2 bg-gradient-to-r from-green-200 via-yellow-200 to-red-200 rounded-lg appearance-none cursor-pointer"
+                  />
+                  <span className="text-sm text-gray-400">High</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Journal Prompt */}
+          <div className="card p-6 bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-100">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center">
+                <BookOpen className="w-6 h-6 text-indigo-500" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-gray-900 mb-1">Today's Journal Prompt</h3>
+                <p className="text-indigo-700 italic mb-4">
+                  "What's one small thing you can do today to take care of yourself?"
+                </p>
+                <button
+                  className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg font-medium transition-colors"
+                >
+                  Write in Journal
+                </button>
               </div>
             </div>
           </div>

@@ -32,13 +32,18 @@ import {
   BookOpen,
   Coffee,
   Battery,
-  Lightbulb
+  Lightbulb,
+  Star,
+  Clock,
+  Trophy,
+  Trash2
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { useTheme } from '../contexts/ThemeContext';
-import { format } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 import ComingSoonModal from '../components/ComingSoonModal';
-import GuidedCardio from '../components/GuidedCardio';
+import GuidedCardio, { WorkoutPreset, WorkoutData } from '../components/GuidedCardio';
+import { useWorkoutPresets, useWorkoutHistory } from '../hooks/useSupabaseData';
 
 type MetricKey = 'heartRate' | 'bloodPressure' | 'bodyTemperature' | 'oxygenSaturation' |
   'respiratoryRate' | 'bmi' | 'bodyFat' | 'height' | 'weight' | 'sleepHours' |
@@ -80,8 +85,64 @@ export default function HealthDashboard() {
   const [activeTab, setActiveTab] = useState<TabType>('workout');
   const [selectedWorkout, setSelectedWorkout] = useState<string | null>(null);
   const [showWorkoutCamera, setShowWorkoutCamera] = useState(false);
+  const [selectedPreset, setSelectedPreset] = useState<WorkoutPreset | undefined>(undefined);
+
+  // Workout presets and history from Supabase
+  const { presets, savePreset, deletePreset } = useWorkoutPresets();
+  const { history, saveWorkout } = useWorkoutHistory(5);
 
   const hasConnectedDevice = connectedDevices.some(d => d.connected);
+
+  // Handle saving a preset
+  const handleSavePreset = async (preset: WorkoutPreset) => {
+    await savePreset({
+      name: preset.name,
+      activityType: preset.activityType,
+      goalType: preset.goalType,
+      targetTime: preset.targetTime,
+      targetMilestones: preset.targetMilestones,
+      milestoneMode: preset.milestoneMode,
+      autoMilestoneInterval: preset.autoMilestoneInterval,
+      intensity: preset.intensity,
+    });
+  };
+
+  // Handle workout completion - save to history
+  const handleWorkoutComplete = async (data: WorkoutData) => {
+    await saveWorkout({
+      activityType: data.activityType,
+      duration: data.duration,
+      milestones: data.milestones,
+      calories: data.calories,
+      milestoneMode: data.milestoneMode,
+      autoMilestoneInterval: data.autoMilestoneInterval,
+    });
+  };
+
+  // Convert DB preset to component preset
+  const dbPresetToComponentPreset = (dbPreset: typeof presets[0]): WorkoutPreset => ({
+    id: dbPreset.id,
+    name: dbPreset.name,
+    activityType: dbPreset.activity_type,
+    goalType: dbPreset.goal_type as WorkoutPreset['goalType'],
+    targetTime: dbPreset.target_time ?? undefined,
+    targetMilestones: dbPreset.target_milestones ?? undefined,
+    milestoneMode: dbPreset.milestone_mode as WorkoutPreset['milestoneMode'],
+    autoMilestoneInterval: dbPreset.auto_milestone_interval ?? undefined,
+    intensity: dbPreset.intensity as WorkoutPreset['intensity'],
+  });
+
+  // Format duration for display
+  const formatDuration = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    if (mins >= 60) {
+      const hrs = Math.floor(mins / 60);
+      const remainMins = mins % 60;
+      return `${hrs}h ${remainMins}m`;
+    }
+    return secs > 0 ? `${mins}m ${secs}s` : `${mins}m`;
+  };
 
   const getMetricDisplay = (key: MetricKey) => {
     switch (key) {
@@ -747,95 +808,189 @@ export default function HealthDashboard() {
             <GuidedCardio
               onClose={() => {
                 setShowWorkoutCamera(false);
+                setSelectedPreset(undefined);
               }}
-              onWorkoutComplete={(data) => {
-                console.log('Workout completed:', data);
-                // TODO: Save workout data to Supabase
-              }}
+              onWorkoutComplete={handleWorkoutComplete}
+              onSavePreset={handleSavePreset}
+              initialPreset={selectedPreset}
             />
           ) : (
             <>
-              {/* Start Cardio Workout */}
-              <div className="card p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Guided Cardio Workout</h3>
-                <p className="text-gray-500 text-sm mb-6">Choose an activity and get coached through your workout with voice guidance and milestone tracking.</p>
-                
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-                  {workoutTypes.map(workout => (
-                    <button
-                      key={workout.id}
-                      onClick={() => setSelectedWorkout(workout.id)}
-                      className={`p-4 rounded-xl border-2 transition-all ${
-                        selectedWorkout === workout.id
-                          ? 'border-current shadow-lg scale-105'
-                          : 'border-gray-100 hover:border-gray-200'
-                      }`}
-                      style={selectedWorkout === workout.id ? { borderColor: workout.color } : {}}
-                    >
-                      <div
-                        className="w-12 h-12 rounded-xl mx-auto mb-3 flex items-center justify-center"
-                        style={{ backgroundColor: `${workout.color}15` }}
-                      >
-                        <workout.icon className="w-6 h-6" style={{ color: workout.color }} />
+              {/* Quick Start or Continue */}
+              <div className="card p-6 bg-gradient-to-br from-green-500 via-emerald-500 to-teal-500 text-white">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="text-xl font-bold mb-1">🔥 Ready to Move?</h3>
+                    <p className="text-green-100 text-sm">Get coached, hit milestones, crush your goals!</p>
+                  </div>
+                  <div className="hidden sm:flex items-center gap-2">
+                    {history.length > 0 && (
+                      <div className="text-right text-sm">
+                        <div className="text-green-100">Last workout</div>
+                        <div className="font-medium">{formatDistanceToNow(new Date(history[0].finished_at), { addSuffix: true })}</div>
                       </div>
-                      <div className="text-sm font-medium text-gray-900">{workout.name}</div>
-                    </button>
-                  ))}
+                    )}
+                  </div>
                 </div>
-
-                <div className="mt-6">
-                  <button
-                    onClick={() => setShowWorkoutCamera(true)}
-                    className="w-full flex items-center justify-center gap-2 px-6 py-4 rounded-xl text-white font-medium text-lg"
-                    style={{ backgroundColor: primaryColor }}
-                  >
-                    <Play className="w-6 h-6" />
-                    Start Guided Workout
-                  </button>
-                  <p className="text-center text-gray-400 text-xs mt-3">
-                    Set time goals, mark milestones, and get voice coaching as you walk, jog, or run!
-                  </p>
-                </div>
+                
+                <button
+                  onClick={() => {
+                    setSelectedPreset(undefined);
+                    setShowWorkoutCamera(true);
+                  }}
+                  className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-xl font-bold text-lg transition-all hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  <Play className="w-7 h-7" />
+                  START NEW WORKOUT
+                </button>
               </div>
 
-              {/* Features Info */}
-              <div className="card p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">What You'll Get</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="flex items-start gap-3 p-3 bg-green-50 rounded-xl">
-                    <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center flex-shrink-0">
-                      <Target className="w-5 h-5 text-green-600" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-900">Set Goals</p>
-                      <p className="text-sm text-gray-500">Time-based or milestone targets</p>
-                    </div>
+              {/* Saved Presets */}
+              {presets.length > 0 && (
+                <div className="card p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                      <Star className="w-5 h-5 text-yellow-500" />
+                      Your Saved Workouts
+                    </h3>
+                    <span className="text-sm text-gray-400">{presets.length} preset{presets.length !== 1 ? 's' : ''}</span>
                   </div>
-                  <div className="flex items-start gap-3 p-3 bg-purple-50 rounded-xl">
-                    <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center flex-shrink-0">
-                      <Activity className="w-5 h-5 text-purple-600" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-900">Voice Coaching</p>
-                      <p className="text-sm text-gray-500">Encouragement and pace guidance</p>
-                    </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {presets.map(preset => {
+                      const workout = workoutTypes.find(w => w.id === preset.activity_type) || workoutTypes[0];
+                      return (
+                        <div
+                          key={preset.id}
+                          className="group relative p-4 rounded-xl border-2 border-gray-100 hover:border-gray-200 hover:shadow-md transition-all"
+                        >
+                          <button
+                            onClick={() => deletePreset(preset.id)}
+                            className="absolute top-2 right-2 p-1.5 rounded-lg bg-gray-100 opacity-0 group-hover:opacity-100 hover:bg-red-100 hover:text-red-600 transition-all"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                          <div className="flex items-start gap-3">
+                            <div
+                              className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+                              style={{ backgroundColor: `${workout.color}15` }}
+                            >
+                              <workout.icon className="w-6 h-6" style={{ color: workout.color }} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-semibold text-gray-900 truncate">{preset.name}</h4>
+                              <p className="text-sm text-gray-500">{workout.name}</p>
+                              <div className="flex items-center gap-2 mt-1 text-xs text-gray-400">
+                                {preset.target_time && (
+                                  <span className="flex items-center gap-1">
+                                    <Clock className="w-3 h-3" />
+                                    {formatDuration(preset.target_time)}
+                                  </span>
+                                )}
+                                <span className="capitalize">{preset.intensity}</span>
+                              </div>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => {
+                              setSelectedPreset(dbPresetToComponentPreset(preset));
+                              setShowWorkoutCamera(true);
+                            }}
+                            className="mt-3 w-full py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium text-sm transition-colors"
+                          >
+                            Start This Workout
+                          </button>
+                        </div>
+                      );
+                    })}
                   </div>
-                  <div className="flex items-start gap-3 p-3 bg-orange-50 rounded-xl">
-                    <div className="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center flex-shrink-0">
-                      <Flame className="w-5 h-5 text-orange-600" />
+                </div>
+              )}
+
+              {/* Recent Workout History */}
+              {history.length > 0 && (
+                <div className="card p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                      <Trophy className="w-5 h-5 text-amber-500" />
+                      Recent Workouts
+                    </h3>
+                  </div>
+                  <div className="space-y-3">
+                    {history.map(workout => {
+                      const workoutType = workoutTypes.find(w => w.name === workout.activity_type) || workoutTypes[0];
+                      return (
+                        <div
+                          key={workout.id}
+                          className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl"
+                        >
+                          <div
+                            className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+                            style={{ backgroundColor: `${workoutType.color}15` }}
+                          >
+                            <workoutType.icon className="w-6 h-6" style={{ color: workoutType.color }} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-gray-900">{workout.activity_type}</div>
+                            <div className="text-sm text-gray-500">
+                              {formatDistanceToNow(new Date(workout.finished_at), { addSuffix: true })}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="font-semibold text-gray-900">{formatDuration(workout.duration)}</div>
+                            <div className="text-sm text-gray-500 flex items-center gap-2 justify-end">
+                              <span>{workout.calories} cal</span>
+                              {workout.milestones > 0 && (
+                                <span className="text-purple-500">• {workout.milestones} ✓</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Features Info - Show if no history */}
+              {history.length === 0 && (
+                <div className="card p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">What You'll Get</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="flex items-start gap-3 p-3 bg-green-50 rounded-xl">
+                      <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center flex-shrink-0">
+                        <Target className="w-5 h-5 text-green-600" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">Set Goals</p>
+                        <p className="text-sm text-gray-500">Time-based or milestone targets</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-medium text-gray-900">Track Progress</p>
-                      <p className="text-sm text-gray-500">Calories, time, and milestones</p>
+                    <div className="flex items-start gap-3 p-3 bg-purple-50 rounded-xl">
+                      <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center flex-shrink-0">
+                        <Activity className="w-5 h-5 text-purple-600" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">Hype Coaching</p>
+                        <p className="text-sm text-gray-500">High-energy voice encouragement</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3 p-3 bg-orange-50 rounded-xl">
+                      <div className="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center flex-shrink-0">
+                        <Flame className="w-5 h-5 text-orange-600" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">Track Progress</p>
+                        <p className="text-sm text-gray-500">Calories, time, and milestones</p>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              )}
 
               {/* Tip */}
-              <div className="bg-gradient-to-r from-cyan-50 to-blue-50 rounded-xl p-4 border border-cyan-100">
+              <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-100">
                 <p className="text-sm text-gray-600">
-                  <span className="font-semibold text-cyan-700">Tip:</span> Mark milestones as you pass landmarks in your neighborhood - it's a great way to track your progress on walks and runs!
+                  <span className="font-semibold text-purple-700">💡 Pro tip:</span> Save your favorite workout configs as presets - then start them with one tap next time!
                 </p>
               </div>
             </>

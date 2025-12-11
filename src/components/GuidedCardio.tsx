@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Play,
   Pause,
@@ -18,8 +18,15 @@ import {
   Wind,
   X,
   Trophy,
-  Sparkles
+  Sparkles,
+  Zap,
+  PartyPopper,
+  Timer,
+  Hand,
+  Star,
+  Rocket
 } from 'lucide-react';
+import confetti from 'canvas-confetti';
 
 // Cardio activity types
 interface CardioType {
@@ -29,98 +36,142 @@ interface CardioType {
   color: string;
   caloriesPerMinute: number;
   description: string;
+  hypeEmoji: string;
 }
 
 const cardioTypes: CardioType[] = [
-  { id: 'walking', name: 'Walking', icon: Footprints, color: '#22c55e', caloriesPerMinute: 4, description: 'Leisurely pace' },
-  { id: 'brisk-walk', name: 'Brisk Walk', icon: Wind, color: '#10b981', caloriesPerMinute: 5.5, description: 'Fast-paced walking' },
-  { id: 'jogging', name: 'Jogging', icon: Footprints, color: '#f59e0b', caloriesPerMinute: 8, description: 'Light running' },
-  { id: 'running', name: 'Running', icon: Flame, color: '#ef4444', caloriesPerMinute: 11, description: 'Steady run' },
-  { id: 'interval', name: 'Intervals', icon: Target, color: '#8b5cf6', caloriesPerMinute: 10, description: 'Walk/run mix' },
-  { id: 'free-cardio', name: 'Free Cardio', icon: Sparkles, color: '#06b6d4', caloriesPerMinute: 7, description: 'Any activity' },
+  { id: 'walking', name: 'Walking', icon: Footprints, color: '#22c55e', caloriesPerMinute: 4, description: 'Leisurely pace', hypeEmoji: '🚶' },
+  { id: 'brisk-walk', name: 'Power Walk', icon: Zap, color: '#10b981', caloriesPerMinute: 5.5, description: 'Fast & fierce', hypeEmoji: '⚡' },
+  { id: 'jogging', name: 'Jogging', icon: Wind, color: '#f59e0b', caloriesPerMinute: 8, description: 'Light running', hypeEmoji: '🏃' },
+  { id: 'running', name: 'Running', icon: Flame, color: '#ef4444', caloriesPerMinute: 11, description: 'Steady run', hypeEmoji: '🔥' },
+  { id: 'interval', name: 'Intervals', icon: Target, color: '#8b5cf6', caloriesPerMinute: 10, description: 'Walk/run mix', hypeEmoji: '💪' },
+  { id: 'free-cardio', name: 'Free Cardio', icon: Sparkles, color: '#06b6d4', caloriesPerMinute: 7, description: 'Any activity', hypeEmoji: '✨' },
 ];
 
 // Goal types
 type GoalType = 'free' | 'time' | 'milestones';
+type MilestoneMode = 'manual' | 'auto';
 
 interface WorkoutConfig {
   goalType: GoalType;
   targetTime?: number; // in seconds
   targetMilestones?: number;
+  milestoneMode: MilestoneMode;
+  autoMilestoneInterval?: number; // in seconds for auto mode
+  intensity: 'easy' | 'moderate' | 'intense';
+  voiceEnabled: boolean;
+}
+
+// Export for use in other components
+export interface WorkoutPreset {
+  id?: string;
+  name: string;
+  activityType: string;
+  goalType: GoalType;
+  targetTime?: number;
+  targetMilestones?: number;
+  milestoneMode: MilestoneMode;
+  autoMilestoneInterval?: number;
   intensity: 'easy' | 'moderate' | 'intense';
 }
 
 interface GuidedCardioProps {
   onClose: () => void;
   onWorkoutComplete?: (data: WorkoutData) => void;
+  onSavePreset?: (preset: WorkoutPreset) => void;
+  initialPreset?: WorkoutPreset;
 }
 
-interface WorkoutData {
+export interface WorkoutData {
   activityType: string;
   duration: number;
   milestones: number;
   calories: number;
+  milestoneMode: MilestoneMode;
+  autoMilestoneInterval?: number;
 }
 
-// Coaching messages
+// HYPE coaching messages - high energy!
 const coachingMessages = {
   start: [
-    "Let's do this! Starting your workout.",
-    "Great choice! Let's get moving.",
-    "Your workout is starting. You've got this!",
+    "LET'S GOOO! 🔥 Time to crush this workout!",
+    "YEAH BABY! Your workout starts NOW!",
+    "Game time! Let's make it HAPPEN!",
+    "You showed up — that's already WINNING! Let's GO!",
   ],
   encouragement: [
-    "Keep it up! You're doing great.",
-    "Excellent pace! Stay strong.",
-    "You're crushing it! Keep going.",
-    "Amazing work! Stay focused.",
-    "That's the spirit! Keep moving.",
+    "You're absolutely KILLING IT right now! 💪",
+    "UNSTOPPABLE! Keep that energy UP!",
+    "Look at you GO! This is YOUR moment!",
+    "Beast mode ACTIVATED! Keep pushing!",
+    "You're on FIRE today! Don't stop now!",
+    "This is what CHAMPIONS do! Keep moving!",
+    "Every step is PROGRESS! You're amazing!",
+    "CRUSHING IT! Your future self thanks you!",
   ],
   milestone: [
-    "Milestone reached! Fantastic work.",
-    "Great job! You hit a milestone.",
-    "Checkpoint complete! Keep it up.",
+    "BOOM! 💥 Milestone SMASHED!",
+    "YES! Another one DOWN! You're incredible!",
+    "Checkpoint CRUSHED! Keep that momentum!",
+    "LEGENDARY! You just hit a milestone!",
+    "That's what I'm TALKING about! Milestone complete!",
+  ],
+  autoMilestone: [
+    "DING DING! ⏰ Auto-checkpoint reached!",
+    "Time milestone HIT! You're staying strong!",
+    "Another interval DOWN! Keep it rolling!",
   ],
   speedUp: [
-    "Pick up the pace a bit!",
-    "Let's go a little faster.",
-    "Time to speed up!",
+    "Let's PICK IT UP! You've got more in you!",
+    "Time to turn up the HEAT! Push harder!",
+    "Show me what you've GOT! Faster!",
   ],
   slowDown: [
-    "Ease up a little, find your rhythm.",
-    "Slow it down, catch your breath.",
-    "Take it easy, you're doing great.",
+    "Easy does it, champ! Find your groove.",
+    "Catch that breath, you've EARNED it!",
+    "Steady pace, you're still WINNING!",
   ],
   halfway: [
-    "Halfway there! You're doing amazing.",
-    "50% done! Keep pushing.",
-    "Halfway point reached! Strong work.",
+    "HALFWAY THERE! 🎯 You're doing AMAZING!",
+    "50% DOWN! The finish line is calling!",
+    "Half done, but FULLY committed! LET'S GO!",
   ],
   almostDone: [
-    "Almost there! Final push.",
-    "Just a little more! You've got this.",
-    "Nearly done! Finish strong.",
+    "FINAL STRETCH! 🏁 Give it EVERYTHING!",
+    "Almost there! DIG DEEP! You've got this!",
+    "The finish line is RIGHT THERE! PUSH!",
+    "Last push! Make it COUNT!",
   ],
   complete: [
-    "Workout complete! Excellent job!",
-    "You did it! Great workout!",
-    "Finished! You should be proud.",
+    "🎉 WORKOUT COMPLETE! You're a LEGEND!",
+    "DONE! 🏆 You absolutely CRUSHED it!",
+    "VICTORY! That was INCREDIBLE!",
+    "YOU DID IT! Time to celebrate! 🥳",
   ],
 };
 
-export default function GuidedCardio({ onClose, onWorkoutComplete }: GuidedCardioProps) {
+export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset, initialPreset }: GuidedCardioProps) {
   // Activity selection
-  const [selectedActivity, setSelectedActivity] = useState<CardioType>(cardioTypes[0]);
+  const [selectedActivity, setSelectedActivity] = useState<CardioType>(
+    initialPreset ? cardioTypes.find(t => t.id === initialPreset.activityType) || cardioTypes[0] : cardioTypes[0]
+  );
   const [showActivityPicker, setShowActivityPicker] = useState(false);
   
   // Workout configuration
   const [showConfig, setShowConfig] = useState(true);
   const [config, setConfig] = useState<WorkoutConfig>({
-    goalType: 'free',
-    targetTime: 1200, // 20 minutes default
-    targetMilestones: 5,
-    intensity: 'moderate',
+    goalType: initialPreset?.goalType || 'time',
+    targetTime: initialPreset?.targetTime || 1200, // 20 minutes default
+    targetMilestones: initialPreset?.targetMilestones || 5,
+    milestoneMode: initialPreset?.milestoneMode || 'manual',
+    autoMilestoneInterval: initialPreset?.autoMilestoneInterval || 180, // 3 minutes default
+    intensity: initialPreset?.intensity || 'moderate',
+    voiceEnabled: true,
   });
+  
+  // Preset save state
+  const [showSavePreset, setShowSavePreset] = useState(false);
+  const [presetName, setPresetName] = useState('');
   
   // Workout state
   const [isWorkoutActive, setIsWorkoutActive] = useState(false);
@@ -128,16 +179,22 @@ export default function GuidedCardio({ onClose, onWorkoutComplete }: GuidedCardi
   const [workoutTime, setWorkoutTime] = useState(0);
   const [milestones, setMilestones] = useState(0);
   const [calories, setCalories] = useState(0);
+  const [lastAutoMilestoneTime, setLastAutoMilestoneTime] = useState(0);
   
   // UI state
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [coachingMessage, setCoachingMessage] = useState('');
   const [showCompletionModal, setShowCompletionModal] = useState(false);
+  const [showMilestoneFlash, setShowMilestoneFlash] = useState(false);
+  const [streakCount, setStreakCount] = useState(0);
   
   // Coaching state
   const [lastCoachingTime, setLastCoachingTime] = useState(0);
-  const [coachingInterval, setCoachingInterval] = useState(60); // seconds between coaching
+  const [coachingInterval, setCoachingInterval] = useState(45); // seconds between coaching
+  
+  // Confetti ref
+  const confettiRef = useRef<HTMLCanvasElement>(null);
   
   // Speech synthesis
   const speak = useCallback((text: string) => {
@@ -166,6 +223,24 @@ export default function GuidedCardio({ onClose, onWorkoutComplete }: GuidedCardi
     return messages[Math.floor(Math.random() * messages.length)];
   };
   
+  // Fire confetti for celebrations
+  const fireConfetti = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: [selectedActivity.color, '#FFD700', '#FF69B4', '#00FF00']
+      });
+    }
+  }, [selectedActivity.color]);
+
+  // Trigger milestone flash animation
+  const triggerMilestoneFlash = useCallback(() => {
+    setShowMilestoneFlash(true);
+    setTimeout(() => setShowMilestoneFlash(false), 1500);
+  }, []);
+  
   // Workout timer and coaching logic
   useEffect(() => {
     if (!isWorkoutActive || isPaused) return;
@@ -182,6 +257,24 @@ export default function GuidedCardio({ onClose, onWorkoutComplete }: GuidedCardi
         // Coaching logic
         const timeSinceLastCoaching = newTime - lastCoachingTime;
         
+        // Auto milestone check
+        if (config.milestoneMode === 'auto' && config.autoMilestoneInterval) {
+          const timeSinceLastAutoMilestone = newTime - lastAutoMilestoneTime;
+          if (timeSinceLastAutoMilestone >= config.autoMilestoneInterval) {
+            setMilestones(m => m + 1);
+            setLastAutoMilestoneTime(newTime);
+            setStreakCount(s => s + 1);
+            triggerMilestoneFlash();
+            showCoaching(getRandomMessage('autoMilestone'));
+            setLastCoachingTime(newTime);
+            
+            // Small confetti for auto milestones
+            if (typeof window !== 'undefined') {
+              confetti({ particleCount: 30, spread: 50, origin: { y: 0.7 } });
+            }
+          }
+        }
+        
         // Time-based goal progress
         if (config.goalType === 'time' && config.targetTime) {
           const progress = newTime / config.targetTime;
@@ -190,6 +283,7 @@ export default function GuidedCardio({ onClose, onWorkoutComplete }: GuidedCardi
           if (progress >= 0.5 && progress < 0.51) {
             showCoaching(getRandomMessage('halfway'));
             setLastCoachingTime(newTime);
+            fireConfetti();
           }
           // Almost done coaching
           else if (progress >= 0.85 && progress < 0.86) {
@@ -217,7 +311,7 @@ export default function GuidedCardio({ onClose, onWorkoutComplete }: GuidedCardi
     }, 1000);
     
     return () => clearInterval(interval);
-  }, [isWorkoutActive, isPaused, selectedActivity, config, lastCoachingTime, coachingInterval, showCoaching]);
+  }, [isWorkoutActive, isPaused, selectedActivity, config, lastCoachingTime, coachingInterval, showCoaching, lastAutoMilestoneTime, triggerMilestoneFlash, fireConfetti]);
   
   // Check milestone completion
   useEffect(() => {
@@ -242,32 +336,64 @@ export default function GuidedCardio({ onClose, onWorkoutComplete }: GuidedCardi
     setMilestones(0);
     setCalories(0);
     setLastCoachingTime(0);
+    setLastAutoMilestoneTime(0);
+    setStreakCount(0);
     
-    // Adjust coaching interval based on intensity
-    setCoachingInterval(config.intensity === 'intense' ? 45 : config.intensity === 'easy' ? 90 : 60);
+    // Adjust coaching interval based on intensity - more frequent for hype!
+    setCoachingInterval(config.intensity === 'intense' ? 35 : config.intensity === 'easy' ? 60 : 45);
     
-    // Initial coaching
-    setTimeout(() => showCoaching(getRandomMessage('start')), 500);
+    // Initial coaching with energy!
+    setTimeout(() => {
+      showCoaching(getRandomMessage('start'));
+      if (typeof window !== 'undefined') {
+        confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
+      }
+    }, 500);
   };
   
-  // Complete milestone
+  // Complete milestone (manual)
   const completeMilestone = () => {
     const newCount = milestones + 1;
     setMilestones(newCount);
+    setStreakCount(s => s + 1);
+    triggerMilestoneFlash();
+    
+    // Fire confetti!
+    fireConfetti();
     
     // Coaching for milestone
     if (config.goalType === 'milestones' && config.targetMilestones) {
       const remaining = config.targetMilestones - newCount;
       if (remaining === 1) {
-        showCoaching("Just one more milestone to go!");
+        showCoaching("ONE MORE to go! You're almost a LEGEND! 🔥");
       } else if (remaining === 0) {
         // Will trigger completion via useEffect
       } else {
-        showCoaching(`${getRandomMessage('milestone')} ${remaining} more to go.`);
+        showCoaching(`${getRandomMessage('milestone')} Only ${remaining} more!`);
       }
     } else {
       showCoaching(getRandomMessage('milestone'));
     }
+  };
+  
+  // Save current config as preset
+  const saveAsPreset = () => {
+    if (!presetName.trim() || !onSavePreset) return;
+    
+    onSavePreset({
+      name: presetName.trim(),
+      activityType: selectedActivity.id,
+      goalType: config.goalType,
+      targetTime: config.targetTime,
+      targetMilestones: config.targetMilestones,
+      milestoneMode: config.milestoneMode,
+      autoMilestoneInterval: config.autoMilestoneInterval,
+      intensity: config.intensity,
+    });
+    
+    setShowSavePreset(false);
+    setPresetName('');
+    showCoaching("Preset saved! 💾");
   };
   
   // Complete workout
@@ -277,12 +403,41 @@ export default function GuidedCardio({ onClose, onWorkoutComplete }: GuidedCardi
     showCoaching(getRandomMessage('complete'));
     setShowCompletionModal(true);
     
+    // Big celebration confetti!
+    if (typeof window !== 'undefined') {
+      const duration = 3000;
+      const end = Date.now() + duration;
+      const colors = [selectedActivity.color, '#FFD700', '#FF69B4', '#00FF00', '#00BFFF'];
+      
+      (function frame() {
+        confetti({
+          particleCount: 5,
+          angle: 60,
+          spread: 55,
+          origin: { x: 0 },
+          colors
+        });
+        confetti({
+          particleCount: 5,
+          angle: 120,
+          spread: 55,
+          origin: { x: 1 },
+          colors
+        });
+        if (Date.now() < end) {
+          requestAnimationFrame(frame);
+        }
+      }());
+    }
+    
     if (onWorkoutComplete) {
       onWorkoutComplete({
         activityType: selectedActivity.name,
         duration: workoutTime,
         milestones,
         calories: Math.round(calories),
+        milestoneMode: config.milestoneMode,
+        autoMilestoneInterval: config.autoMilestoneInterval,
       });
     }
   };
@@ -478,23 +633,85 @@ export default function GuidedCardio({ onClose, onWorkoutComplete }: GuidedCardi
           
           {/* Milestones Goal Setting */}
           {config.goalType === 'milestones' && (
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Target Milestones: {config.targetMilestones}
-              </label>
-              <input
-                type="range"
-                min="1"
-                max="20"
-                value={config.targetMilestones || 5}
-                onChange={(e) => setConfig({ ...config, targetMilestones: parseInt(e.target.value) })}
-                className="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer"
-              />
-              <p className="text-xs text-gray-400 mt-2">
-                Mark milestones as you walk around your neighborhood, reach landmarks, or complete sections.
-              </p>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Target Milestones: {config.targetMilestones}
+                </label>
+                <input
+                  type="range"
+                  min="1"
+                  max="20"
+                  value={config.targetMilestones || 5}
+                  onChange={(e) => setConfig({ ...config, targetMilestones: parseInt(e.target.value) })}
+                  className="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer"
+                />
+              </div>
             </div>
           )}
+
+          {/* Milestone Mode - Manual vs Auto */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-3">
+              <MapPin className="w-4 h-4 inline mr-1" />
+              Checkpoint Style
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => setConfig({ ...config, milestoneMode: 'manual' })}
+                className={`p-4 rounded-xl transition-all ${
+                  config.milestoneMode === 'manual'
+                    ? 'bg-purple-500/20 border-2 border-purple-500 text-white'
+                    : 'bg-gray-700 border-2 border-transparent text-gray-300 hover:bg-gray-600'
+                }`}
+              >
+                <Hand className="w-6 h-6 mx-auto mb-2" />
+                <div className="font-medium">Manual</div>
+                <div className="text-xs text-gray-400">Tap to mark</div>
+              </button>
+              <button
+                onClick={() => setConfig({ ...config, milestoneMode: 'auto' })}
+                className={`p-4 rounded-xl transition-all ${
+                  config.milestoneMode === 'auto'
+                    ? 'bg-cyan-500/20 border-2 border-cyan-500 text-white'
+                    : 'bg-gray-700 border-2 border-transparent text-gray-300 hover:bg-gray-600'
+                }`}
+              >
+                <Timer className="w-6 h-6 mx-auto mb-2" />
+                <div className="font-medium">Auto</div>
+                <div className="text-xs text-gray-400">Timed intervals</div>
+              </button>
+            </div>
+            
+            {config.milestoneMode === 'manual' && (
+              <p className="text-xs text-gray-400 mt-3 flex items-start gap-2">
+                <Star className="w-4 h-4 text-yellow-500 flex-shrink-0 mt-0.5" />
+                Tap the milestone button when you pass landmarks, complete loops, or hit personal goals!
+              </p>
+            )}
+            
+            {config.milestoneMode === 'auto' && (
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Auto checkpoint every: {Math.floor((config.autoMilestoneInterval || 180) / 60)} min
+                </label>
+                <input
+                  type="range"
+                  min="60"
+                  max="600"
+                  step="30"
+                  value={config.autoMilestoneInterval || 180}
+                  onChange={(e) => setConfig({ ...config, autoMilestoneInterval: parseInt(e.target.value) })}
+                  className="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer"
+                />
+                <div className="flex justify-between text-xs text-gray-400 mt-1">
+                  <span>1 min</span>
+                  <span>5 min</span>
+                  <span>10 min</span>
+                </div>
+              </div>
+            )}
+          </div>
           
           {/* Intensity */}
           <div>
@@ -518,59 +735,133 @@ export default function GuidedCardio({ onClose, onWorkoutComplete }: GuidedCardi
             </div>
           </div>
           
+          {/* Save as Preset */}
+          {onSavePreset && (
+            <div className="pt-2">
+              {!showSavePreset ? (
+                <button
+                  onClick={() => setShowSavePreset(true)}
+                  className="w-full py-3 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-xl font-medium transition-all border border-gray-600"
+                >
+                  <Star className="w-5 h-5 inline mr-2" />
+                  Save as Preset
+                </button>
+              ) : (
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={presetName}
+                    onChange={(e) => setPresetName(e.target.value)}
+                    placeholder="Preset name..."
+                    className="flex-1 px-4 py-3 bg-gray-700 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
+                  />
+                  <button
+                    onClick={saveAsPreset}
+                    disabled={!presetName.trim()}
+                    className="px-4 py-3 bg-purple-500 hover:bg-purple-600 disabled:bg-gray-600 text-white rounded-xl font-medium transition-colors"
+                  >
+                    Save
+                  </button>
+                  <button
+                    onClick={() => setShowSavePreset(false)}
+                    className="px-4 py-3 bg-gray-600 hover:bg-gray-500 text-white rounded-xl transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Start Button */}
           <button
             onClick={startWorkout}
-            className="w-full py-4 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white rounded-xl font-bold text-lg transition-all shadow-lg"
+            className="w-full py-5 bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 hover:from-green-600 hover:via-emerald-600 hover:to-teal-600 text-white rounded-xl font-bold text-xl transition-all shadow-lg shadow-green-500/25 hover:shadow-green-500/40 hover:scale-[1.02] active:scale-[0.98]"
           >
-            <Play className="w-6 h-6 inline mr-2" />
-            Start Workout
+            <Rocket className="w-6 h-6 inline mr-2" />
+            LET'S GO! 🔥
           </button>
         </div>
       )}
       
       {/* Active Workout Screen */}
       {!showConfig && (
-        <div className="p-6">
+        <div className="p-6 relative overflow-hidden">
+          {/* Milestone Flash Overlay */}
+          {showMilestoneFlash && (
+            <div className="absolute inset-0 bg-gradient-to-b from-yellow-500/30 via-transparent to-transparent animate-pulse z-10 pointer-events-none" />
+          )}
+          
+          {/* Activity & Mode Indicator */}
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <div 
+              className="px-4 py-2 rounded-full flex items-center gap-2"
+              style={{ backgroundColor: `${selectedActivity.color}20` }}
+            >
+              <selectedActivity.icon className="w-5 h-5" style={{ color: selectedActivity.color }} />
+              <span className="text-white font-medium">{selectedActivity.name}</span>
+              <span className="text-2xl">{selectedActivity.hypeEmoji}</span>
+            </div>
+            {config.milestoneMode === 'auto' && (
+              <div className="px-3 py-2 bg-cyan-500/20 rounded-full flex items-center gap-1">
+                <Timer className="w-4 h-4 text-cyan-400" />
+                <span className="text-cyan-400 text-sm">Auto</span>
+              </div>
+            )}
+          </div>
+
           {/* Progress Ring */}
           <div className="relative flex flex-col items-center justify-center mb-6">
-            <div className="relative w-48 h-48">
+            <div className="relative w-52 h-52">
+              {/* Outer glow */}
+              <div 
+                className="absolute inset-0 rounded-full blur-xl opacity-30"
+                style={{ backgroundColor: selectedActivity.color }}
+              />
+              
               {/* Background circle */}
-              <svg className="w-full h-full transform -rotate-90">
+              <svg className="w-full h-full transform -rotate-90 relative z-10">
                 <circle
-                  cx="96"
-                  cy="96"
-                  r="88"
+                  cx="104"
+                  cy="104"
+                  r="92"
                   stroke="currentColor"
-                  strokeWidth="8"
+                  strokeWidth="10"
                   fill="none"
                   className="text-gray-700"
                 />
                 {/* Progress circle */}
                 {config.goalType !== 'free' && (
                   <circle
-                    cx="96"
-                    cy="96"
-                    r="88"
+                    cx="104"
+                    cy="104"
+                    r="92"
                     stroke={selectedActivity.color}
-                    strokeWidth="8"
+                    strokeWidth="10"
                     fill="none"
                     strokeLinecap="round"
-                    strokeDasharray={553}
-                    strokeDashoffset={553 - (553 * getProgress()) / 100}
+                    strokeDasharray={578}
+                    strokeDashoffset={578 - (578 * getProgress()) / 100}
                     className="transition-all duration-500"
+                    style={{ filter: `drop-shadow(0 0 8px ${selectedActivity.color})` }}
                   />
                 )}
               </svg>
               
               {/* Center content */}
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <div className="text-4xl font-mono font-bold text-white">
+              <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
+                <div className="text-5xl font-mono font-bold text-white tracking-tight">
                   {formatTime(workoutTime)}
                 </div>
                 {getTimeRemaining() !== null && (
-                  <div className="text-sm text-gray-400">
-                    {formatTime(getTimeRemaining()!)} remaining
+                  <div className="text-sm text-gray-400 mt-1">
+                    {formatTime(getTimeRemaining()!)} left
+                  </div>
+                )}
+                {config.milestoneMode === 'auto' && config.autoMilestoneInterval && (
+                  <div className="text-xs text-cyan-400 mt-2 flex items-center gap-1">
+                    <Timer className="w-3 h-3" />
+                    Next in {formatTime(config.autoMilestoneInterval - ((workoutTime - lastAutoMilestoneTime) % config.autoMilestoneInterval))}
                   </div>
                 )}
               </div>
@@ -579,46 +870,59 @@ export default function GuidedCardio({ onClose, onWorkoutComplete }: GuidedCardi
           
           {/* Coaching Message */}
           {coachingMessage && (
-            <div className="mb-6 animate-pulse">
-              <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 rounded-xl px-6 py-4 text-center">
-                <p className="text-white text-lg font-semibold">{coachingMessage}</p>
+            <div className="mb-6">
+              <div 
+                className="bg-gradient-to-r from-purple-500/30 via-pink-500/30 to-orange-500/30 border-2 border-purple-500/50 rounded-2xl px-6 py-5 text-center animate-bounce"
+                style={{ animationDuration: '2s' }}
+              >
+                <p className="text-white text-xl font-bold">{coachingMessage}</p>
               </div>
             </div>
           )}
           
           {/* Stats Grid */}
-          <div className="grid grid-cols-3 gap-4 mb-6">
-            <div className="bg-gray-800 rounded-xl p-4 text-center">
+          <div className="grid grid-cols-3 gap-3 mb-6">
+            <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-4 text-center border border-gray-700">
               <div className="text-3xl font-bold" style={{ color: selectedActivity.color }}>
                 {milestones}
               </div>
               <div className="text-xs text-gray-400">
-                {config.goalType === 'milestones' ? `/ ${config.targetMilestones}` : ''} Milestones
+                {config.goalType === 'milestones' ? `/ ${config.targetMilestones}` : ''} Checkpoints
               </div>
             </div>
-            <div className="bg-gray-800 rounded-xl p-4 text-center">
+            <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-4 text-center border border-gray-700">
               <div className="text-3xl font-bold text-orange-400">
                 {Math.round(calories)}
               </div>
-              <div className="text-xs text-gray-400">Calories</div>
+              <div className="text-xs text-gray-400">🔥 Calories</div>
             </div>
-            <div className="bg-gray-800 rounded-xl p-4 text-center">
+            <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-4 text-center border border-gray-700">
               <div className="text-3xl font-bold text-blue-400">
-                {Math.round(getProgress())}%
+                {streakCount > 0 ? `${streakCount}🔥` : `${Math.round(getProgress())}%`}
               </div>
-              <div className="text-xs text-gray-400">Progress</div>
+              <div className="text-xs text-gray-400">{streakCount > 0 ? 'Streak' : 'Progress'}</div>
             </div>
           </div>
           
-          {/* Milestone Button */}
-          <button
-            onClick={completeMilestone}
-            disabled={isPaused}
-            className="w-full py-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 disabled:from-gray-600 disabled:to-gray-600 text-white rounded-xl font-bold text-lg transition-all shadow-lg mb-4"
-          >
-            <MapPin className="w-5 h-5 inline mr-2" />
-            Mark Milestone {milestones + 1}
-          </button>
+          {/* Milestone Button - Only show for manual mode */}
+          {config.milestoneMode === 'manual' && (
+            <button
+              onClick={completeMilestone}
+              disabled={isPaused}
+              className="w-full py-5 bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 hover:from-purple-600 hover:via-pink-600 hover:to-orange-600 disabled:from-gray-600 disabled:to-gray-600 text-white rounded-xl font-bold text-xl transition-all shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 mb-4 hover:scale-[1.02] active:scale-[0.98]"
+            >
+              <PartyPopper className="w-6 h-6 inline mr-2" />
+              CHECKPOINT! 🎯 #{milestones + 1}
+            </button>
+          )}
+          
+          {/* Auto mode indicator */}
+          {config.milestoneMode === 'auto' && (
+            <div className="w-full py-4 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border-2 border-cyan-500/30 text-cyan-400 rounded-xl font-medium text-center mb-4">
+              <Timer className="w-5 h-5 inline mr-2" />
+              Auto-checkpoints every {Math.floor((config.autoMilestoneInterval || 180) / 60)} min
+            </div>
+          )}
           
           {/* Control Buttons */}
           <div className="flex items-center justify-center gap-4">

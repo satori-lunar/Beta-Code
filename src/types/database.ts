@@ -461,6 +461,96 @@ export type Database = {
         }
         Relationships: []
       }
+      workout_presets: {
+        Row: {
+          id: string
+          user_id: string
+          name: string
+          activity_type: string
+          goal_type: string
+          target_time: number | null
+          target_milestones: number | null
+          milestone_mode: string
+          auto_milestone_interval: number | null
+          intensity: string
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          name: string
+          activity_type: string
+          goal_type: string
+          target_time?: number | null
+          target_milestones?: number | null
+          milestone_mode: string
+          auto_milestone_interval?: number | null
+          intensity: string
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          name?: string
+          activity_type?: string
+          goal_type?: string
+          target_time?: number | null
+          target_milestones?: number | null
+          milestone_mode?: string
+          auto_milestone_interval?: number | null
+          intensity?: string
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      workout_history: {
+        Row: {
+          id: string
+          user_id: string
+          activity_type: string
+          duration: number
+          milestones: number
+          calories: number
+          goal_type: string | null
+          milestone_mode: string | null
+          auto_milestone_interval: number | null
+          notes: string | null
+          finished_at: string
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          activity_type: string
+          duration: number
+          milestones: number
+          calories: number
+          goal_type?: string | null
+          milestone_mode?: string | null
+          auto_milestone_interval?: number | null
+          notes?: string | null
+          finished_at: string
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          activity_type?: string
+          duration?: number
+          milestones?: number
+          calories?: number
+          goal_type?: string | null
+          milestone_mode?: string | null
+          auto_milestone_interval?: number | null
+          notes?: string | null
+          finished_at?: string
+          created_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

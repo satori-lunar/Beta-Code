@@ -36,7 +36,10 @@ import {
   Star,
   Clock,
   Trophy,
-  Trash2
+  Trash2,
+  Home,
+  MapPin,
+  Navigation
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { useTheme } from '../contexts/ThemeContext';
@@ -86,6 +89,8 @@ export default function HealthDashboard() {
   const [editValues, setEditValues] = useState<Record<string, string>>({});
   const [activeTab, setActiveTab] = useState<TabType>('workout');
   const [showWorkoutCamera, setShowWorkoutCamera] = useState(false);
+  const [showModeSelection, setShowModeSelection] = useState(false);
+  const [workoutMode, setWorkoutMode] = useState<'indoor' | 'outdoor' | null>(null);
   const [selectedPreset, setSelectedPreset] = useState<WorkoutPreset | undefined>(undefined);
   const [activeMindfulness, setActiveMindfulness] = useState<'breathing' | 'bodyscan' | 'gratitude' | 'meditation' | null>(null);
 
@@ -809,14 +814,87 @@ export default function HealthDashboard() {
         <div className="space-y-6">
           {showWorkoutCamera ? (
             <GuidedCardio
+              mode={workoutMode || 'outdoor'}
               onClose={() => {
                 setShowWorkoutCamera(false);
+                setShowModeSelection(false);
+                setWorkoutMode(null);
                 setSelectedPreset(undefined);
               }}
               onWorkoutComplete={handleWorkoutComplete}
               onSavePreset={handleSavePreset}
               initialPreset={selectedPreset}
             />
+          ) : showModeSelection ? (
+            <div className="card p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold text-gray-900">Choose Your Workout Location</h3>
+                <button
+                  onClick={() => setShowModeSelection(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Indoor Workout */}
+                <button
+                  onClick={() => {
+                    setWorkoutMode('indoor');
+                    setShowModeSelection(false);
+                    setShowWorkoutCamera(true);
+                  }}
+                  className="group p-6 rounded-2xl border-2 border-gray-200 hover:border-purple-300 hover:shadow-lg transition-all text-left"
+                >
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="w-16 h-16 rounded-xl bg-purple-100 group-hover:bg-purple-200 flex items-center justify-center transition-colors">
+                      <Home className="w-8 h-8 text-purple-600" />
+                    </div>
+                    <div>
+                      <h4 className="text-xl font-bold text-gray-900">Indoor Workout</h4>
+                      <p className="text-sm text-gray-500">Work out at home</p>
+                    </div>
+                  </div>
+                  <p className="text-gray-600 mb-4">
+                    Zumba, Cardio, and Walking workouts with guided videos and optional camera for form check.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="px-3 py-1 bg-purple-50 text-purple-700 rounded-full text-sm font-medium">Zumba</span>
+                    <span className="px-3 py-1 bg-purple-50 text-purple-700 rounded-full text-sm font-medium">Cardio</span>
+                    <span className="px-3 py-1 bg-purple-50 text-purple-700 rounded-full text-sm font-medium">Walking</span>
+                  </div>
+                </button>
+
+                {/* Outdoor Workout */}
+                <button
+                  onClick={() => {
+                    setWorkoutMode('outdoor');
+                    setShowModeSelection(false);
+                    setShowWorkoutCamera(true);
+                  }}
+                  className="group p-6 rounded-2xl border-2 border-gray-200 hover:border-green-300 hover:shadow-lg transition-all text-left"
+                >
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="w-16 h-16 rounded-xl bg-green-100 group-hover:bg-green-200 flex items-center justify-center transition-colors">
+                      <Navigation className="w-8 h-8 text-green-600" />
+                    </div>
+                    <div>
+                      <h4 className="text-xl font-bold text-gray-900">Outdoor Workout</h4>
+                      <p className="text-sm text-gray-500">Track your route with GPS</p>
+                    </div>
+                  </div>
+                  <p className="text-gray-600 mb-4">
+                    Running, Walking, and Jogging with real-time GPS tracking and route mapping.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="px-3 py-1 bg-green-50 text-green-700 rounded-full text-sm font-medium">Running</span>
+                    <span className="px-3 py-1 bg-green-50 text-green-700 rounded-full text-sm font-medium">Walking</span>
+                    <span className="px-3 py-1 bg-green-50 text-green-700 rounded-full text-sm font-medium">Jogging</span>
+                  </div>
+                </button>
+              </div>
+            </div>
           ) : (
             <>
               {/* Quick Start or Continue */}
@@ -838,8 +916,7 @@ export default function HealthDashboard() {
                 
                 <button
                   onClick={() => {
-                    setSelectedPreset(undefined);
-                    setShowWorkoutCamera(true);
+                    setShowModeSelection(true);
                   }}
                   className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-xl font-bold text-lg transition-all hover:scale-[1.02] active:scale-[0.98]"
                 >

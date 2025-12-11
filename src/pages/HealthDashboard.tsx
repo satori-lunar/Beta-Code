@@ -93,7 +93,6 @@ export default function HealthDashboard() {
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [weeklyData] = useState(generateWeeklyData);
   const [heartBeat, setHeartBeat] = useState(false);
-  const [isWorkoutActive, setIsWorkoutActive] = useState(false);
   const [selectedWorkout, setSelectedWorkout] = useState<string | null>(null);
   const [showWorkoutCamera, setShowWorkoutCamera] = useState(false);
 
@@ -993,7 +992,6 @@ export default function HealthDashboard() {
             <GuidedCardio
               onClose={() => {
                 setShowWorkoutCamera(false);
-                setIsWorkoutActive(false);
               }}
               onWorkoutComplete={(data) => {
                 console.log('Workout completed:', data);

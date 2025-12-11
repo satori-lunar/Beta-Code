@@ -38,7 +38,6 @@ import {
   Trophy,
   Trash2,
   Home,
-  MapPin,
   Navigation
 } from 'lucide-react';
 import { useStore } from '../store/useStore';

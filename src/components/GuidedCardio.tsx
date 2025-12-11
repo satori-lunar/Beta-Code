@@ -9,7 +9,6 @@ import {
   Volume2,
   VolumeX,
   Flame,
-  Target,
   ChevronDown,
   Check,
   MapPin,
@@ -29,9 +28,32 @@ import {
   Gauge,
   Route,
   MapPinned,
-  AlertCircle
+  AlertCircle,
+  Video,
+  Camera,
+  Music
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { MapContainer, TileLayer, Polyline, Marker, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
+// Fix Leaflet default icon issue
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+});
+
+// Component to update map view when position changes
+function MapUpdater({ center }: { center: [number, number] }) {
+  const map = useMap();
+  useEffect(() => {
+    map.setView(center, map.getZoom());
+  }, [center, map]);
+  return null;
+}
 
 // GPS Coordinate type
 interface GpsCoordinate {
@@ -94,40 +116,45 @@ interface CardioType {
   tips: string[];
 }
 
-const cardioTypes: CardioType[] = [
+// Indoor workout types (with YouTube videos)
+const indoorCardioTypes: CardioType[] = [
   { 
-    id: 'walking', 
+    id: 'zumba', 
+    name: 'Zumba', 
+    icon: Music, 
+    color: '#ec4899', 
+    caloriesPerMinute: 8, 
+    description: 'Dance fitness party', 
+    hypeEmoji: '💃',
+    videoId: 'vNPbnbl85u4', // Zumba workout video
+    tips: ['Move to the beat!', 'Keep it fun and energetic', 'Don\'t worry about perfect moves', 'Just keep moving and having fun!']
+  },
+  { 
+    id: 'cardio', 
+    name: 'Cardio', 
+    icon: Zap, 
+    color: '#06b6d4', 
+    caloriesPerMinute: 9, 
+    description: 'Full body cardio', 
+    hypeEmoji: '⚡',
+    videoId: 'ml6cT4AZdqI', // Cardio workout video
+    tips: ['Stay in your comfort zone', 'Focus on form over speed', 'Take breaks when needed', 'Stay hydrated!']
+  },
+  { 
+    id: 'walking-indoor', 
     name: 'Walking', 
     icon: Footprints, 
     color: '#22c55e', 
     caloriesPerMinute: 4, 
-    description: 'Leisurely pace', 
+    description: 'Indoor walking workout', 
     hypeEmoji: '🚶',
-    videoId: 'njeZ29umqVE', // Walking workout video
-    tips: ['Keep your head up and look forward', 'Swing your arms naturally', 'Take comfortable strides', 'Breathe deeply and enjoy!']
+    videoId: 'X3fkMqKbVCE', // Indoor walking workout video
+    tips: ['Keep your head up', 'Swing your arms naturally', 'Maintain steady pace', 'Focus on your breathing']
   },
-  { 
-    id: 'brisk-walk', 
-    name: 'Power Walk', 
-    icon: Zap, 
-    color: '#10b981', 
-    caloriesPerMinute: 5.5, 
-    description: 'Fast & fierce', 
-    hypeEmoji: '⚡',
-    videoId: 'X3fkMqKbVCE', // Power walking video
-    tips: ['Pump your arms with bent elbows', 'Take quick, short steps', 'Engage your core', 'Push through your heels']
-  },
-  { 
-    id: 'jogging', 
-    name: 'Jogging', 
-    icon: Wind, 
-    color: '#f59e0b', 
-    caloriesPerMinute: 8, 
-    description: 'Light running', 
-    hypeEmoji: '🏃',
-    videoId: 'wCVSv7UxB2E', // Jogging technique
-    tips: ['Land midfoot, not heel', 'Keep shoulders relaxed', 'Find a comfortable pace', 'Breathe rhythmically']
-  },
+];
+
+// Outdoor workout types (with GPS tracking)
+const outdoorCardioTypes: CardioType[] = [
   { 
     id: 'running', 
     name: 'Running', 
@@ -136,48 +163,30 @@ const cardioTypes: CardioType[] = [
     caloriesPerMinute: 11, 
     description: 'Steady run', 
     hypeEmoji: '🔥',
-    videoId: 'brFHyOtTwH4', // Running form
     tips: ['Drive your knees forward', 'Keep arms at 90 degrees', 'Stay light on your feet', 'Maintain steady breathing']
   },
-  { 
-    id: 'interval', 
-    name: 'Intervals', 
-    icon: Target, 
-    color: '#8b5cf6', 
-    caloriesPerMinute: 10, 
-    description: 'Walk/run mix', 
-    hypeEmoji: '💪',
-    videoId: 'VXAK6qvtHRQ', // Interval training
-    tips: ['Alternate between fast and slow', 'Push hard during sprints', 'Recover actively, keep moving', 'Challenge yourself each interval']
+  {
+    id: 'walking',
+    name: 'Walking',
+    icon: Footprints,
+    color: '#22c55e',
+    caloriesPerMinute: 4,
+    description: 'Leisurely pace',
+    hypeEmoji: '🚶',
+    tips: ['Keep your head up and look forward', 'Swing your arms naturally', 'Take comfortable strides', 'Breathe deeply and enjoy!']
   },
-  { 
-    id: 'free-cardio', 
-    name: 'Free Cardio', 
-    icon: Sparkles, 
-    color: '#06b6d4', 
-    caloriesPerMinute: 7, 
-    description: 'Any activity', 
-    hypeEmoji: '✨',
-    tips: ['Mix it up!', 'Do what feels good', 'Keep moving and have fun', 'Dance, jump, just move!']
+  {
+    id: 'jogging',
+    name: 'Jogging',
+    icon: Wind,
+    color: '#f59e0b',
+    caloriesPerMinute: 8,
+    description: 'Light running',
+    hypeEmoji: '🏃',
+    tips: ['Land midfoot, not heel', 'Keep shoulders relaxed', 'Find a comfortable pace', 'Breathe rhythmically']
   },
 ];
 
-// Free cardio sub-types for variety
-interface FreeCardioOption {
-  id: string;
-  name: string;
-  icon: React.ElementType;
-  color: string;
-  videoId: string;
-  description: string;
-}
-
-const freeCardioOptions: FreeCardioOption[] = [
-  { id: 'dance', name: 'Dance Cardio', icon: Sparkles, color: '#ec4899', videoId: 'ZWk19OVon2k', description: 'Fun dance workout' },
-  { id: 'hiit', name: 'HIIT', icon: Flame, color: '#ef4444', videoId: 'ml6cT4AZdqI', description: 'High intensity bursts' },
-  { id: 'jumprope', name: 'Jump Rope', icon: Zap, color: '#f59e0b', videoId: 'u3zgHI8QnqE', description: 'Cardio skipping' },
-  { id: 'boxing', name: 'Boxing', icon: Target, color: '#8b5cf6', videoId: 'HwBmPLP5kBI', description: 'Punch it out' },
-];
 
 // Goal types
 type GoalType = 'free' | 'time' | 'milestones';
@@ -211,6 +220,7 @@ interface GuidedCardioProps {
   onWorkoutComplete?: (data: WorkoutData) => void;
   onSavePreset?: (preset: WorkoutPreset) => void;
   initialPreset?: WorkoutPreset;
+  mode?: 'indoor' | 'outdoor'; // Workout location mode
 }
 
 export interface WorkoutData {
@@ -286,12 +296,22 @@ const coachingMessages = {
   ],
 };
 
-export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset, initialPreset }: GuidedCardioProps) {
+export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset, initialPreset, mode = 'indoor' }: GuidedCardioProps) {
+  // Determine available workout types based on mode
+  const availableCardioTypes = mode === 'indoor' ? indoorCardioTypes : outdoorCardioTypes;
+  
   // Activity selection
   const [selectedActivity, setSelectedActivity] = useState<CardioType>(
-    initialPreset ? cardioTypes.find(t => t.id === initialPreset.activityType) || cardioTypes[0] : cardioTypes[0]
+    initialPreset 
+      ? availableCardioTypes.find(t => t.id === initialPreset.activityType) || availableCardioTypes[0]
+      : availableCardioTypes[0]
   );
   const [showActivityPicker, setShowActivityPicker] = useState(false);
+  
+  // Camera state for indoor workouts
+  const [cameraEnabled, setCameraEnabled] = useState(false);
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   
   // Workout configuration
   const [showConfig, setShowConfig] = useState(true);
@@ -309,8 +329,7 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
   const [showSavePreset, setShowSavePreset] = useState(false);
   const [presetName, setPresetName] = useState('');
   
-  // Free cardio sub-option
-  const [selectedFreeCardio, setSelectedFreeCardio] = useState<FreeCardioOption | null>(null);
+  // Video display state for indoor workouts
   const [showVideo, setShowVideo] = useState(false);
   
   // Workout state
@@ -333,8 +352,8 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
   const [lastCoachingTime, setLastCoachingTime] = useState(0);
   const [coachingInterval, setCoachingInterval] = useState(45); // seconds between coaching
   
-  // GPS tracking state
-  const [gpsEnabled, setGpsEnabled] = useState(false);
+  // GPS tracking state (enabled by default for outdoor workouts)
+  const [gpsEnabled, setGpsEnabled] = useState(mode === 'outdoor');
   const [gpsPermission, setGpsPermission] = useState<'prompt' | 'granted' | 'denied'>('prompt');
   const [currentPosition, setCurrentPosition] = useState<GpsCoordinate | null>(null);
   const [routeHistory, setRouteHistory] = useState<GpsCoordinate[]>([]);
@@ -440,6 +459,42 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
       setGpsPermission('denied');
     }
   }, []);
+
+  // Camera functions for indoor workouts
+  const startCamera = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: 'user' },
+        audio: false 
+      });
+      setCameraStream(stream);
+      setCameraEnabled(true);
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    } catch (error) {
+      console.error('Error accessing camera:', error);
+      setCameraEnabled(false);
+    }
+  }, []);
+
+  const stopCamera = useCallback(() => {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(track => track.stop());
+      setCameraStream(null);
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    setCameraEnabled(false);
+  }, [cameraStream]);
+
+  // Cleanup camera on unmount
+  useEffect(() => {
+    return () => {
+      stopCamera();
+    };
+  }, [stopCamera]);
 
   // Calculate average speed when workout is active
   useEffect(() => {
@@ -628,6 +683,11 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
     setLastAutoMilestoneTime(0);
     setStreakCount(0);
     
+    // Stop camera for outdoor workouts
+    if (mode === 'outdoor' && cameraEnabled) {
+      stopCamera();
+    }
+    
     // Reset GPS tracking
     setTotalDistance(0);
     setCurrentSpeed(0);
@@ -755,6 +815,7 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
       setIsWorkoutActive(false);
       setShowConfig(true);
       stopGpsTracking();
+      stopCamera();
     }
   };
   
@@ -847,13 +908,12 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
               
               {showActivityPicker && (
                 <div className="absolute top-full left-0 right-0 mt-2 bg-gray-700 rounded-xl shadow-xl z-10 max-h-64 overflow-y-auto">
-                  {cardioTypes.map(activity => (
+                  {availableCardioTypes.map(activity => (
                     <button
                       key={activity.id}
                       onClick={() => {
                         setSelectedActivity(activity);
                         setShowActivityPicker(false);
-                        setSelectedFreeCardio(null);
                       }}
                       className="w-full flex items-center gap-3 p-3 hover:bg-gray-600 transition-colors first:rounded-t-xl last:rounded-b-xl"
                     >
@@ -877,47 +937,14 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
             </div>
           </div>
 
-          {/* Free Cardio Options */}
-          {selectedActivity.id === 'free-cardio' && (
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-3">Choose Your Style</label>
-              <div className="grid grid-cols-2 gap-3">
-                {freeCardioOptions.map(option => (
-                  <button
-                    key={option.id}
-                    onClick={() => setSelectedFreeCardio(option)}
-                    className={`p-4 rounded-xl transition-all ${
-                      selectedFreeCardio?.id === option.id
-                        ? 'border-2 shadow-lg'
-                        : 'bg-gray-700 border-2 border-transparent hover:bg-gray-600'
-                    }`}
-                    style={selectedFreeCardio?.id === option.id ? { 
-                      borderColor: option.color,
-                      backgroundColor: `${option.color}15`
-                    } : {}}
-                  >
-                    <option.icon 
-                      className="w-8 h-8 mx-auto mb-2" 
-                      style={{ color: selectedFreeCardio?.id === option.id ? option.color : '#9ca3af' }} 
-                    />
-                    <div className={`font-medium ${selectedFreeCardio?.id === option.id ? 'text-white' : 'text-gray-300'}`}>
-                      {option.name}
-                    </div>
-                    <div className="text-xs text-gray-400">{option.description}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* Workout Tips & Video Preview */}
           <div className="bg-gray-800/50 rounded-xl p-4">
             <div className="flex items-center justify-between mb-3">
               <h4 className="font-medium text-white flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-yellow-500" />
-                {selectedActivity.id === 'free-cardio' && selectedFreeCardio ? selectedFreeCardio.name : selectedActivity.name} Tips
+                {selectedActivity.name} Tips
               </h4>
-              {(selectedActivity.videoId || selectedFreeCardio?.videoId) && (
+              {mode === 'indoor' && selectedActivity.videoId && (
                 <button
                   onClick={() => setShowVideo(!showVideo)}
                   className="text-sm text-cyan-400 hover:text-cyan-300 flex items-center gap-1"
@@ -930,10 +957,7 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
             
             {/* Tips List */}
             <div className="space-y-2 mb-3">
-              {(selectedActivity.id === 'free-cardio' && selectedFreeCardio ? 
-                ['Follow along with the video', 'Stay hydrated', 'Go at your own pace', 'Have fun!'] :
-                selectedActivity.tips
-              ).map((tip, i) => (
+              {selectedActivity.tips.map((tip, i) => (
                 <div key={i} className="flex items-center gap-2 text-sm text-gray-400">
                   <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: selectedActivity.color }} />
                   {tip}
@@ -941,13 +965,13 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
               ))}
             </div>
 
-            {/* Video Embed */}
-            {showVideo && (selectedActivity.videoId || selectedFreeCardio?.videoId) && (
+            {/* Video Embed - Indoor workouts only */}
+            {mode === 'indoor' && showVideo && selectedActivity.videoId && (
               <div className="mt-4">
                 <div className="relative w-full pt-[56.25%] bg-gray-900 rounded-lg overflow-hidden">
                   <iframe
                     className="absolute inset-0 w-full h-full"
-                    src={`https://www.youtube.com/embed/${selectedFreeCardio?.videoId || selectedActivity.videoId}?modestbranding=1&rel=0`}
+                    src={`https://www.youtube.com/embed/${selectedActivity.videoId}?modestbranding=1&rel=0`}
                     title="Workout Guide"
                     frameBorder="0"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -1110,7 +1134,42 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
             )}
           </div>
 
-          {/* GPS Tracking */}
+          {/* Camera Toggle - Indoor workouts only */}
+          {mode === 'indoor' && (
+            <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-xl p-4 border border-purple-500/20">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Camera className="w-5 h-5 text-purple-400" />
+                  <span className="font-medium text-white">Camera</span>
+                  <span className="text-xs bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded-full">OPTIONAL</span>
+                </div>
+                <button
+                  onClick={() => {
+                    if (!cameraEnabled) {
+                      startCamera();
+                    } else {
+                      stopCamera();
+                    }
+                  }}
+                  className={`relative w-14 h-7 rounded-full transition-colors ${
+                    cameraEnabled ? 'bg-purple-500' : 'bg-gray-600'
+                  }`}
+                >
+                  <div className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow-md transition-transform ${
+                    cameraEnabled ? 'translate-x-8' : 'translate-x-1'
+                  }`} />
+                </button>
+              </div>
+              <p className="text-xs text-gray-500">
+                {cameraEnabled 
+                  ? 'Camera is on! Use it to check your form or show off your moves! 📸'
+                  : 'Enable camera to check your form or share your workout progress!'}
+              </p>
+            </div>
+          )}
+
+          {/* GPS Tracking - Outdoor workouts only */}
+          {mode === 'outdoor' && (
           <div className="bg-gradient-to-r from-blue-500/10 to-cyan-500/10 rounded-xl p-4 border border-blue-500/20">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
@@ -1181,6 +1240,7 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
               </p>
             )}
           </div>
+          )}
           
           {/* Intensity */}
           <div>
@@ -1411,8 +1471,89 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
             </div>
           </div>
           
+          {/* Camera Display - Indoor workouts */}
+          {mode === 'indoor' && cameraEnabled && (
+            <div className="mb-4">
+              <div className="bg-gray-800 rounded-xl overflow-hidden border border-purple-500/30">
+                <div className="p-2 bg-purple-500/20 flex items-center gap-2">
+                  <Camera className="w-4 h-4 text-purple-400" />
+                  <span className="text-sm text-purple-400 font-medium">Camera View</span>
+                </div>
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className="w-full h-48 object-cover"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* YouTube Video Display - Indoor workouts */}
+          {mode === 'indoor' && selectedActivity.videoId && !cameraEnabled && (
+            <div className="mb-4">
+              <div className="bg-gray-800 rounded-xl overflow-hidden border border-cyan-500/30">
+                <div className="p-2 bg-cyan-500/20 flex items-center gap-2">
+                  <Video className="w-4 h-4 text-cyan-400" />
+                  <span className="text-sm text-cyan-400 font-medium">Follow Along Video</span>
+                </div>
+                <div className="relative w-full pt-[56.25%] bg-gray-900">
+                  <iframe
+                    className="absolute inset-0 w-full h-full"
+                    src={`https://www.youtube.com/embed/${selectedActivity.videoId}?modestbranding=1&rel=0&autoplay=1&controls=1`}
+                    title="Workout Guide"
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Map Display - Outdoor workouts */}
+          {mode === 'outdoor' && gpsEnabled && routeHistory.length > 0 && currentPosition && (
+            <div className="mb-4">
+              <div className="bg-gray-800 rounded-xl overflow-hidden border border-blue-500/30 h-64">
+                <div className="p-2 bg-blue-500/20 flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-blue-400" />
+                  <span className="text-sm text-blue-400 font-medium">Your Route</span>
+                </div>
+                <MapContainer
+                  center={[currentPosition.latitude, currentPosition.longitude]}
+                  zoom={15}
+                  style={{ height: '100%', width: '100%' }}
+                  className="z-0"
+                >
+                  <TileLayer
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                  />
+                  {routeHistory.length > 1 && (
+                    <Polyline
+                      positions={routeHistory.map(coord => [coord.latitude, coord.longitude])}
+                      color={selectedActivity.color}
+                      weight={4}
+                      opacity={0.8}
+                    />
+                  )}
+                  <Marker
+                    position={[currentPosition.latitude, currentPosition.longitude]}
+                    icon={L.icon({
+                      iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
+                      iconSize: [25, 41],
+                      iconAnchor: [12, 41],
+                    })}
+                  />
+                  <MapUpdater center={[currentPosition.latitude, currentPosition.longitude]} />
+                </MapContainer>
+              </div>
+            </div>
+          )}
+
           {/* GPS Status Indicator */}
-          {gpsEnabled && (
+          {mode === 'outdoor' && gpsEnabled && (
             <div className="flex items-center justify-center gap-2 mb-4 text-sm">
               <div className={`w-2 h-2 rounded-full ${currentPosition ? 'bg-green-500 animate-pulse' : 'bg-yellow-500'}`} />
               <span className="text-gray-400">

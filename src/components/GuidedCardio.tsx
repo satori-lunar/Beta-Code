@@ -450,9 +450,12 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
               newCoord.latitude, newCoord.longitude
             );
             
-            // More lenient threshold for mobile (GPS can be less accurate)
-            const threshold = Math.max(newCoord.accuracy * 0.5, 3); // Use 50% of accuracy or 3m minimum
+            // More lenient threshold for mobile - only filter out GPS jitter
+            // Accept any movement greater than 2 meters (very lenient for accurate tracking)
+            const threshold = Math.max(newCoord.accuracy * 0.3, 2); // Use 30% of accuracy or 2m minimum
+            
             if (distance > threshold) {
+              // Always add distance if it's significant movement
               setTotalDistance(d => d + distance);
               
               // Calculate speed from distance if device speed not available
@@ -464,9 +467,14 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
               }
               
               return [...prev, newCoord];
+            } else {
+              // Even if distance is small, update current position for map tracking
+              // This ensures the blue dot follows accurately
+              return prev;
             }
           }
-          return prev.length === 0 ? [newCoord] : prev;
+          // Always add first coordinate
+          return [newCoord];
         });
 
         setGpsPermission('granted');

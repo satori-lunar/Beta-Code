@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Play,
   Pause,
@@ -24,9 +24,62 @@ import {
   Timer,
   Hand,
   Star,
-  Rocket
+  Rocket,
+  Navigation,
+  Gauge,
+  Route,
+  MapPinned,
+  AlertCircle
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+
+// GPS Coordinate type
+interface GpsCoordinate {
+  latitude: number;
+  longitude: number;
+  timestamp: number;
+  accuracy: number;
+  speed: number | null;
+}
+
+// Haversine formula to calculate distance between two GPS points (in meters)
+function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371e3; // Earth's radius in meters
+  const φ1 = lat1 * Math.PI / 180;
+  const φ2 = lat2 * Math.PI / 180;
+  const Δφ = (lat2 - lat1) * Math.PI / 180;
+  const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+  const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+            Math.cos(φ1) * Math.cos(φ2) *
+            Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return R * c;
+}
+
+// Format distance for display
+function formatDistance(meters: number): string {
+  if (meters < 1000) {
+    return `${Math.round(meters)} m`;
+  }
+  return `${(meters / 1000).toFixed(2)} km`;
+}
+
+// Format pace (min/km)
+function formatPace(metersPerSecond: number): string {
+  if (metersPerSecond <= 0) return '--:--';
+  const secondsPerKm = 1000 / metersPerSecond;
+  const minutes = Math.floor(secondsPerKm / 60);
+  const seconds = Math.floor(secondsPerKm % 60);
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+}
+
+// Format speed (km/h)
+function formatSpeed(metersPerSecond: number): string {
+  if (metersPerSecond <= 0) return '0.0';
+  return (metersPerSecond * 3.6).toFixed(1);
+}
 
 // Cardio activity types
 interface CardioType {
@@ -167,6 +220,11 @@ export interface WorkoutData {
   calories: number;
   milestoneMode: MilestoneMode;
   autoMilestoneInterval?: number;
+  // GPS data
+  distance?: number; // meters
+  averageSpeed?: number; // m/s
+  averagePace?: string; // min/km
+  routeCoordinates?: Array<{ lat: number; lng: number }>;
 }
 
 // HYPE coaching messages - high energy!
@@ -275,6 +333,157 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
   const [lastCoachingTime, setLastCoachingTime] = useState(0);
   const [coachingInterval, setCoachingInterval] = useState(45); // seconds between coaching
   
+  // GPS tracking state
+  const [gpsEnabled, setGpsEnabled] = useState(false);
+  const [gpsPermission, setGpsPermission] = useState<'prompt' | 'granted' | 'denied'>('prompt');
+  const [currentPosition, setCurrentPosition] = useState<GpsCoordinate | null>(null);
+  const [routeHistory, setRouteHistory] = useState<GpsCoordinate[]>([]);
+  const [totalDistance, setTotalDistance] = useState(0); // in meters
+  const [currentSpeed, setCurrentSpeed] = useState(0); // m/s
+  const [averageSpeed, setAverageSpeed] = useState(0); // m/s
+  const [lastDistanceMilestone, setLastDistanceMilestone] = useState(0);
+  const [distanceMilestoneInterval, setDistanceMilestoneInterval] = useState(500); // meters between distance milestones
+  const watchIdRef = useRef<number | null>(null);
+  
+  // GPS tracking functions
+  const startGpsTracking = useCallback(() => {
+    if (!navigator.geolocation) {
+      console.error('Geolocation not supported');
+      return;
+    }
+
+    const options: PositionOptions = {
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 0
+    };
+
+    watchIdRef.current = navigator.geolocation.watchPosition(
+      (position) => {
+        const newCoord: GpsCoordinate = {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          timestamp: position.timestamp,
+          accuracy: position.coords.accuracy,
+          speed: position.coords.speed
+        };
+
+        setCurrentPosition(newCoord);
+        
+        // Use device speed if available, otherwise calculate
+        if (position.coords.speed !== null && position.coords.speed >= 0) {
+          setCurrentSpeed(position.coords.speed);
+        }
+
+        setRouteHistory(prev => {
+          if (prev.length > 0) {
+            const lastCoord = prev[prev.length - 1];
+            const distance = calculateDistance(
+              lastCoord.latitude, lastCoord.longitude,
+              newCoord.latitude, newCoord.longitude
+            );
+            
+            // Only add if moved more than accuracy threshold (reduce GPS jitter)
+            if (distance > Math.max(newCoord.accuracy, 5)) {
+              setTotalDistance(d => d + distance);
+              
+              // Calculate speed from distance if device speed not available
+              if (position.coords.speed === null) {
+                const timeDiff = (newCoord.timestamp - lastCoord.timestamp) / 1000;
+                if (timeDiff > 0) {
+                  setCurrentSpeed(distance / timeDiff);
+                }
+              }
+              
+              return [...prev, newCoord];
+            }
+          }
+          return prev.length === 0 ? [newCoord] : prev;
+        });
+
+        setGpsPermission('granted');
+      },
+      (error) => {
+        console.error('GPS Error:', error);
+        if (error.code === error.PERMISSION_DENIED) {
+          setGpsPermission('denied');
+        }
+      },
+      options
+    );
+  }, []);
+
+  const stopGpsTracking = useCallback(() => {
+    if (watchIdRef.current !== null) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
+    }
+  }, []);
+
+  // Request GPS permission
+  const requestGpsPermission = useCallback(async () => {
+    if (!navigator.geolocation) {
+      setGpsPermission('denied');
+      return;
+    }
+
+    try {
+      await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 10000
+        });
+      });
+      setGpsPermission('granted');
+      setGpsEnabled(true);
+    } catch {
+      setGpsPermission('denied');
+    }
+  }, []);
+
+  // Calculate average speed when workout is active
+  useEffect(() => {
+    if (isWorkoutActive && workoutTime > 0 && totalDistance > 0) {
+      setAverageSpeed(totalDistance / workoutTime);
+    }
+  }, [isWorkoutActive, workoutTime, totalDistance]);
+
+  // Start/stop GPS tracking with workout
+  useEffect(() => {
+    if (isWorkoutActive && gpsEnabled && !isPaused) {
+      startGpsTracking();
+    } else {
+      stopGpsTracking();
+    }
+
+    return () => stopGpsTracking();
+  }, [isWorkoutActive, gpsEnabled, isPaused, startGpsTracking, stopGpsTracking]);
+
+  // Distance-based milestones
+  useEffect(() => {
+    if (!isWorkoutActive || !gpsEnabled) return;
+
+    const currentMilestone = Math.floor(totalDistance / distanceMilestoneInterval);
+    if (currentMilestone > lastDistanceMilestone && totalDistance > 0) {
+      setLastDistanceMilestone(currentMilestone);
+      setMilestones(m => m + 1);
+      setStreakCount(s => s + 1);
+      triggerMilestoneFlash();
+      
+      const distanceKm = (currentMilestone * distanceMilestoneInterval) / 1000;
+      const message = distanceKm >= 1 
+        ? `🎯 ${distanceKm} kilometer${distanceKm > 1 ? 's' : ''} DOWN! Keep CRUSHING it!`
+        : `📍 ${currentMilestone * distanceMilestoneInterval} meters! You're on FIRE!`;
+      showCoaching(message);
+      
+      // Confetti for km milestones
+      if (totalDistance >= (lastDistanceMilestone + 1) * 1000) {
+        fireConfetti();
+      } else if (typeof window !== 'undefined') {
+        confetti({ particleCount: 30, spread: 50, origin: { y: 0.7 } });
+      }
+    }
+  }, [totalDistance, lastDistanceMilestone, distanceMilestoneInterval, isWorkoutActive, gpsEnabled, showCoaching, triggerMilestoneFlash, fireConfetti]);
   
   // Speech synthesis
   const speak = useCallback((text: string) => {
@@ -419,12 +628,21 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
     setLastAutoMilestoneTime(0);
     setStreakCount(0);
     
+    // Reset GPS tracking
+    setTotalDistance(0);
+    setCurrentSpeed(0);
+    setAverageSpeed(0);
+    setRouteHistory([]);
+    setLastDistanceMilestone(0);
+    setCurrentPosition(null);
+    
     // Adjust coaching interval based on intensity - more frequent for hype!
     setCoachingInterval(config.intensity === 'intense' ? 35 : config.intensity === 'easy' ? 60 : 45);
     
     // Initial coaching with energy!
     setTimeout(() => {
-      showCoaching(getRandomMessage('start'));
+      const gpsMessage = gpsEnabled ? " GPS tracking is ON! 📍" : "";
+      showCoaching(getRandomMessage('start') + gpsMessage);
       if (typeof window !== 'undefined') {
         confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
       }
@@ -518,6 +736,13 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
         calories: Math.round(calories),
         milestoneMode: config.milestoneMode,
         autoMilestoneInterval: config.autoMilestoneInterval,
+        // GPS data
+        distance: gpsEnabled ? totalDistance : undefined,
+        averageSpeed: gpsEnabled && averageSpeed > 0 ? averageSpeed : undefined,
+        averagePace: gpsEnabled && averageSpeed > 0 ? formatPace(averageSpeed) : undefined,
+        routeCoordinates: gpsEnabled && routeHistory.length > 0 
+          ? routeHistory.map(c => ({ lat: c.latitude, lng: c.longitude }))
+          : undefined,
       });
     }
   };
@@ -529,6 +754,7 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
     } else {
       setIsWorkoutActive(false);
       setShowConfig(true);
+      stopGpsTracking();
     }
   };
   
@@ -538,6 +764,12 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
     setMilestones(0);
     setCalories(0);
     setLastCoachingTime(0);
+    // Reset GPS
+    setTotalDistance(0);
+    setCurrentSpeed(0);
+    setAverageSpeed(0);
+    setRouteHistory([]);
+    setLastDistanceMilestone(0);
   };
   
   // Calculate progress
@@ -877,6 +1109,78 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
               </div>
             )}
           </div>
+
+          {/* GPS Tracking */}
+          <div className="bg-gradient-to-r from-blue-500/10 to-cyan-500/10 rounded-xl p-4 border border-blue-500/20">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Navigation className="w-5 h-5 text-blue-400" />
+                <span className="font-medium text-white">GPS Tracking</span>
+                <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full">NEW</span>
+              </div>
+              <button
+                onClick={() => {
+                  if (!gpsEnabled && gpsPermission !== 'granted') {
+                    requestGpsPermission();
+                  } else {
+                    setGpsEnabled(!gpsEnabled);
+                  }
+                }}
+                className={`relative w-14 h-7 rounded-full transition-colors ${
+                  gpsEnabled ? 'bg-blue-500' : 'bg-gray-600'
+                }`}
+              >
+                <div className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow-md transition-transform ${
+                  gpsEnabled ? 'translate-x-8' : 'translate-x-1'
+                }`} />
+              </button>
+            </div>
+            
+            {gpsPermission === 'denied' && (
+              <div className="flex items-center gap-2 text-red-400 text-sm mb-2">
+                <AlertCircle className="w-4 h-4" />
+                Location permission denied. Enable in browser settings.
+              </div>
+            )}
+            
+            {gpsEnabled && gpsPermission === 'granted' && (
+              <div className="space-y-3">
+                <p className="text-sm text-gray-400">
+                  📍 Track your route, distance, speed, and pace in real-time!
+                </p>
+                
+                {/* Distance milestone interval */}
+                <div>
+                  <label className="block text-sm text-gray-300 mb-2">
+                    Distance milestones every: {distanceMilestoneInterval >= 1000 
+                      ? `${distanceMilestoneInterval / 1000} km` 
+                      : `${distanceMilestoneInterval} m`}
+                  </label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {[250, 500, 1000, 2000].map(dist => (
+                      <button
+                        key={dist}
+                        onClick={() => setDistanceMilestoneInterval(dist)}
+                        className={`py-2 rounded-lg text-sm transition-all ${
+                          distanceMilestoneInterval === dist
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                        }`}
+                      >
+                        {dist >= 1000 ? `${dist / 1000} km` : `${dist}m`}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {!gpsEnabled && (
+              <p className="text-xs text-gray-500">
+                Enable to track distance, speed, and pace during your workout.
+              </p>
+            )}
+          </div>
           
           {/* Intensity */}
           <div>
@@ -1046,28 +1350,79 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
           )}
           
           {/* Stats Grid */}
-          <div className="grid grid-cols-3 gap-3 mb-6">
+          <div className={`grid ${gpsEnabled ? 'grid-cols-2 sm:grid-cols-3' : 'grid-cols-3'} gap-3 mb-4`}>
+            {/* Distance - GPS */}
+            {gpsEnabled && (
+              <div className="bg-gradient-to-br from-blue-900/50 to-cyan-900/50 rounded-xl p-4 text-center border border-blue-500/30">
+                <Route className="w-5 h-5 mx-auto mb-1 text-blue-400" />
+                <div className="text-2xl sm:text-3xl font-bold text-blue-400">
+                  {formatDistance(totalDistance)}
+                </div>
+                <div className="text-xs text-gray-400">Distance</div>
+              </div>
+            )}
+            
+            {/* Speed - GPS */}
+            {gpsEnabled && (
+              <div className="bg-gradient-to-br from-green-900/50 to-emerald-900/50 rounded-xl p-4 text-center border border-green-500/30">
+                <Gauge className="w-5 h-5 mx-auto mb-1 text-green-400" />
+                <div className="text-2xl sm:text-3xl font-bold text-green-400">
+                  {formatSpeed(currentSpeed)} <span className="text-sm">km/h</span>
+                </div>
+                <div className="text-xs text-gray-400">Speed</div>
+              </div>
+            )}
+            
+            {/* Pace - GPS */}
+            {gpsEnabled && (
+              <div className="bg-gradient-to-br from-purple-900/50 to-pink-900/50 rounded-xl p-4 text-center border border-purple-500/30">
+                <MapPinned className="w-5 h-5 mx-auto mb-1 text-purple-400" />
+                <div className="text-2xl sm:text-3xl font-bold text-purple-400">
+                  {formatPace(averageSpeed)} <span className="text-sm">/km</span>
+                </div>
+                <div className="text-xs text-gray-400">Avg Pace</div>
+              </div>
+            )}
+            
+            {/* Checkpoints */}
             <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-4 text-center border border-gray-700">
-              <div className="text-3xl font-bold" style={{ color: selectedActivity.color }}>
+              <div className="text-2xl sm:text-3xl font-bold" style={{ color: selectedActivity.color }}>
                 {milestones}
               </div>
               <div className="text-xs text-gray-400">
                 {config.goalType === 'milestones' ? `/ ${config.targetMilestones}` : ''} Checkpoints
               </div>
             </div>
+            
+            {/* Calories */}
             <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-4 text-center border border-gray-700">
-              <div className="text-3xl font-bold text-orange-400">
+              <div className="text-2xl sm:text-3xl font-bold text-orange-400">
                 {Math.round(calories)}
               </div>
               <div className="text-xs text-gray-400">🔥 Calories</div>
             </div>
+            
+            {/* Progress/Streak */}
             <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-4 text-center border border-gray-700">
-              <div className="text-3xl font-bold text-blue-400">
+              <div className="text-2xl sm:text-3xl font-bold text-blue-400">
                 {streakCount > 0 ? `${streakCount}🔥` : `${Math.round(getProgress())}%`}
               </div>
               <div className="text-xs text-gray-400">{streakCount > 0 ? 'Streak' : 'Progress'}</div>
             </div>
           </div>
+          
+          {/* GPS Status Indicator */}
+          {gpsEnabled && (
+            <div className="flex items-center justify-center gap-2 mb-4 text-sm">
+              <div className={`w-2 h-2 rounded-full ${currentPosition ? 'bg-green-500 animate-pulse' : 'bg-yellow-500'}`} />
+              <span className="text-gray-400">
+                {currentPosition 
+                  ? `GPS Active • ±${Math.round(currentPosition.accuracy)}m accuracy`
+                  : 'Acquiring GPS signal...'
+                }
+              </span>
+            </div>
+          )}
           
           {/* Milestone Button - Only show for manual mode */}
           {config.milestoneMode === 'manual' && (
@@ -1131,17 +1486,18 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
               <Trophy className="w-10 h-10 text-white" />
             </div>
             
-            <h3 className="text-2xl font-bold text-white mb-2">Workout Complete!</h3>
+            <h3 className="text-2xl font-bold text-white mb-2">Workout Complete! 🎉</h3>
             <p className="text-gray-400 mb-6">Great job on finishing your {selectedActivity.name.toLowerCase()} session!</p>
             
-            <div className="grid grid-cols-3 gap-4 mb-6">
+            {/* Main Stats */}
+            <div className="grid grid-cols-3 gap-3 mb-4">
               <div className="bg-gray-700 rounded-xl p-3">
                 <div className="text-2xl font-bold text-white">{formatTime(workoutTime)}</div>
                 <div className="text-xs text-gray-400">Duration</div>
               </div>
               <div className="bg-gray-700 rounded-xl p-3">
                 <div className="text-2xl font-bold text-purple-400">{milestones}</div>
-                <div className="text-xs text-gray-400">Milestones</div>
+                <div className="text-xs text-gray-400">Checkpoints</div>
               </div>
               <div className="bg-gray-700 rounded-xl p-3">
                 <div className="text-2xl font-bold text-orange-400">{Math.round(calories)}</div>
@@ -1149,18 +1505,46 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
               </div>
             </div>
             
+            {/* GPS Stats */}
+            {gpsEnabled && totalDistance > 0 && (
+              <div className="bg-gradient-to-r from-blue-500/10 to-cyan-500/10 rounded-xl p-4 mb-6 border border-blue-500/20">
+                <div className="flex items-center justify-center gap-2 mb-3">
+                  <Navigation className="w-4 h-4 text-blue-400" />
+                  <span className="text-sm font-medium text-blue-400">GPS Tracking Results</span>
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <div className="text-xl font-bold text-blue-400">{formatDistance(totalDistance)}</div>
+                    <div className="text-xs text-gray-400">Distance</div>
+                  </div>
+                  <div>
+                    <div className="text-xl font-bold text-green-400">{formatSpeed(averageSpeed)} km/h</div>
+                    <div className="text-xs text-gray-400">Avg Speed</div>
+                  </div>
+                  <div>
+                    <div className="text-xl font-bold text-purple-400">{formatPace(averageSpeed)}/km</div>
+                    <div className="text-xs text-gray-400">Avg Pace</div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
             <div className="flex gap-3">
               <button
                 onClick={() => {
                   setShowCompletionModal(false);
                   setShowConfig(true);
+                  stopGpsTracking();
                 }}
                 className="flex-1 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-xl font-medium transition-colors"
               >
                 New Workout
               </button>
               <button
-                onClick={onClose}
+                onClick={() => {
+                  stopGpsTracking();
+                  onClose();
+                }}
                 className="flex-1 py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-medium transition-colors"
               >
                 Done

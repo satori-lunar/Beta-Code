@@ -83,15 +83,6 @@ export default function HealthDashboard() {
 
   const hasConnectedDevice = connectedDevices.some(d => d.connected);
 
-  // Heart beat animation
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setHeartBeat(prev => !prev);
-    }, 800);
-    return () => clearInterval(interval);
-  }, []);
-
-
   const getMetricDisplay = (key: MetricKey) => {
     switch (key) {
       case 'heartRate': {

@@ -77,15 +77,20 @@ export default function WorkoutMap({
   if (!currentPosition) return null;
 
   return (
-    <div className={`${isFullscreen ? 'fixed inset-0 z-50 bg-gray-900' : ''}`}>
-      <div className={`bg-gray-800 rounded-xl overflow-hidden border border-blue-500/30 ${isFullscreen ? 'h-screen' : 'h-64'}`}>
-        <div className="p-2 bg-blue-500/20 flex items-center justify-between gap-2">
+    <div className={`${isFullscreen ? 'fixed inset-0 z-50 bg-gray-900 p-4' : ''}`}>
+      <div className={`bg-gray-800 rounded-xl overflow-hidden border border-blue-500/30 ${isFullscreen ? 'h-[calc(100vh-2rem)]' : 'h-64'} flex flex-col`}>
+        <div className="p-2 bg-blue-500/20 flex items-center justify-between gap-2 flex-shrink-0">
           <div className="flex items-center gap-2">
             <MapPin className="w-4 h-4 text-blue-400" />
             <span className="text-sm text-blue-400 font-medium">Your Route</span>
             {goalPin && (
               <span className="text-xs text-yellow-400">
                 Goal: {formatDistance(distanceToGoal)} away
+              </span>
+            )}
+            {mapClickMode === 'setGoal' && (
+              <span className="text-xs text-yellow-300 animate-pulse">
+                Click map to set destination
               </span>
             )}
           </div>
@@ -111,12 +116,14 @@ export default function WorkoutMap({
             </button>
           </div>
         </div>
-        <MapContainer
-          center={[currentPosition.latitude, currentPosition.longitude]}
-          zoom={15}
-          style={{ height: '100%', width: '100%' }}
-          className="z-0"
-        >
+        <div className="flex-1 relative min-h-0">
+          <MapContainer
+            key={`map-${isFullscreen ? 'fullscreen' : 'normal'}`}
+            center={[currentPosition.latitude, currentPosition.longitude]}
+            zoom={15}
+            style={{ height: '100%', width: '100%', position: 'absolute', inset: 0 }}
+            className="z-0"
+          >
           <TileLayer
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -156,7 +163,8 @@ export default function WorkoutMap({
               onMapClickModeChange('normal');
             }}
           />
-        </MapContainer>
+          </MapContainer>
+        </div>
       </div>
     </div>
   );

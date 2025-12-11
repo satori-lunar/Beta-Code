@@ -359,6 +359,58 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
   const [spotifyDeviceId, setSpotifyDeviceId] = useState<string | null>(null);
   const [spotifyVolume, setSpotifyVolume] = useState(50); // 0-100
   
+  // Check for Spotify callback token on mount
+  useEffect(() => {
+    const hash = window.location.hash.substring(1);
+    const params = new URLSearchParams(hash);
+    const accessToken = params.get('access_token');
+    
+    if (accessToken && typeof window !== 'undefined' && (window as any).Spotify && !spotifyEnabled) {
+      // Clean URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+      
+      // Initialize Spotify player
+      try {
+        const player = new (window as any).Spotify.Player({
+          name: 'Workout Player',
+          getOAuthToken: (cb: (token: string) => void) => cb(accessToken),
+          volume: spotifyVolume / 100
+        });
+        
+        player.addListener('ready', ({ device_id }: { device_id: string }) => {
+          setSpotifyDeviceId(device_id);
+          setSpotifyPlayer(player);
+          setSpotifyEnabled(true);
+          setCoachingMessage('🎵 Spotify connected! Music will lower when coach talks.');
+          setTimeout(() => setCoachingMessage(''), 5000);
+        });
+        
+        player.addListener('not_ready', ({ device_id }: { device_id: string }) => {
+          console.log('Device ID has gone offline', device_id);
+          setSpotifyEnabled(false);
+        });
+        
+        player.addListener('initialization_error', ({ message }: { message: string }) => {
+          console.error('Failed to initialize', message);
+          setCoachingMessage(`⚠️ Spotify error: ${message}`);
+          setTimeout(() => setCoachingMessage(''), 5000);
+        });
+        
+        player.addListener('authentication_error', ({ message }: { message: string }) => {
+          console.error('Failed to authenticate', message);
+          setCoachingMessage(`⚠️ Spotify auth error: ${message}`);
+          setTimeout(() => setCoachingMessage(''), 5000);
+        });
+        
+        player.connect();
+      } catch (error) {
+        console.error('Spotify player error:', error);
+        setCoachingMessage('⚠️ Failed to connect to Spotify. Please try again.');
+        setTimeout(() => setCoachingMessage(''), 5000);
+      }
+    }
+  }, [spotifyEnabled]);
+  
   // GPS tracking functions
   const startGpsTracking = useCallback(() => {
     if (!navigator.geolocation) {
@@ -586,22 +638,37 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
     if (!spotifyEnabled || !spotifyPlayer || !spotifyDeviceId) return;
     
     try {
+      // Get OAuth token
+      const token = await new Promise<string>((resolve) => {
+        spotifyPlayer._options.getOAuthToken(resolve);
+      });
+      
       // Lower volume to 20% when coach talks
       await fetch(`https://api.spotify.com/v1/me/player/volume?volume_percent=20&device_id=${spotifyDeviceId}`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${spotifyPlayer._options.accessToken}`,
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
         },
       });
+      
       // Restore volume after 4 seconds
       setTimeout(async () => {
         if (spotifyEnabled && spotifyDeviceId && spotifyPlayer) {
-          await fetch(`https://api.spotify.com/v1/me/player/volume?volume_percent=${spotifyVolume}&device_id=${spotifyDeviceId}`, {
-            method: 'PUT',
-            headers: {
-              'Authorization': `Bearer ${spotifyPlayer._options.accessToken}`,
-            },
-          });
+          try {
+            const restoreToken = await new Promise<string>((resolve) => {
+              spotifyPlayer._options.getOAuthToken(resolve);
+            });
+            await fetch(`https://api.spotify.com/v1/me/player/volume?volume_percent=${spotifyVolume}&device_id=${spotifyDeviceId}`, {
+              method: 'PUT',
+              headers: {
+                'Authorization': `Bearer ${restoreToken}`,
+                'Content-Type': 'application/json',
+              },
+            });
+          } catch (error) {
+            console.error('Error restoring volume:', error);
+          }
         }
       }, 4000);
     } catch (error) {
@@ -1385,36 +1452,23 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
                   <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full">OPTIONAL</span>
                 </div>
                 <button
-                  onClick={() => {
+                  onClick={async () => {
                     if (!spotifyEnabled) {
-                      // Initialize Spotify Web Playback SDK
-                      if (typeof window !== 'undefined' && (window as any).Spotify) {
-                        const token = prompt('Enter your Spotify access token (get from Spotify Developer Dashboard)');
-                        if (token) {
-                          const player = new (window as any).Spotify.Player({
-                            name: 'Workout Player',
-                            getOAuthToken: (cb: (token: string) => void) => cb(token),
-                            volume: spotifyVolume / 100
-                          });
-                          
-                          player.addListener('ready', ({ device_id }: { device_id: string }) => {
-                            setSpotifyDeviceId(device_id);
-                            setSpotifyPlayer(player);
-                            setSpotifyEnabled(true);
-                            showCoaching('🎵 Spotify connected! Music will pause when coach talks.');
-                          });
-                          
-                          player.addListener('not_ready', () => {
-                            setSpotifyEnabled(false);
-                          });
-                          
-                          player.connect();
-                        }
-                      } else {
-                        setCoachingMessage('⚠️ Spotify Web Playback SDK not loaded. Add script tag: <script src="https://sdk.scdn.co/spotify-player.js"></script>');
+                      // Check if Spotify SDK is loaded
+                      if (typeof window === 'undefined' || !(window as any).Spotify) {
+                        setCoachingMessage('⚠️ Loading Spotify SDK... Please refresh the page.');
                         setTimeout(() => setCoachingMessage(''), 5000);
+                        return;
                       }
+
+                      // Redirect to Spotify authorization
+                      const clientId = import.meta.env.VITE_SPOTIFY_CLIENT_ID || 'YOUR_SPOTIFY_CLIENT_ID';
+                      const redirectUri = `${window.location.origin}${window.location.pathname}`;
+                      const scopes = 'user-read-playback-state user-modify-playback-state user-read-currently-playing';
+                      const authUrl = `https://accounts.spotify.com/authorize?client_id=${clientId}&response_type=token&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}&show_dialog=true`;
+                      window.location.href = authUrl;
                     } else {
+                      // Disconnect
                       if (spotifyPlayer) {
                         spotifyPlayer.disconnect();
                       }
@@ -1436,7 +1490,7 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
               {spotifyEnabled && (
                 <div className="space-y-2">
                   <p className="text-xs text-gray-400">
-                    🎵 Music will automatically lower volume when coach speaks
+                    🎵 Music will automatically lower to 20% when coach speaks
                   </p>
                   <div>
                     <label className="block text-sm text-gray-300 mb-1">
@@ -1447,16 +1501,24 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
                       min="0"
                       max="100"
                       value={spotifyVolume}
-                      onChange={(e) => {
+                      onChange={async (e) => {
                         const vol = parseInt(e.target.value);
                         setSpotifyVolume(vol);
                         if (spotifyPlayer && spotifyDeviceId) {
-                          fetch(`https://api.spotify.com/v1/me/player/volume?volume_percent=${vol}&device_id=${spotifyDeviceId}`, {
-                            method: 'PUT',
-                            headers: {
-                              'Authorization': `Bearer ${spotifyPlayer._options.getOAuthToken}`,
-                            },
-                          });
+                          try {
+                            const token = await new Promise<string>((resolve) => {
+                              spotifyPlayer._options.getOAuthToken(resolve);
+                            });
+                            await fetch(`https://api.spotify.com/v1/me/player/volume?volume_percent=${vol}&device_id=${spotifyDeviceId}`, {
+                              method: 'PUT',
+                              headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json',
+                              },
+                            });
+                          } catch (error) {
+                            console.error('Error setting volume:', error);
+                          }
                         }
                       }}
                       className="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer"
@@ -1466,9 +1528,14 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
               )}
               
               {!spotifyEnabled && (
-                <p className="text-xs text-gray-500">
-                  Connect Spotify to listen to music during your run. Music will pause/lower when coach talks!
-                </p>
+                <div className="space-y-2">
+                  <p className="text-xs text-gray-500">
+                    Connect Spotify to listen to music during your run. Music will automatically lower when coach talks!
+                  </p>
+                  <p className="text-xs text-gray-600">
+                    Note: You'll be redirected to Spotify to authorize access. Make sure to set VITE_SPOTIFY_CLIENT_ID in your .env file.
+                  </p>
+                </div>
               )}
             </div>
           )}
@@ -1754,7 +1821,7 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
           )}
 
           {/* Map Display - Outdoor workouts */}
-          {mode === 'outdoor' && gpsEnabled && routeHistory.length > 0 && currentPosition && (
+          {mode === 'outdoor' && gpsEnabled && currentPosition && (
             <div className="mb-4">
               <WorkoutMap
                 currentPosition={currentPosition}

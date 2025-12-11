@@ -34,7 +34,7 @@ import {
   Music
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { MapContainer, TileLayer, Polyline, Marker, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Polyline, Marker, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -52,6 +52,24 @@ function MapUpdater({ center }: { center: [number, number] }) {
   useEffect(() => {
     map.setView(center, map.getZoom());
   }, [center, map]);
+  return null;
+}
+
+// Component to handle map clicks for goal pin
+function MapClickHandler({ 
+  onClick, 
+  enabled 
+}: { 
+  onClick: (lat: number, lng: number) => void;
+  enabled: boolean;
+}) {
+  useMapEvents({
+    click: (e) => {
+      if (enabled) {
+        onClick(e.latlng.lat, e.latlng.lng);
+      }
+    }
+  });
   return null;
 }
 
@@ -363,6 +381,21 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
   const [lastDistanceMilestone, setLastDistanceMilestone] = useState(0);
   const [distanceMilestoneInterval, setDistanceMilestoneInterval] = useState(500); // meters between distance milestones
   const watchIdRef = useRef<number | null>(null);
+  
+  // Goal pin/marker state
+  const [goalPin, setGoalPin] = useState<{ lat: number; lng: number } | null>(null);
+  const [distanceToGoal, setDistanceToGoal] = useState(0); // meters
+  const [mapClickMode, setMapClickMode] = useState<'normal' | 'setGoal'>('normal');
+  
+  // Fullscreen map state
+  const [isMapFullscreen, setIsMapFullscreen] = useState(false);
+  
+  // Spotify integration state
+  const [spotifyEnabled, setSpotifyEnabled] = useState(false);
+  const [spotifyPlayer, setSpotifyPlayer] = useState<any>(null);
+  const [spotifyDeviceId, setSpotifyDeviceId] = useState<string | null>(null);
+  const [spotifyVolume, setSpotifyVolume] = useState(50); // 0-100
+  const [isMusicPaused, setIsMusicPaused] = useState(false);
   
   // GPS tracking functions
   const startGpsTracking = useCallback(() => {

@@ -18,7 +18,6 @@ import {
   ChevronRight,
   TrendingDown,
   Play,
-  Camera,
   Timer,
   Flame,
   Target,
@@ -26,15 +25,13 @@ import {
   Settings,
   BarChart3,
   ChevronLeft,
-  Dumbbell,
-  PersonStanding,
-  Hand
+  PersonStanding
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { useTheme } from '../contexts/ThemeContext';
 import { format, startOfWeek, addDays } from 'date-fns';
 import ComingSoonModal from '../components/ComingSoonModal';
-import WorkoutCamera from '../components/WorkoutCamera';
+import GuidedCardio from '../components/GuidedCardio';
 
 type MetricKey = 'heartRate' | 'bloodPressure' | 'bodyTemperature' | 'oxygenSaturation' |
   'respiratoryRate' | 'bmi' | 'bodyFat' | 'height' | 'weight' | 'sleepHours' |
@@ -77,13 +74,13 @@ const generateWeeklyData = () => {
   });
 };
 
-// Workout types
+// Workout types - cardio focused
 const workoutTypes = [
-  { id: 'running', name: 'Running', icon: PersonStanding, color: '#22c55e' },
-  { id: 'strength', name: 'Strength', icon: Dumbbell, color: '#8b5cf6' },
-  { id: 'yoga', name: 'Yoga', icon: Hand, color: '#ec4899' },
-  { id: 'hiit', name: 'HIIT', icon: Flame, color: '#f59e0b' },
-  { id: 'custom', name: 'Custom', icon: Target, color: '#06b6d4' },
+  { id: 'walking', name: 'Walking', icon: Footprints, color: '#22c55e' },
+  { id: 'jogging', name: 'Jogging', icon: PersonStanding, color: '#f59e0b' },
+  { id: 'running', name: 'Running', icon: Flame, color: '#ef4444' },
+  { id: 'intervals', name: 'Intervals', icon: Target, color: '#8b5cf6' },
+  { id: 'cardio', name: 'Free Cardio', icon: Zap, color: '#06b6d4' },
 ];
 
 export default function HealthDashboard() {
@@ -1010,7 +1007,7 @@ export default function HealthDashboard() {
       {activeTab === 'workout' && (
         <div className="space-y-6">
           {showWorkoutCamera ? (
-            <WorkoutCamera
+            <GuidedCardio
               onClose={() => {
                 setShowWorkoutCamera(false);
                 setIsWorkoutActive(false);
@@ -1023,9 +1020,11 @@ export default function HealthDashboard() {
             />
           ) : (
             <>
-              {/* Start Workout */}
+              {/* Start Cardio Workout */}
               <div className="card p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Start Workout</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Guided Cardio Workout</h3>
+                <p className="text-gray-500 text-sm mb-6">Choose an activity and get coached through your workout with voice guidance and milestone tracking.</p>
+                
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
                   {workoutTypes.map(workout => (
                     <button
@@ -1049,59 +1048,95 @@ export default function HealthDashboard() {
                   ))}
                 </div>
 
-                {selectedWorkout && (
-                  <div className="mt-6 flex flex-col sm:flex-row items-center gap-4">
-                    <button
-                      onClick={() => setShowWorkoutCamera(true)}
-                      className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-white font-medium"
-                      style={{ backgroundColor: primaryColor }}
-                    >
-                      <Camera className="w-5 h-5" />
-                      Start with Motion Tracking
-                    </button>
-                    <button
-                      onClick={() => {
-                        setIsWorkoutActive(true);
-                        setWorkoutTime(0);
-                      }}
-                      className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 rounded-xl border border-gray-200 text-gray-700 font-medium hover:bg-gray-50"
-                    >
-                      <Play className="w-5 h-5" />
-                      Quick Start
-                    </button>
-                  </div>
-                )}
+                <div className="mt-6">
+                  <button
+                    onClick={() => setShowWorkoutCamera(true)}
+                    className="w-full flex items-center justify-center gap-2 px-6 py-4 rounded-xl text-white font-medium text-lg"
+                    style={{ backgroundColor: primaryColor }}
+                  >
+                    <Play className="w-6 h-6" />
+                    Start Guided Workout
+                  </button>
+                  <p className="text-center text-gray-400 text-xs mt-3">
+                    Set time goals, mark milestones, and get voice coaching as you walk, jog, or run!
+                  </p>
+                </div>
               </div>
 
-              {/* Quick Timer (if active without camera) */}
-              {isWorkoutActive && !showWorkoutCamera && (
-                <div className="card p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900">Workout in Progress</h3>
-                      <p className="text-gray-500">{workoutTypes.find(w => w.id === selectedWorkout)?.name}</p>
+              {/* Features Info */}
+              <div className="card p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">What You'll Get</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="flex items-start gap-3 p-3 bg-green-50 rounded-xl">
+                    <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center flex-shrink-0">
+                      <Target className="w-5 h-5 text-green-600" />
                     </div>
-                    <div className="text-4xl font-mono font-bold" style={{ color: primaryColor }}>
-                      {formatWorkoutTime(workoutTime)}
+                    <div>
+                      <p className="font-medium text-gray-900">Set Goals</p>
+                      <p className="text-sm text-gray-500">Time-based or milestone targets</p>
                     </div>
                   </div>
-                  <div className="mt-4 flex gap-3">
-                    <button
-                      onClick={() => setIsWorkoutActive(false)}
-                      className="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-gray-50"
-                    >
-                      Pause
-                    </button>
-                    <button
-                      onClick={() => {
-                        setIsWorkoutActive(false);
-                        setWorkoutTime(0);
-                        setSelectedWorkout(null);
-                      }}
-                      className="flex-1 px-4 py-3 rounded-xl text-white font-medium"
-                      style={{ backgroundColor: primaryColor }}
-                    >
-                      End Workout
+                  <div className="flex items-start gap-3 p-3 bg-purple-50 rounded-xl">
+                    <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center flex-shrink-0">
+                      <Activity className="w-5 h-5 text-purple-600" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900">Voice Coaching</p>
+                      <p className="text-sm text-gray-500">Encouragement and pace guidance</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3 p-3 bg-orange-50 rounded-xl">
+                    <div className="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center flex-shrink-0">
+                      <Flame className="w-5 h-5 text-orange-600" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900">Track Progress</p>
+                      <p className="text-sm text-gray-500">Calories, time, and milestones</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Tip */}
+              <div className="bg-gradient-to-r from-cyan-50 to-blue-50 rounded-xl p-4 border border-cyan-100">
+                <p className="text-sm text-gray-600">
+                  <span className="font-semibold text-cyan-700">Tip:</span> Mark milestones as you pass landmarks in your neighborhood - it's a great way to track your progress on walks and runs!
+                </p>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Remove old quick timer section - no longer needed */}
+      {false && activeTab === 'workout-old' && (
+        <div className="card p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Workout in Progress</h3>
+              <p className="text-gray-500">{workoutTypes.find(w => w.id === selectedWorkout)?.name}</p>
+            </div>
+            <div className="text-4xl font-mono font-bold" style={{ color: primaryColor }}>
+              {formatWorkoutTime(workoutTime)}
+            </div>
+          </div>
+          <div className="mt-4 flex gap-3">
+            <button
+              onClick={() => setIsWorkoutActive(false)}
+              className="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-gray-50"
+            >
+              Pause
+            </button>
+            <button
+              onClick={() => {
+                setIsWorkoutActive(false);
+                setWorkoutTime(0);
+                setSelectedWorkout(null);
+              }}
+              className="flex-1 px-4 py-3 rounded-xl text-white font-medium"
+              style={{ backgroundColor: primaryColor }}
+            >
+              End Workout
                     </button>
                   </div>
                 </div>

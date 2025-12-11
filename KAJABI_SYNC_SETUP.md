@@ -16,19 +16,24 @@ The sync performs two main tasks:
    - API Secret: `PxVd7iZBQ2UPymvyJ4XLaL4A`
 3. Supabase CLI installed (optional, for local development)
 
-## Step 1: Run Database Migration
+## Step 1: Run Database Migrations
 
-Run the migration to add Kajabi tracking fields:
+**IMPORTANT**: You must create the base tables first before adding Kajabi fields.
 
-```sql
--- Run this in Supabase SQL Editor
--- File: supabase/migrations/005_add_kajabi_fields.sql
-```
+### Option A: Run All Migrations (Recommended)
 
-Or via Supabase Dashboard:
-1. Go to SQL Editor
-2. Copy and paste the contents of `supabase/migrations/005_add_kajabi_fields.sql`
-3. Run the migration
+1. Go to Supabase Dashboard → SQL Editor
+2. Run migrations in order:
+   - First, run `supabase/migrations/001_initial_schema.sql` (creates base tables including `recorded_sessions`, `live_classes`, `user_favorite_sessions`)
+   - Then, run `supabase/migrations/005_add_kajabi_fields.sql` (adds Kajabi tracking fields)
+
+### Option B: Quick Fix - Run Combined Script
+
+If you just need the tables created quickly:
+
+1. Go to Supabase Dashboard → SQL Editor
+2. Copy and paste the contents of `supabase/migrations/CREATE_MISSING_TABLES.sql`
+3. Run the script (this creates all necessary tables and adds Kajabi fields in one go)
 
 ## Step 2: Set Up Environment Variables
 

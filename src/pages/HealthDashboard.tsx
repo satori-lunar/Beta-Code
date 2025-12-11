@@ -107,16 +107,6 @@ export default function HealthDashboard() {
     return () => clearInterval(interval);
   }, []);
 
-  // Workout timer
-  useEffect(() => {
-    let interval: ReturnType<typeof setInterval> | undefined;
-    if (isWorkoutActive) {
-      interval = setInterval(() => {
-        setWorkoutTime(prev => prev + 1);
-      }, 1000);
-    }
-    return () => { if (interval) clearInterval(interval); };
-  }, [isWorkoutActive]);
 
   const getMetricDisplay = (key: MetricKey) => {
     switch (key) {
@@ -1004,7 +994,6 @@ export default function HealthDashboard() {
               onClose={() => {
                 setShowWorkoutCamera(false);
                 setIsWorkoutActive(false);
-                setWorkoutTime(0);
               }}
               onWorkoutComplete={(data) => {
                 console.log('Workout completed:', data);

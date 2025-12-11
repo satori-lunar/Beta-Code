@@ -23,7 +23,13 @@ import {
   GripVertical,
   X,
   Palette,
-  Check
+  Check,
+  Heart,
+  Sparkles,
+  Smile,
+  BookOpen,
+  MessageCircle,
+  Star
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -48,24 +54,27 @@ interface WidgetConfig {
 
 const defaultWidgets: WidgetConfig[] = [
   { id: 'welcome', type: 'welcome', title: 'Welcome Header', size: 'full', visible: true },
+  { id: 'wellness-tip', type: 'wellness-tip', title: 'Daily Wellness Tip', size: 'medium', visible: true },
+  { id: 'gratitude', type: 'gratitude', title: 'Daily Gratitude', size: 'medium', visible: true },
   { id: 'badges', type: 'badges', title: 'Your Badges', size: 'full', visible: true },
   { id: 'stats', type: 'stats', title: 'Stats Grid', size: 'full', visible: true },
-  { id: 'live-classes', type: 'live-classes', title: "Today's Live Classes", size: 'full', visible: true },
   { id: 'habits', type: 'habits', title: "Today's Habits", size: 'medium', visible: true },
-  { id: 'upcoming-class', type: 'upcoming-class', title: 'Next Live Class', size: 'medium', visible: true },
-  { id: 'course-progress', type: 'course-progress', title: 'Course Progress', size: 'medium', visible: true },
-  { id: 'journal', type: 'journal', title: 'Latest Journal', size: 'full', visible: true },
+  { id: 'journal', type: 'journal', title: 'Latest Journal Entry', size: 'medium', visible: true },
+  { id: 'mood-tracker', type: 'mood-tracker', title: 'How are you feeling?', size: 'medium', visible: true },
 ];
 
 const availableWidgets = [
-  { type: 'welcome', title: 'Welcome Header', description: 'Greeting with streak and badges count' },
-  { type: 'badges', title: 'Your Badges', description: 'Display earned badges' },
-  { type: 'stats', title: 'Stats Grid', description: 'Habits, water, sleep, weight stats' },
-  { type: 'live-classes', title: "Today's Live Classes", description: 'Live classes scheduled for today' },
-  { type: 'habits', title: "Today's Habits", description: 'Track daily habits' },
-  { type: 'upcoming-class', title: 'Next Live Class', description: 'Upcoming class info' },
-  { type: 'course-progress', title: 'Course Progress', description: 'Track course completion' },
-  { type: 'journal', title: 'Latest Journal', description: 'Recent journal entry' },
+  { type: 'welcome', title: 'Welcome Header', description: 'Greeting with streak and badges count', icon: Sunrise },
+  { type: 'badges', title: 'Your Badges', description: 'Display earned badges', icon: Award },
+  { type: 'stats', title: 'Stats Grid', description: 'Habits, water, sleep, weight stats', icon: TrendingUp },
+  { type: 'habits', title: "Today's Habits", description: 'Track daily habits', icon: Target },
+  { type: 'journal', title: 'Latest Journal Entry', description: 'Recent journal entry', icon: BookOpen },
+  { type: 'wellness-tip', title: 'Daily Wellness Tip', description: 'Inspirational wellness quotes and tips', icon: Sparkles },
+  { type: 'gratitude', title: 'Daily Gratitude', description: 'Prompt for daily gratitude practice', icon: Heart },
+  { type: 'mood-tracker', title: 'Mood Tracker', description: 'Quick mood check-in widget', icon: Smile },
+  { type: 'live-classes', title: "Today's Live Classes", description: 'Live classes scheduled for today', icon: Video },
+  { type: 'upcoming-class', title: 'Next Live Class', description: 'Upcoming class info', icon: Calendar },
+  { type: 'course-progress', title: 'Course Progress', description: 'Track course completion', icon: Star },
 ];
 
 export default function Dashboard() {
@@ -164,6 +173,14 @@ export default function Dashboard() {
   const addWidget = (type: string) => {
     const widgetInfo = availableWidgets.find(w => w.type === type);
     if (!widgetInfo) return;
+
+    // Check if widget of this type already exists
+    const alreadyExists = widgets.some(w => w.type === type && w.visible);
+    if (alreadyExists) {
+      // Don't add duplicates, but close the modal
+      setShowAddWidget(false);
+      return;
+    }
 
     const newWidget: WidgetConfig = {
       id: `${type}-${Date.now()}`,
@@ -588,8 +605,182 @@ export default function Dashboard() {
     </div>
   );
 
+  const WellnessTipWidget = () => {
+    const tips = [
+      { quote: "Self-care isn't selfish. It's essential.", author: "Unknown" },
+      { quote: "Progress, not perfection, is the goal.", author: "Unknown" },
+      { quote: "Every small step forward is a victory worth celebrating.", author: "Unknown" },
+      { quote: "You are stronger than you think and more capable than you know.", author: "Unknown" },
+      { quote: "Take time for yourself. You deserve it.", author: "Unknown" },
+      { quote: "Wellness is a journey, not a destination.", author: "Unknown" },
+      { quote: "Your mental health is just as important as your physical health.", author: "Unknown" },
+      { quote: "Be kind to yourself. You're doing your best.", author: "Unknown" },
+    ];
+    
+    const todayTip = tips[new Date().getDate() % tips.length];
+    
+    return (
+      <div className="card h-full">
+        <div className="flex items-center gap-3 mb-4">
+          <div
+            className="w-10 h-10 rounded-xl flex items-center justify-center"
+            style={{ backgroundColor: colorPresets[colorPreset]?.light }}
+          >
+            <Sparkles className="w-5 h-5" style={{ color: primaryColor }} />
+          </div>
+          <h2 className="text-xl font-display font-semibold text-gray-900">Daily Wellness Tip</h2>
+        </div>
+        <div
+          className="p-6 rounded-xl"
+          style={{
+            background: `linear-gradient(to bottom right, ${colorPresets[colorPreset]?.light}, ${colorPresets[colorPreset]?.light}dd)`,
+          }}
+        >
+          <p className="text-lg font-medium text-gray-900 mb-2 italic">"{todayTip.quote}"</p>
+          <p className="text-sm text-gray-600">— {todayTip.author}</p>
+        </div>
+      </div>
+    );
+  };
+
+  const GratitudeWidget = () => {
+    const prompts = [
+      "What made you smile today?",
+      "Who are you grateful for?",
+      "What moment brought you joy?",
+      "What are you thankful for today?",
+      "What simple pleasure are you grateful for?",
+    ];
+    
+    const todayPrompt = prompts[new Date().getDate() % prompts.length];
+    
+    return (
+      <div className="card h-full">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-xl bg-pink-100 flex items-center justify-center">
+            <Heart className="w-5 h-5 text-pink-600" />
+          </div>
+          <h2 className="text-xl font-display font-semibold text-gray-900">Daily Gratitude</h2>
+        </div>
+        <div
+          className="p-6 rounded-xl border"
+          style={{
+            backgroundColor: colorPresets[colorPreset]?.light,
+            borderColor: `${primaryColor}30`
+          }}
+        >
+          <p className="text-gray-700 mb-4 font-medium">{todayPrompt}</p>
+          <Link
+            to="/journal"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors text-white hover:opacity-90"
+            style={{ backgroundColor: primaryColor }}
+          >
+            <BookOpen className="w-4 h-4" />
+            Write in Journal
+          </Link>
+        </div>
+      </div>
+    );
+  };
+
+  const MoodTrackerWidget = () => {
+    const recentMoods = journalEntries
+      .slice(0, 5)
+      .map(entry => ({
+        date: entry.date,
+        mood: entry.mood || 'neutral',
+      }))
+      .reverse();
+    
+    return (
+      <div className="card h-full">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center">
+              <Smile className="w-5 h-5 text-purple-600" />
+            </div>
+            <h2 className="text-xl font-display font-semibold text-gray-900">How are you feeling?</h2>
+          </div>
+          <Link
+            to="/journal"
+            className="text-sm font-medium flex items-center gap-1 hover:opacity-80"
+            style={{ color: primaryColor }}
+          >
+            Log Mood <ChevronRight className="w-4 h-4" />
+          </Link>
+        </div>
+        {recentMoods.length > 0 ? (
+          <div className="space-y-3">
+            {recentMoods.map((entry, idx) => (
+              <div key={idx} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50">
+                <span className={`badge ${getMoodBadgeClass(entry.mood)}`}>
+                  {entry.mood}
+                </span>
+                <span className="text-sm text-gray-600 flex-1">
+                  {format(parseISO(entry.date), 'MMM d')}
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div
+            className="p-6 rounded-xl border text-center"
+            style={{
+              backgroundColor: colorPresets[colorPreset]?.light,
+              borderColor: `${primaryColor}30`
+            }}
+          >
+            <Smile className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+            <p className="text-gray-600 mb-4">Start tracking your mood</p>
+            <Link
+              to="/journal"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors text-white hover:opacity-90"
+              style={{ backgroundColor: primaryColor }}
+            >
+              <Plus className="w-4 h-4" />
+              Add Mood Entry
+            </Link>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const JournalWidget = () => {
-    if (journalEntries.length === 0) return null;
+    if (journalEntries.length === 0) {
+      return (
+        <div className="card">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-display font-semibold text-gray-900">Latest Journal Entry</h2>
+            <Link
+              to="/journal"
+              className="text-sm font-medium flex items-center gap-1 hover:opacity-80"
+              style={{ color: primaryColor }}
+            >
+              Start Journaling <ChevronRight className="w-4 h-4" />
+            </Link>
+          </div>
+          <div
+            className="p-8 rounded-xl border text-center"
+            style={{
+              backgroundColor: colorPresets[colorPreset]?.light,
+              borderColor: `${primaryColor}30`
+            }}
+          >
+            <BookOpen className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+            <p className="text-gray-600 mb-4">Start your wellness journey with journaling</p>
+            <Link
+              to="/journal"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors text-white hover:opacity-90"
+              style={{ backgroundColor: primaryColor }}
+            >
+              <Plus className="w-4 h-4" />
+              Create First Entry
+            </Link>
+          </div>
+        </div>
+      );
+    }
 
     return (
       <div className="card">
@@ -641,6 +832,12 @@ export default function Dashboard() {
         return <CourseProgressWidget />;
       case 'journal':
         return <JournalWidget />;
+      case 'wellness-tip':
+        return <WellnessTipWidget />;
+      case 'gratitude':
+        return <GratitudeWidget />;
+      case 'mood-tracker':
+        return <MoodTrackerWidget />;
       default:
         return <div className="card p-4 text-gray-500">Unknown widget</div>;
     }
@@ -814,27 +1011,48 @@ export default function Dashboard() {
             </div>
             <div className="p-4 max-h-96 overflow-y-auto">
               <div className="grid gap-3">
-                {availableWidgets.map(widget => (
-                  <button
-                    key={widget.type}
-                    onClick={() => addWidget(widget.type)}
-                    className="flex items-start gap-4 p-4 bg-gray-50 hover:bg-gray-100 rounded-xl text-left transition-colors"
-                  >
-                    <div
-                      className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
-                      style={{
-                        backgroundColor: colorPresets[colorPreset]?.light,
-                        color: primaryColor
-                      }}
+                {availableWidgets.map(widget => {
+                  const isAdded = widgets.some(w => w.type === widget.type && w.visible);
+                  const IconComponent = widget.icon || Plus;
+                  
+                  return (
+                    <button
+                      key={widget.type}
+                      onClick={() => addWidget(widget.type)}
+                      disabled={isAdded}
+                      className={`flex items-start gap-4 p-4 rounded-xl text-left transition-colors ${
+                        isAdded
+                          ? 'bg-gray-100 opacity-60 cursor-not-allowed'
+                          : 'bg-gray-50 hover:bg-gray-100'
+                      }`}
                     >
-                      <Plus className="w-6 h-6" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-900">{widget.title}</p>
-                      <p className="text-sm text-gray-500">{widget.description}</p>
-                    </div>
-                  </button>
-                ))}
+                      <div
+                        className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+                        style={{
+                          backgroundColor: isAdded ? '#e5e7eb' : colorPresets[colorPreset]?.light,
+                          color: isAdded ? '#9ca3af' : primaryColor
+                        }}
+                      >
+                        {isAdded ? (
+                          <Check className="w-6 h-6" />
+                        ) : (
+                          <IconComponent className="w-6 h-6" />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium text-gray-900">{widget.title}</p>
+                          {isAdded && (
+                            <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded-full">
+                              Added
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-500">{widget.description}</p>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>

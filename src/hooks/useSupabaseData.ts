@@ -410,36 +410,65 @@ export function useLiveClasses() {
 async function ensureUserExists(userId: string, email: string | undefined) {
   try {
     // Check if user exists (using type assertion since users table might not be in types)
-    const { error: selectError } = await (supabase
+    const { data: existingUser, error: selectError } = await (supabase
       .from('users' as any)
       .select('id')
       .eq('id', userId)
+      .maybeSingle() as any)
+
+    // If user exists, we're done
+    if (existingUser) {
+      return true
+    }
+
+    // If error is not "not found", log it
+    if (selectError && selectError.code !== 'PGRST116') {
+      console.warn('[ensureUserExists] Error checking user:', selectError)
+    }
+
+    // User doesn't exist, create them
+    // Try with the original schema first (name, email NOT NULL)
+    const userName = email?.split('@')[0] || 'User'
+    const userEmail = email || `${userId}@example.com`
+    
+    const { error: insertError } = await (supabase
+      .from('users' as any)
+      .insert({
+        id: userId,
+        email: userEmail,
+        name: userName,
+      })
+      .select()
       .single() as any)
 
-    if (selectError && selectError.code === 'PGRST116') {
-      // User doesn't exist (PGRST116 = no rows returned), create them
-      const { error: insertError } = await (supabase
-        .from('users' as any)
-        .insert({
-          id: userId,
-          email: email || null,
-          full_name: email?.split('@')[0] || null,
-        })
-        .select()
-        .single() as any)
+    if (insertError) {
+      // If that fails, try with the alternative schema (full_name, nullable email)
+      if (insertError.code === '42703' || insertError.message?.includes('name')) {
+        // Column 'name' doesn't exist, try 'full_name'
+        const { error: insertError2 } = await (supabase
+          .from('users' as any)
+          .insert({
+            id: userId,
+            email: email || null,
+            full_name: userName,
+          })
+          .select()
+          .single() as any)
 
-      if (insertError && insertError.code !== '23505') { // Ignore duplicate key errors
-        console.warn('[ensureUserExists] Could not create user:', insertError)
+        if (insertError2 && insertError2.code !== '23505') {
+          console.error('[ensureUserExists] Could not create user with full_name:', insertError2)
+          return false
+        }
+        return true
+      } else if (insertError.code !== '23505') {
+        // Ignore duplicate key errors (user was created between check and insert)
+        console.error('[ensureUserExists] Could not create user:', insertError)
         return false
       }
-      return true
-    } else if (selectError) {
-      console.warn('[ensureUserExists] Error checking user:', selectError)
-      return false
     }
     return true
   } catch (err) {
-    console.warn('[ensureUserExists] Unexpected error:', err)
+    console.error('[ensureUserExists] Unexpected error:', err)
     return false
   }
 }
@@ -506,7 +535,12 @@ export function useFavoriteSessions() {
     }
 
     // Ensure user exists in public.users first
-    await ensureUserExists(user.id, user.email)
+    const userExists = await ensureUserExists(user.id, user.email)
+    if (!userExists) {
+      console.error('[toggleFavorite] Failed to ensure user exists in database')
+      alert('Please refresh the page and try again. If the problem persists, contact support.')
+      return
+    }
 
     const isFavorite = favoriteIds.has(sessionId)
     console.log('[toggleFavorite] Toggling favorite for session:', sessionId, 'Current state:', isFavorite)
@@ -624,7 +658,12 @@ export function useSessionCompletions() {
     }
 
     // Ensure user exists in public.users
-    await ensureUserExists(user.id, user.email)
+    const userExists = await ensureUserExists(user.id, user.email)
+    if (!userExists) {
+      console.error('[toggleCompletion] Failed to ensure user exists in database')
+      alert('Please refresh the page and try again. If the problem persists, contact support.')
+      return
+    }
 
     const isCompleted = completedIds.has(sessionId)
 

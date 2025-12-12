@@ -610,22 +610,6 @@ function RecordedSessionCard({ session, onToggleFavorite, onToggleComplete, onCl
     }
   }
 
-  const handleToggleComplete = async (sessionId: string, sessionTitle: string) => {
-    // Show toast notification
-    setToastMessage(`"${sessionTitle}" has been moved to Completed`);
-    
-    // Wait a moment before actually toggling (so user sees the feedback)
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
-    // Toggle completion
-    await toggleCompletion(sessionId);
-    
-    // Hide toast after 3 seconds
-    setTimeout(() => {
-      setToastMessage(null);
-    }, 3000);
-  }
-
   return (
     <div 
       className="card overflow-hidden hover:shadow-elevated transition-all duration-300 group cursor-pointer relative"

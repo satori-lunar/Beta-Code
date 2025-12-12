@@ -442,8 +442,15 @@ async function ensureUserExists(userId: string, email: string | undefined) {
       .single() as any)
 
     if (insertError) {
+      console.error('[ensureUserExists] Insert error details:', {
+        code: insertError.code,
+        message: insertError.message,
+        details: insertError.details,
+        hint: insertError.hint
+      })
+
       // If that fails, try with the alternative schema (full_name, nullable email)
-      if (insertError.code === '42703' || insertError.message?.includes('name')) {
+      if (insertError.code === '42703' || insertError.message?.includes('name') || insertError.message?.includes('column')) {
         // Column 'name' doesn't exist, try 'full_name'
         const { error: insertError2 } = await (supabase
           .from('users' as any)
@@ -455,11 +462,36 @@ async function ensureUserExists(userId: string, email: string | undefined) {
           .select()
           .single() as any)
 
-        if (insertError2 && insertError2.code !== '23505') {
-          console.error('[ensureUserExists] Could not create user with full_name:', insertError2)
-          return false
+        if (insertError2) {
+          console.error('[ensureUserExists] Could not create user with full_name:', {
+            code: insertError2.code,
+            message: insertError2.message,
+            details: insertError2.details,
+            hint: insertError2.hint
+          })
+          
+          // If it's a permission/RLS error, the user might need to be created via trigger
+          // For now, we'll allow the operation to continue and let the foreign key error show
+          // The user will need to contact support or we need to add an RLS policy
+          if (insertError2.code === '42501' || insertError2.message?.includes('permission') || insertError2.message?.includes('policy')) {
+            console.warn('[ensureUserExists] RLS policy blocking user creation. User may need to be created via database trigger.')
+            // Return false so we show the alert
+            return false
+          }
+          
+          if (insertError2.code !== '23505') {
+            // If it's a permission error, provide helpful message
+            if (insertError2.code === '42501' || insertError2.message?.includes('permission') || insertError2.message?.includes('policy')) {
+              console.error('[ensureUserExists] RLS policy blocking user creation. Please run migration 007_add_user_insert_policy.sql')
+            }
+            return false
+          }
         }
         return true
+      } else if (insertError.code === '42501' || insertError.message?.includes('permission') || insertError.message?.includes('policy')) {
+        // RLS policy error - user can't insert themselves
+        console.error('[ensureUserExists] RLS policy blocking user creation. Please run migration 007_add_user_insert_policy.sql')
+        return false
       } else if (insertError.code !== '23505') {
         // Ignore duplicate key errors (user was created between check and insert)
         console.error('[ensureUserExists] Could not create user:', insertError)

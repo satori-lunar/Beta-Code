@@ -44,7 +44,7 @@ export default function Classes() {
   const { completedIds, toggleCompletion } = useSessionCompletions();
   const { courses, loading: coursesLoading } = useCourses();
   
-  const [activeTab, setActiveTab] = useState<'live' | 'recorded' | 'favorites'>('live');
+  const [activeTab, setActiveTab] = useState<'live' | 'recorded' | 'favorites' | 'completed'>('live');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
@@ -145,6 +145,7 @@ export default function Classes() {
   );
 
   const favoriteSessions = mappedRecordedSessions.filter((s) => s.isFavorite);
+  const completedSessions = mappedRecordedSessions.filter((s) => s.isCompleted);
 
   const loading = sessionsLoading || classesLoading || coursesLoading;
 
@@ -164,10 +165,11 @@ export default function Classes() {
           { id: 'live', label: 'Live Classes', icon: Radio },
           { id: 'recorded', label: 'Recordings', icon: Video },
           { id: 'favorites', label: 'Favorites', icon: Heart },
+          { id: 'completed', label: 'Completed', icon: CheckCircle2 },
         ].map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id as 'live' | 'recorded' | 'favorites')}
+            onClick={() => setActiveTab(tab.id as 'live' | 'recorded' | 'favorites' | 'completed')}
             className={`flex items-center gap-2 px-4 py-3 font-medium transition-colors border-b-2 -mb-px ${
               activeTab === tab.id
                 ? 'text-coral-600 border-coral-500'
@@ -179,6 +181,11 @@ export default function Classes() {
             {tab.id === 'favorites' && favoriteSessions.length > 0 && (
               <span className="ml-1 px-2 py-0.5 bg-coral-100 text-coral-600 text-xs rounded-full">
                 {favoriteSessions.length}
+              </span>
+            )}
+            {tab.id === 'completed' && completedSessions.length > 0 && (
+              <span className="ml-1 px-2 py-0.5 bg-green-100 text-green-600 text-xs rounded-full">
+                {completedSessions.length}
               </span>
             )}
           </button>
@@ -413,6 +420,41 @@ export default function Classes() {
               <h3 className="font-semibold text-gray-900 mb-2">No favorites yet</h3>
               <p className="text-gray-500">
                 Browse recordings and click the heart icon to save your favorites
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Completed */}
+      {activeTab === 'completed' && (
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {loading ? (
+            <div className="col-span-full card text-center py-12">
+              <p className="text-gray-500">Loading completed sessions...</p>
+            </div>
+          ) : completedSessions.length > 0 ? (
+            completedSessions.map((session) => (
+              <RecordedSessionCard
+                key={session.id}
+                session={session}
+                onToggleFavorite={() => toggleFavorite(session.id)}
+                onToggleComplete={() => toggleCompletion(session.id)}
+                onClick={() => {
+                  if (session.videoUrl) {
+                    window.open(session.videoUrl, '_blank', 'noopener,noreferrer');
+                  } else {
+                    console.error('No video URL for session:', session.id);
+                  }
+                }}
+              />
+            ))
+          ) : (
+            <div className="col-span-full card text-center py-12">
+              <CheckCircle2 className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+              <h3 className="font-semibold text-gray-900 mb-2">No completed sessions yet</h3>
+              <p className="text-gray-500">
+                Mark sessions as complete by clicking the checkmark icon on any recording
               </p>
             </div>
           )}

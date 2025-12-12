@@ -605,17 +605,16 @@ function RecordedSessionCard({ session, onToggleFavorite, onToggleComplete, onCl
             console.log('[RecordedSessionCard] Favorite button clicked for session:', session.id, 'Current favorite state:', session.isFavorite);
             onToggleFavorite();
           }}
-          className={`absolute top-3 right-3 p-2 rounded-full transition-all z-50 pointer-events-auto ${
+          className={`absolute top-3 right-3 p-2 rounded-full transition-all duration-200 z-50 pointer-events-auto transform ${
             session.isFavorite
-              ? 'bg-red-500 text-white shadow-lg'
-              : 'bg-white/90 text-gray-600 hover:bg-white hover:shadow-md'
+              ? 'bg-red-500 text-white shadow-lg scale-100'
+              : 'bg-white/90 text-gray-600 hover:bg-white hover:shadow-lg hover:scale-110 active:scale-95'
           }`}
           type="button"
           aria-label={session.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
           onMouseDown={(e) => e.stopPropagation()}
-          style={{ pointerEvents: 'auto', zIndex: 50 }}
         >
-          <Heart className={`w-5 h-5 ${session.isFavorite ? 'fill-current' : ''}`} />
+          <Heart className={`w-5 h-5 transition-transform duration-200 ${session.isFavorite ? 'fill-current' : 'hover:scale-110'}`} />
         </button>
         
         {/* Complete button */}
@@ -626,16 +625,16 @@ function RecordedSessionCard({ session, onToggleFavorite, onToggleComplete, onCl
             console.log('[RecordedSessionCard] Complete button clicked', session.id);
             onToggleComplete();
           }}
-          className={`absolute top-3 left-3 p-2 rounded-full transition-all z-50 pointer-events-auto ${
+          className={`absolute top-3 left-3 p-2 rounded-full transition-all duration-200 z-50 pointer-events-auto transform ${
             session.isCompleted
-              ? 'bg-green-500 text-white shadow-lg'
-              : 'bg-white/90 text-gray-600 hover:bg-white hover:shadow-md'
+              ? 'bg-green-500 text-white shadow-lg scale-100'
+              : 'bg-white/90 text-gray-600 hover:bg-white hover:shadow-lg hover:scale-110 active:scale-95'
           }`}
           type="button"
           aria-label={session.isCompleted ? 'Mark as incomplete' : 'Mark as complete'}
           onMouseDown={(e) => e.stopPropagation()}
         >
-          <CheckCircle2 className={`w-5 h-5 ${session.isCompleted ? 'fill-current' : ''}`} />
+          <CheckCircle2 className={`w-5 h-5 transition-transform duration-200 ${session.isCompleted ? 'fill-current' : 'hover:scale-110'}`} />
         </button>
         
         {/* Decorative pattern */}

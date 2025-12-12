@@ -152,7 +152,7 @@ async function analyzeWithEdamam(imageFile: File, appId: string, appKey: string)
  * Identifies food type from image using basic client-side analysis
  * This is a simplified approach - in production, use a proper image recognition API
  */
-async function identifyFoodTypeFromImage(imageFile: File): Promise<string> {
+async function identifyFoodTypeFromImage(_imageFile: File): Promise<string> {
   // Basic client-side image analysis
   // In production, you'd use:
   // - A backend service with image recognition
@@ -161,6 +161,7 @@ async function identifyFoodTypeFromImage(imageFile: File): Promise<string> {
   
   // For now, return a generic type
   // Users can manually adjust the food name
+  // _imageFile parameter reserved for future image analysis implementation
   return 'meal';
 }
 
@@ -224,7 +225,8 @@ function estimateNutritionFromName(foodName: string, confidence: number): FoodAn
  * Fallback food image analysis
  * Returns generic meal with prompt to review
  */
-async function analyzeFoodImageFallback(imageFile: File): Promise<FoodAnalysisResult> {
+async function analyzeFoodImageFallback(_imageFile: File): Promise<FoodAnalysisResult> {
+  // _imageFile parameter reserved for future image analysis implementation
   return {
     name: 'Meal from photo',
     calories: 400,
@@ -234,23 +236,6 @@ async function analyzeFoodImageFallback(imageFile: File): Promise<FoodAnalysisRe
     confidence: 0.3,
     description: 'Unable to analyze image automatically. Please enter nutritional values manually or set up API keys (see FOOD_ANALYSIS_SETUP.md)',
   };
-}
-
-/**
- * Converts a File to base64 string
- */
-function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result as string;
-      // Remove data URL prefix
-      const base64 = result.split(',')[1];
-      resolve(base64);
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
 }
 
 /**

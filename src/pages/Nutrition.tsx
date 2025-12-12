@@ -27,7 +27,7 @@ import {
   Tooltip,
   ResponsiveContainer
 } from 'recharts';
-import { analyzeFoodImage, captureImageFromCamera } from '../lib/foodAnalysis';
+import { analyzeFoodImage } from '../lib/foodAnalysis';
 
 const waterData = [
   { time: '8AM', amount: 350 },

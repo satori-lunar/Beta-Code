@@ -667,6 +667,7 @@ export type Database = {
           kajabi_product_id: string | null
           kajabi_offering_id: string | null
           synced_from_kajabi: boolean | null
+          course_id: string | null
         }
         Insert: {
           id?: string
@@ -701,6 +702,49 @@ export type Database = {
           kajabi_product_id?: string | null
           kajabi_offering_id?: string | null
           synced_from_kajabi?: boolean | null
+          course_id?: string | null
+        }
+        Relationships: []
+      }
+      courses: {
+        Row: {
+          id: string
+          title: string
+          description: string
+          thumbnail_url: string | null
+          instructor: string
+          duration: string
+          sessions: number
+          category: string
+          level: string
+          tags: string[]
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          title: string
+          description: string
+          thumbnail_url?: string | null
+          instructor: string
+          duration: string
+          sessions: number
+          category: string
+          level: string
+          tags?: string[]
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          title?: string
+          description?: string
+          thumbnail_url?: string | null
+          instructor?: string
+          duration?: string
+          sessions?: number
+          category?: string
+          level?: string
+          tags?: string[]
+          created_at?: string | null
         }
         Relationships: []
       }

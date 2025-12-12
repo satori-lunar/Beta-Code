@@ -42,8 +42,8 @@ export function useCourses() {
         if (coursesError) throw coursesError
 
         // For each course, get session count
-        const coursesWithCounts = await Promise.all(
-          (data || []).map(async (course) => {
+        const coursesWithCounts: CourseWithSessions[] = await Promise.all(
+          (data || []).map(async (course: any) => {
             const { count, error: countError } = await supabase
               .from('recorded_sessions')
               .select('*', { count: 'exact', head: true })
@@ -52,7 +52,17 @@ export function useCourses() {
             if (countError) throw countError
 
             return {
-              ...course,
+              id: course.id,
+              title: course.title,
+              description: course.description,
+              thumbnail_url: course.thumbnail_url,
+              instructor: course.instructor,
+              duration: course.duration,
+              sessions: course.sessions,
+              category: course.category,
+              level: course.level,
+              tags: course.tags || [],
+              created_at: course.created_at || new Date().toISOString(),
               session_count: count || 0,
             }
           })

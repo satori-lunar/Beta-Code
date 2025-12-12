@@ -141,10 +141,6 @@ export default function Classes() {
     (c) => filterBySearch(c.title, c.description) && filterByCategory(c.category)
   );
 
-  const filteredRecordedSessions = mappedRecordedSessions.filter(
-    (s) => filterBySearch(s.title, s.description) && filterByCategory(s.category)
-  );
-
   const favoriteSessions = mappedRecordedSessions.filter((s) => s.isFavorite);
 
   const loading = sessionsLoading || classesLoading || coursesLoading;

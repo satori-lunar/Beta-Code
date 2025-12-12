@@ -526,10 +526,18 @@ function RecordedSessionCard({ session, onToggleFavorite, onToggleComplete, onCl
   ];
   const sessionGradient = gradients[parseInt(session.id.slice(-1), 16) % gradients.length];
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Only trigger onClick if the click wasn't on a button
+    const target = e.target as HTMLElement
+    if (!target.closest('button')) {
+      onClick?.()
+    }
+  }
+
   return (
     <div 
       className="card overflow-hidden hover:shadow-elevated transition-all duration-300 group cursor-pointer relative"
-      onClick={onClick}
+      onClick={handleCardClick}
     >
       {/* Thumbnail/Image Area */}
       <div className={`h-48 bg-gradient-to-br ${sessionGradient} -mx-6 -mt-6 mb-4 relative overflow-hidden`} onClick={(e) => e.stopPropagation()}>
@@ -545,7 +553,7 @@ function RecordedSessionCard({ session, onToggleFavorite, onToggleComplete, onCl
           onClick={(e) => {
             e.stopPropagation();
             e.preventDefault();
-            console.log('[RecordedSessionCard] Favorite button clicked', session.id);
+            console.log('[RecordedSessionCard] Favorite button clicked for session:', session.id, 'Current favorite state:', session.isFavorite);
             onToggleFavorite();
           }}
           className={`absolute top-3 right-3 p-2 rounded-full transition-all z-50 pointer-events-auto ${
@@ -556,6 +564,7 @@ function RecordedSessionCard({ session, onToggleFavorite, onToggleComplete, onCl
           type="button"
           aria-label={session.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
           onMouseDown={(e) => e.stopPropagation()}
+          style={{ pointerEvents: 'auto', zIndex: 50 }}
         >
           <Heart className={`w-5 h-5 ${session.isFavorite ? 'fill-current' : ''}`} />
         </button>

@@ -502,17 +502,14 @@ export function useFavoriteSessions() {
   const toggleFavorite = async (sessionId: string) => {
     if (!user) {
       console.error('[toggleFavorite] No user found')
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/1de0ee3c-dda9-4eeb-9faf-c2d8ef7facb1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useSupabaseData.ts:464',message:'toggleFavorite called without user',data:{sessionId},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-      // #endregion
       return
     }
 
-    const isFavorite = favoriteIds.has(sessionId)
+    // Ensure user exists in public.users first
+    await ensureUserExists(user.id, user.email)
 
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/1de0ee3c-dda9-4eeb-9faf-c2d8ef7facb1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useSupabaseData.ts:467',message:'toggleFavorite state check',data:{sessionId,isFavorite,userId:user.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-    // #endregion
+    const isFavorite = favoriteIds.has(sessionId)
+    console.log('[toggleFavorite] Toggling favorite for session:', sessionId, 'Current state:', isFavorite)
 
     try {
       if (isFavorite) {
@@ -523,14 +520,12 @@ export function useFavoriteSessions() {
           .eq('user_id', user.id)
           .eq('session_id', sessionId)
 
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/1de0ee3c-dda9-4eeb-9faf-c2d8ef7facb1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useSupabaseData.ts:476',message:'delete favorite result',data:{sessionId,error:error?.message,hasError:!!error,errorCode:error?.code,errorDetails:error?.details},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-        // #endregion
-
         if (error) {
           console.error('[toggleFavorite] Error removing favorite:', error)
           setError(error as Error)
+          alert(`Failed to remove favorite: ${error.message}`)
         } else {
+          console.log('[toggleFavorite] Successfully removed favorite')
           setFavoriteIds(prev => {
             const next = new Set(prev)
             next.delete(sessionId)
@@ -546,20 +541,19 @@ export function useFavoriteSessions() {
             session_id: sessionId,
           })
 
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/1de0ee3c-dda9-4eeb-9faf-c2d8ef7facb1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useSupabaseData.ts:492',message:'insert favorite result',data:{sessionId,error:error?.message,hasError:!!error,errorCode:error?.code,errorDetails:error?.details},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-        // #endregion
-
         if (error) {
           console.error('[toggleFavorite] Error adding favorite:', error)
           setError(error as Error)
+          alert(`Failed to add favorite: ${error.message}`)
         } else {
+          console.log('[toggleFavorite] Successfully added favorite')
           setFavoriteIds(prev => new Set(prev).add(sessionId))
         }
       }
     } catch (err) {
       console.error('[toggleFavorite] Unexpected error:', err)
       setError(err as Error)
+      alert(`Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}`)
     }
   }
 

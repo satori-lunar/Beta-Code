@@ -132,10 +132,10 @@ export default function Classes() {
     return grouped;
   }, [mappedRecordedSessions]);
 
-  // Get sessions for selected course
+  // Get sessions for selected course (excluding completed ones)
   const courseSessions = selectedCourseId 
     ? (sessionsByCourse[selectedCourseId] || []).filter(
-        (s) => filterBySearch(s.title, s.description) && filterByCategory(s.category)
+        (s) => !s.isCompleted && filterBySearch(s.title, s.description) && filterByCategory(s.category)
       )
     : [];
 

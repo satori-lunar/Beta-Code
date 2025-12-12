@@ -151,7 +151,17 @@ export default function Classes() {
   const loading = sessionsLoading || classesLoading || coursesLoading;
 
   return (
-    <div className="space-y-8 pb-20 lg:pb-0">
+    <div className="space-y-8 pb-20 lg:pb-0 relative">
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 animate-in slide-in-from-top-5 fade-in duration-300">
+          <div className="bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-3">
+            <CheckCircle2 className="w-5 h-5" />
+            <span className="font-medium">{toastMessage}</span>
+          </div>
+        </div>
+      )}
+      
       {/* Header */}
       <div>
         <h1 className="text-2xl lg:text-3xl font-display font-bold text-gray-900">
@@ -318,7 +328,7 @@ export default function Classes() {
                       key={session.id}
                       session={session}
                       onToggleFavorite={() => toggleFavorite(session.id)}
-                      onToggleComplete={() => toggleCompletion(session.id)}
+                      onToggleComplete={() => handleToggleComplete(session.id, session.title)}
                       onClick={() => {
                         if (session.videoUrl) {
                           window.open(session.videoUrl, '_blank', 'noopener,noreferrer');
@@ -412,7 +422,7 @@ export default function Classes() {
                 key={session.id}
                 session={session}
                 onToggleFavorite={() => toggleFavorite(session.id)}
-                onToggleComplete={() => toggleCompletion(session.id)}
+                onToggleComplete={() => handleToggleComplete(session.id, session.title)}
                 onClick={() => {
                   if (session.videoUrl) {
                     window.open(session.videoUrl, '_blank', 'noopener,noreferrer');
@@ -447,7 +457,7 @@ export default function Classes() {
                 key={session.id}
                 session={session}
                 onToggleFavorite={() => toggleFavorite(session.id)}
-                onToggleComplete={() => toggleCompletion(session.id)}
+                onToggleComplete={() => handleToggleComplete(session.id, session.title)}
                 onClick={() => {
                   if (session.videoUrl) {
                     window.open(session.videoUrl, '_blank', 'noopener,noreferrer');
@@ -582,6 +592,22 @@ function RecordedSessionCard({ session, onToggleFavorite, onToggleComplete, onCl
     if (!target.closest('button')) {
       onClick?.()
     }
+  }
+
+  const handleToggleComplete = async (sessionId: string, sessionTitle: string) => {
+    // Show toast notification
+    setToastMessage(`"${sessionTitle}" has been moved to Completed`);
+    
+    // Wait a moment before actually toggling (so user sees the feedback)
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
+    // Toggle completion
+    await toggleCompletion(sessionId);
+    
+    // Hide toast after 3 seconds
+    setTimeout(() => {
+      setToastMessage(null);
+    }, 3000);
   }
 
   return (

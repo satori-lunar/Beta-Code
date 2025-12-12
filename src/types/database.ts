@@ -769,6 +769,30 @@ export type Database = {
         }
         Relationships: []
       }
+      user_session_completions: {
+        Row: {
+          id: string
+          user_id: string
+          session_id: string
+          completed_at: string | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          session_id: string
+          completed_at?: string | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          session_id?: string
+          completed_at?: string | null
+          created_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

@@ -406,6 +406,44 @@ export function useLiveClasses() {
   return { classes, loading, error, refetch }
 }
 
+// Helper function to ensure user exists in public.users
+async function ensureUserExists(userId: string, email: string | undefined) {
+  try {
+    // Check if user exists (using type assertion since users table might not be in types)
+    const { data: existingUser, error: selectError } = await (supabase
+      .from('users' as any)
+      .select('id')
+      .eq('id', userId)
+      .single() as any)
+
+    if (selectError && selectError.code === 'PGRST116') {
+      // User doesn't exist (PGRST116 = no rows returned), create them
+      const { error: insertError } = await (supabase
+        .from('users' as any)
+        .insert({
+          id: userId,
+          email: email || null,
+          full_name: email?.split('@')[0] || null,
+        })
+        .select()
+        .single() as any)
+
+      if (insertError && insertError.code !== '23505') { // Ignore duplicate key errors
+        console.warn('[ensureUserExists] Could not create user:', insertError)
+        return false
+      }
+      return true
+    } else if (selectError) {
+      console.warn('[ensureUserExists] Error checking user:', selectError)
+      return false
+    }
+    return true
+  } catch (err) {
+    console.warn('[ensureUserExists] Unexpected error:', err)
+    return false
+  }
+}
+
 // Hook for favorite sessions
 export function useFavoriteSessions() {
   const { user } = useAuth()
@@ -462,43 +500,189 @@ export function useFavoriteSessions() {
   }, [user, refetchTrigger])
 
   const toggleFavorite = async (sessionId: string) => {
-    if (!user) return
+    if (!user) {
+      console.error('[toggleFavorite] No user found')
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/1de0ee3c-dda9-4eeb-9faf-c2d8ef7facb1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useSupabaseData.ts:464',message:'toggleFavorite called without user',data:{sessionId},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
+      return
+    }
 
     const isFavorite = favoriteIds.has(sessionId)
 
-    if (isFavorite) {
-      // Remove from favorites
-      const { error } = await supabase
-        .from('user_favorite_sessions')
-        .delete()
-        .eq('user_id', user.id)
-        .eq('session_id', sessionId)
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/1de0ee3c-dda9-4eeb-9faf-c2d8ef7facb1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useSupabaseData.ts:467',message:'toggleFavorite state check',data:{sessionId,isFavorite,userId:user.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
 
-      if (!error) {
-        setFavoriteIds(prev => {
-          const next = new Set(prev)
-          next.delete(sessionId)
-          return next
-        })
-      }
-    } else {
-      // Add to favorites
-      const { error } = await supabase
-        .from('user_favorite_sessions')
-        .insert({
-          user_id: user.id,
-          session_id: sessionId,
-        })
+    try {
+      if (isFavorite) {
+        // Remove from favorites
+        const { error, data } = await supabase
+          .from('user_favorite_sessions')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('session_id', sessionId)
+          .select()
 
-      if (!error) {
-        setFavoriteIds(prev => new Set(prev).add(sessionId))
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/1de0ee3c-dda9-4eeb-9faf-c2d8ef7facb1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useSupabaseData.ts:476',message:'delete favorite result',data:{sessionId,error:error?.message,hasError:!!error,errorCode:error?.code,errorDetails:error?.details,data},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+        // #endregion
+
+        if (error) {
+          console.error('[toggleFavorite] Error removing favorite:', error)
+          setError(error as Error)
+        } else {
+          setFavoriteIds(prev => {
+            const next = new Set(prev)
+            next.delete(sessionId)
+            return next
+          })
+        }
+      } else {
+        // Add to favorites
+        const { error, data } = await supabase
+          .from('user_favorite_sessions')
+          .insert({
+            user_id: user.id,
+            session_id: sessionId,
+          })
+          .select()
+
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/1de0ee3c-dda9-4eeb-9faf-c2d8ef7facb1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useSupabaseData.ts:492',message:'insert favorite result',data:{sessionId,error:error?.message,hasError:!!error,errorCode:error?.code,errorDetails:error?.details,data},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+        // #endregion
+
+        if (error) {
+          console.error('[toggleFavorite] Error adding favorite:', error)
+          setError(error as Error)
+        } else {
+          setFavoriteIds(prev => new Set(prev).add(sessionId))
+        }
       }
+    } catch (err) {
+      console.error('[toggleFavorite] Unexpected error:', err)
+      setError(err as Error)
     }
   }
 
   const refetch = () => setRefetchTrigger(prev => prev + 1)
 
   return { favoriteIds, loading, error, toggleFavorite, refetch }
+}
+
+// Hook for session completions
+export function useSessionCompletions() {
+  const { user } = useAuth()
+  const [completedIds, setCompletedIds] = useState<Set<string>>(new Set())
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
+  const [refetchTrigger, setRefetchTrigger] = useState(0)
+
+  useEffect(() => {
+    if (!user) {
+      setCompletedIds(new Set())
+      setLoading(false)
+      return
+    }
+
+    async function fetchCompletions() {
+      if (!user) return
+      try {
+        setLoading(true)
+        const { data, error } = await supabase
+          .from('user_session_completions')
+          .select('session_id')
+          .eq('user_id', user.id)
+
+        if (error) throw error
+        setCompletedIds(new Set((data || []).map((c: any) => c.session_id)))
+      } catch (err) {
+        setError(err as Error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchCompletions()
+
+    // Subscribe to changes
+    const channel = supabase
+      .channel('user_session_completions_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'user_session_completions',
+          filter: `user_id=eq.${user.id}`,
+        },
+        fetchCompletions
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [user, refetchTrigger])
+
+  const toggleCompletion = async (sessionId: string) => {
+    if (!user) {
+      console.error('[toggleCompletion] No user found')
+      return
+    }
+
+    // Ensure user exists in public.users
+    await ensureUserExists(user.id, user.email)
+
+    const isCompleted = completedIds.has(sessionId)
+
+    try {
+      if (isCompleted) {
+        // Remove completion
+        const { error, data } = await supabase
+          .from('user_session_completions')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('session_id', sessionId)
+          .select()
+
+        if (error) {
+          console.error('[toggleCompletion] Error removing completion:', error)
+          setError(error as Error)
+        } else {
+          setCompletedIds(prev => {
+            const next = new Set(prev)
+            next.delete(sessionId)
+            return next
+          })
+        }
+      } else {
+        // Add completion
+        const { error, data } = await supabase
+          .from('user_session_completions')
+          .insert({
+            user_id: user.id,
+            session_id: sessionId,
+            completed_at: new Date().toISOString(),
+          })
+          .select()
+
+        if (error) {
+          console.error('[toggleCompletion] Error adding completion:', error)
+          setError(error as Error)
+        } else {
+          setCompletedIds(prev => new Set(prev).add(sessionId))
+        }
+      }
+    } catch (err) {
+      console.error('[toggleCompletion] Unexpected error:', err)
+      setError(err as Error)
+    }
+  }
+
+  const refetch = () => setRefetchTrigger(prev => prev + 1)
+
+  return { completedIds, loading, error, toggleCompletion, refetch }
 }
 
 // Hook for workout presets

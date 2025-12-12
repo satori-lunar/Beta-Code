@@ -13,7 +13,7 @@ import {
   ChevronRight,
   BookOpen
 } from 'lucide-react';
-import { useRecordedSessions, useLiveClasses, useFavoriteSessions } from '../hooks/useSupabaseData';
+import { useRecordedSessions, useLiveClasses, useFavoriteSessions, useSessionCompletions } from '../hooks/useSupabaseData';
 import { useCourses } from '../hooks/useCourses';
 import { format, parseISO, isAfter, isBefore, addHours } from 'date-fns';
 
@@ -84,10 +84,11 @@ export default function Classes() {
       category: session.category,
       views: session.views || 0,
       isFavorite: favoriteIds.has(session.id),
+      isCompleted: completedIds.has(session.id),
       tags: session.tags || [],
       courseId: session.course_id || null,
     }));
-  }, [recordedSessions, favoriteIds]);
+  }, [recordedSessions, favoriteIds, completedIds]);
 
   const mappedLiveClasses = useMemo(() => {
     return (liveClasses || []).map(cls => ({
@@ -300,6 +301,7 @@ export default function Classes() {
                       key={session.id}
                       session={session}
                       onToggleFavorite={() => toggleFavorite(session.id)}
+                      onToggleComplete={() => toggleCompletion(session.id)}
                       onClick={() => {
                         if (session.videoUrl) {
                           window.open(session.videoUrl, '_blank', 'noopener,noreferrer');
@@ -499,13 +501,15 @@ interface RecordedSessionCardProps {
     category: string;
     views: number;
     isFavorite: boolean;
+    isCompleted: boolean;
     tags: string[];
   };
   onToggleFavorite: () => void;
+  onToggleComplete: () => void;
   onClick?: () => void;
 }
 
-function RecordedSessionCard({ session, onToggleFavorite, onClick }: RecordedSessionCardProps) {
+function RecordedSessionCard({ session, onToggleFavorite, onToggleComplete, onClick }: RecordedSessionCardProps) {
   // Generate a consistent gradient based on session ID for visual variety
   const gradients = [
     'from-coral-400 to-pink-500',
@@ -521,11 +525,11 @@ function RecordedSessionCard({ session, onToggleFavorite, onClick }: RecordedSes
 
   return (
     <div 
-      className="card overflow-hidden hover:shadow-elevated transition-all duration-300 group cursor-pointer"
+      className="card overflow-hidden hover:shadow-elevated transition-all duration-300 group cursor-pointer relative"
       onClick={onClick}
     >
       {/* Thumbnail/Image Area */}
-      <div className={`h-48 bg-gradient-to-br ${sessionGradient} -mx-6 -mt-6 mb-4 relative overflow-hidden`}>
+      <div className={`h-48 bg-gradient-to-br ${sessionGradient} -mx-6 -mt-6 mb-4 relative overflow-hidden`} onClick={(e) => e.stopPropagation()}>
         {/* Play overlay */}
         <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity">
           <div className="bg-white/20 backdrop-blur-sm rounded-full p-4 transform group-hover:scale-110 transition-transform">
@@ -538,15 +542,37 @@ function RecordedSessionCard({ session, onToggleFavorite, onClick }: RecordedSes
           onClick={(e) => {
             e.stopPropagation();
             e.preventDefault();
+            console.log('[RecordedSessionCard] Favorite button clicked', session.id);
             onToggleFavorite();
           }}
-          className={`absolute top-3 right-3 p-2 rounded-full transition-all z-10 ${
+          className={`absolute top-3 right-3 p-2 rounded-full transition-all z-20 ${
             session.isFavorite
               ? 'bg-red-500 text-white shadow-lg'
               : 'bg-white/90 text-gray-600 hover:bg-white hover:shadow-md'
           }`}
+          type="button"
         >
           <Heart className={`w-5 h-5 ${session.isFavorite ? 'fill-current' : ''}`} />
+        </button>
+        
+        {/* Complete button */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            console.log('[RecordedSessionCard] Complete button clicked', session.id);
+            onToggleComplete();
+          }}
+          className={`absolute top-3 left-3 p-2 rounded-full transition-all z-50 pointer-events-auto ${
+            session.isCompleted
+              ? 'bg-green-500 text-white shadow-lg'
+              : 'bg-white/90 text-gray-600 hover:bg-white hover:shadow-md'
+          }`}
+          type="button"
+          aria-label={session.isCompleted ? 'Mark as incomplete' : 'Mark as complete'}
+          onMouseDown={(e) => e.stopPropagation()}
+        >
+          <CheckCircle2 className={`w-5 h-5 ${session.isCompleted ? 'fill-current' : ''}`} />
         </button>
         
         {/* Decorative pattern */}
@@ -592,9 +618,17 @@ function RecordedSessionCard({ session, onToggleFavorite, onClick }: RecordedSes
         )}
 
         <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-          <span className="text-sm text-gray-500">
-            {format(parseISO(session.recordedAt), 'MMM d, yyyy')}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-500">
+              {format(parseISO(session.recordedAt), 'MMM d, yyyy')}
+            </span>
+            {session.isCompleted && (
+              <span className="text-xs text-green-600 font-medium flex items-center gap-1">
+                <CheckCircle2 className="w-3 h-3" />
+                Completed
+              </span>
+            )}
+          </div>
           <div className="flex items-center gap-2 text-coral-600 group-hover:text-coral-700 font-medium text-sm">
             <span>Watch</span>
             <PlayCircle className="w-4 h-4" />

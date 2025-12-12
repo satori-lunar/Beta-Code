@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
   Plus,
   Droplet,
@@ -13,7 +13,10 @@ import {
   Sparkles,
   Lightbulb,
   Target,
-  CheckCircle
+  CheckCircle,
+  Camera,
+  Upload,
+  Loader2
 } from 'lucide-react';
 import {
   AreaChart,
@@ -24,6 +27,7 @@ import {
   Tooltip,
   ResponsiveContainer
 } from 'recharts';
+import { analyzeFoodImage, captureImageFromCamera } from '../lib/foodAnalysis';
 
 const waterData = [
   { time: '8AM', amount: 350 },
@@ -60,6 +64,13 @@ export default function Nutrition() {
   const [selectedMealType, setSelectedMealType] = useState('breakfast');
   const [meals, setMeals] = useState<Meal[]>([]);
   const [showGettingStarted, setShowGettingStarted] = useState(true);
+  const [analyzingImage, setAnalyzingImage] = useState(false);
+  const [mealImage, setMealImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [showCamera, setShowCamera] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
   const [newMeal, setNewMeal] = useState({
     name: '',
@@ -96,7 +107,105 @@ export default function Nutrition() {
         },
       ]);
       setNewMeal({ name: '', calories: '', protein: '', carbs: '', fat: '' });
+      setMealImage(null);
+      setImagePreview(null);
       setShowAddMealModal(false);
+    }
+  };
+
+  const handleImageSelect = async (file: File) => {
+    setMealImage(file);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleImageSelect(file);
+    }
+  };
+
+  const handleCaptureFromCamera = async () => {
+    try {
+      setShowCamera(true);
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment' },
+      });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    } catch (error) {
+      console.error('Error accessing camera:', error);
+      alert('Unable to access camera. Please check permissions.');
+      setShowCamera(false);
+    }
+  };
+
+  const capturePhoto = () => {
+    if (!videoRef.current) return;
+
+    const canvas = document.createElement('canvas');
+    const video = videoRef.current;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    const ctx = canvas.getContext('2d');
+    ctx?.drawImage(video, 0, 0);
+
+    // Stop camera stream
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+
+    canvas.toBlob((blob) => {
+      if (blob) {
+        const file = new File([blob], 'meal-photo.jpg', { type: 'image/jpeg' });
+        handleImageSelect(file);
+        setShowCamera(false);
+      }
+    }, 'image/jpeg', 0.9);
+  };
+
+  const cancelCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    setShowCamera(false);
+  };
+
+  const handleAnalyzeImage = async () => {
+    if (!mealImage) return;
+
+    setAnalyzingImage(true);
+    try {
+      const analysis = await analyzeFoodImage(mealImage);
+      setNewMeal({
+        name: analysis.name,
+        calories: Math.round(analysis.calories).toString(),
+        protein: Math.round(analysis.protein).toString(),
+        carbs: Math.round(analysis.carbs).toString(),
+        fat: Math.round(analysis.fat).toString(),
+      });
+    } catch (error) {
+      console.error('Error analyzing image:', error);
+      alert('Failed to analyze image. Please enter meal details manually.');
+    } finally {
+      setAnalyzingImage(false);
+    }
+  };
+
+  const removeImage = () => {
+    setMealImage(null);
+    setImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
@@ -471,6 +580,75 @@ export default function Nutrition() {
                 </div>
               </div>
 
+              {/* Image Capture Section */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Take a Photo of Your Meal
+                </label>
+                {!imagePreview ? (
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={handleCaptureFromCamera}
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 border-dashed border-gray-300 hover:border-coral-400 hover:bg-coral-50 transition-colors"
+                    >
+                      <Camera className="w-5 h-5 text-gray-600" />
+                      <span className="text-sm font-medium text-gray-700">Take Photo</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 border-dashed border-gray-300 hover:border-coral-400 hover:bg-coral-50 transition-colors"
+                    >
+                      <Upload className="w-5 h-5 text-gray-600" />
+                      <span className="text-sm font-medium text-gray-700">Upload</span>
+                    </button>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileInput}
+                      className="hidden"
+                    />
+                  </div>
+                ) : (
+                  <div className="relative">
+                    <div className="relative rounded-xl overflow-hidden border-2 border-gray-200">
+                      <img
+                        src={imagePreview}
+                        alt="Meal preview"
+                        className="w-full h-48 object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={removeImage}
+                        className="absolute top-2 right-2 p-2 bg-black/50 hover:bg-black/70 rounded-full text-white transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleAnalyzeImage}
+                      disabled={analyzingImage}
+                      className="mt-2 w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-coral-500 to-orange-500 text-white font-medium hover:from-coral-600 hover:to-orange-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {analyzingImage ? (
+                        <>
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                          <span>Analyzing...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-5 h-5" />
+                          <span>Analyze Meal</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Food Name
@@ -550,6 +728,34 @@ export default function Nutrition() {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Camera Modal */}
+      {showCamera && (
+        <div className="fixed inset-0 bg-black z-50 flex flex-col">
+          <div className="flex-1 relative">
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              className="w-full h-full object-cover"
+            />
+            <button
+              onClick={cancelCamera}
+              className="absolute top-4 left-4 p-2 bg-black/50 hover:bg-black/70 rounded-full text-white"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+          <div className="bg-black/80 p-6 flex justify-center">
+            <button
+              onClick={capturePhoto}
+              className="w-20 h-20 rounded-full bg-white border-4 border-gray-300 flex items-center justify-center hover:scale-105 transition-transform"
+            >
+              <div className="w-16 h-16 rounded-full bg-white border-2 border-gray-400"></div>
+            </button>
           </div>
         </div>
       )}

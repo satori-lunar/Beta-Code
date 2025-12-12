@@ -299,6 +299,13 @@ export default function Classes() {
                 <ChevronRight className="w-4 h-4 rotate-180" />
                 Back to Courses
               </button>
+              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-800 flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span className="font-medium">Showing incomplete sessions only</span>
+                  <span className="text-blue-600">({courseSessions.length} remaining)</span>
+                </p>
+              </div>
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {loading ? (
                   <div className="col-span-full card text-center py-12">

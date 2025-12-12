@@ -48,6 +48,7 @@ export default function Classes() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Reset course selection when switching tabs or when recorded tab is first opened
   useEffect(() => {

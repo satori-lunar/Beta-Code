@@ -545,12 +545,14 @@ function RecordedSessionCard({ session, onToggleFavorite, onToggleComplete, onCl
             console.log('[RecordedSessionCard] Favorite button clicked', session.id);
             onToggleFavorite();
           }}
-          className={`absolute top-3 right-3 p-2 rounded-full transition-all z-20 ${
+          className={`absolute top-3 right-3 p-2 rounded-full transition-all z-50 pointer-events-auto ${
             session.isFavorite
               ? 'bg-red-500 text-white shadow-lg'
               : 'bg-white/90 text-gray-600 hover:bg-white hover:shadow-md'
           }`}
           type="button"
+          aria-label={session.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+          onMouseDown={(e) => e.stopPropagation()}
         >
           <Heart className={`w-5 h-5 ${session.isFavorite ? 'fill-current' : ''}`} />
         </button>

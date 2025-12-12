@@ -52,27 +52,97 @@ serve(async (req) => {
     )
 
     // Get Kajabi credentials from environment or use provided defaults
-    const kajabiApiKey = Deno.env.get('KAJABI_API_KEY') ?? 'zThg3LJbBrPS9L7BtFpzBzgm'
-    const kajabiApiSecret = Deno.env.get('KAJABI_API_SECRET') ?? 'PxVd7iZBQ2UPymvyJ4XLaL4A'
+    // Trim whitespace to avoid issues with copy/paste
+    const kajabiApiKey = (Deno.env.get('KAJABI_API_KEY') ?? 'zThg3LJbBrPS9L7BtFpzBzgm').trim()
+    const kajabiApiSecret = (Deno.env.get('KAJABI_API_SECRET') ?? 'PxVd7iZBQ2UPymvyJ4XLaL4A').trim()
     const kajabiDomain = Deno.env.get('KAJABI_DOMAIN') ?? '' // User should set this
+
+    // Debug: Log credential source (without exposing actual secrets)
+    const usingEnvKey = Deno.env.get('KAJABI_API_KEY') !== null
+    const usingEnvSecret = Deno.env.get('KAJABI_API_SECRET') !== null
+    console.log(`Using credentials: API_KEY from ${usingEnvKey ? 'environment' : 'default'}, API_SECRET from ${usingEnvSecret ? 'environment' : 'default'}`)
+    console.log(`API Key length: ${kajabiApiKey.length}, API Secret length: ${kajabiApiSecret.length}`)
+    console.log(`API Key starts with: ${kajabiApiKey.substring(0, 5)}...`)
 
     // Step 1: Get OAuth access token from Kajabi
     console.log('Authenticating with Kajabi API...')
-    const tokenResponse = await fetch('https://api.kajabi.com/v1/oauth/token', {
+    console.log('Request URL: https://api.kajabi.com/v1/oauth/token')
+    console.log(`Client ID length: ${kajabiApiKey.length}, Client Secret length: ${kajabiApiSecret.length}`)
+    
+    // Verify credentials are not empty
+    if (!kajabiApiKey || kajabiApiKey.trim() === '') {
+      throw new Error('KAJABI_API_KEY is empty or not set')
+    }
+    if (!kajabiApiSecret || kajabiApiSecret.trim() === '') {
+      throw new Error('KAJABI_API_SECRET is empty or not set')
+    }
+    
+    // Build form-encoded body using URLSearchParams (Kajabi API requires this format)
+    // Per Kajabi docs: use separate form data parameters
+    const params = new URLSearchParams()
+    params.append('grant_type', 'client_credentials')
+    params.append('client_id', kajabiApiKey.trim())
+    params.append('client_secret', kajabiApiSecret.trim())
+    
+    const formBody = params.toString()
+    console.log(`Form body length: ${formBody.length}`)
+    console.log(`Contains grant_type: ${formBody.includes('grant_type')}`)
+    console.log(`Contains client_id: ${formBody.includes('client_id')}`)
+    console.log(`Contains client_secret: ${formBody.includes('client_secret')}`)
+    
+    let tokenResponse = await fetch('https://api.kajabi.com/v1/oauth/token', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/x-www-form-urlencoded',
       },
-      body: JSON.stringify({
-        grant_type: 'client_credentials',
-        client_id: kajabiApiKey,
-        client_secret: kajabiApiSecret,
-      }),
+      body: formBody,
     })
+    
+    // If form-encoded fails, try with URLSearchParams (different encoding)
+    if (!tokenResponse.ok) {
+      const errorText = await tokenResponse.text()
+      console.log(`First attempt failed (${tokenResponse.status}): ${errorText}`)
+      console.log('Trying with URLSearchParams...')
+      
+      const params = new URLSearchParams()
+      params.append('grant_type', 'client_credentials')
+      params.append('client_id', kajabiApiKey)
+      params.append('client_secret', kajabiApiSecret)
+      
+      tokenResponse = await fetch('https://api.kajabi.com/v1/oauth/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: params.toString(),
+      })
+    }
+    
+    // If still failing, try JSON format as fallback
+    if (!tokenResponse.ok && tokenResponse.status !== 200) {
+      const errorText = await tokenResponse.text()
+      console.log(`Form-encoded failed (${tokenResponse.status}): ${errorText}`)
+      console.log('Trying JSON format...')
+      
+      tokenResponse = await fetch('https://api.kajabi.com/v1/oauth/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          grant_type: 'client_credentials',
+          client_id: kajabiApiKey,
+          client_secret: kajabiApiSecret,
+        }),
+      })
+    }
 
     if (!tokenResponse.ok) {
       const errorText = await tokenResponse.text()
-      throw new Error(`Kajabi auth failed: ${tokenResponse.status} - ${errorText}`)
+      console.error(`Kajabi authentication failed with status ${tokenResponse.status}`)
+      console.error(`Error response: ${errorText}`)
+      console.error(`Using API Key: ${kajabiApiKey.substring(0, 10)}... (length: ${kajabiApiKey.length})`)
+      throw new Error(`Kajabi auth failed: ${tokenResponse.status} - ${errorText}. Check that KAJABI_API_KEY and KAJABI_API_SECRET are correct in Supabase Edge Function secrets.`)
     }
 
     const tokenData: KajabiAccessTokenResponse = await tokenResponse.json()
@@ -263,15 +333,39 @@ serve(async (req) => {
         const contactsData = await contactsResponse.json()
         const allContacts: KajabiContact[] = contactsData.contacts || contactsData.data || contactsData || []
 
+        console.log(`Total contacts fetched from Kajabi: ${allContacts.length}`)
+        
+        // Debug: Log first contact structure to see tag format
+        if (allContacts.length > 0) {
+          console.log('Sample contact structure:', JSON.stringify(allContacts[0], null, 2))
+        }
+
         // Filter for contacts with "mastermind" tag
         const mastermindContacts = allContacts.filter(contact => {
           const tags = contact.tags || []
-          return tags.some((tag: string) => 
-            tag.toLowerCase().includes('mastermind')
-          )
+          // Log tags for debugging
+          if (tags.length > 0) {
+            console.log(`Contact ${contact.email} has tags:`, JSON.stringify(tags))
+          }
+          return tags.some((tag: string) => {
+            const tagStr = typeof tag === 'string' ? tag : JSON.stringify(tag)
+            return tagStr.toLowerCase().includes('mastermind')
+          })
         })
 
-        console.log(`Found ${mastermindContacts.length} contacts with mastermind tag`)
+        console.log(`Found ${mastermindContacts.length} contacts with mastermind tag out of ${allContacts.length} total contacts`)
+        
+        // Log which contacts matched
+        if (mastermindContacts.length > 0) {
+          console.log('Matched contacts:', mastermindContacts.map(c => ({ email: c.email, tags: c.tags })))
+        } else {
+          console.log('No contacts matched the mastermind filter. Checking all contact tags...')
+          allContacts.forEach(contact => {
+            if (contact.tags && contact.tags.length > 0) {
+              console.log(`Contact ${contact.email || contact.id} tags:`, JSON.stringify(contact.tags))
+            }
+          })
+        }
 
         for (const contact of mastermindContacts) {
           try {
@@ -279,6 +373,8 @@ serve(async (req) => {
               console.warn(`Contact ${contact.id} has no email, skipping`)
               continue
             }
+            
+            console.log(`Processing contact: ${contact.email} (ID: ${contact.id})`)
 
             // Check if user already exists by email
             const { data: existingAuthUser } = await supabaseClient.auth.admin.listUsers()

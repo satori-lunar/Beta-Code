@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Search,
   PlayCircle,
@@ -9,9 +9,12 @@ import {
   Eye,
   Video,
   ExternalLink,
-  Radio
+  Radio,
+  ChevronRight,
+  BookOpen
 } from 'lucide-react';
 import { useRecordedSessions, useLiveClasses, useFavoriteSessions } from '../hooks/useSupabaseData';
+import { useCourses } from '../hooks/useCourses';
 import { format, parseISO, isAfter, isBefore, addHours } from 'date-fns';
 
 const categories = [
@@ -37,10 +40,22 @@ export default function Classes() {
   const { sessions: recordedSessions, loading: sessionsLoading } = useRecordedSessions();
   const { classes: liveClasses, loading: classesLoading } = useLiveClasses();
   const { favoriteIds, toggleFavorite } = useFavoriteSessions();
+  const { courses, loading: coursesLoading } = useCourses();
   
   const [activeTab, setActiveTab] = useState<'live' | 'recorded' | 'favorites'>('live');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
+
+  // Reset course selection when switching tabs or when recorded tab is first opened
+  useEffect(() => {
+    if (activeTab !== 'recorded') {
+      setSelectedCourseId(null);
+    } else if (activeTab === 'recorded' && selectedCourseId === null) {
+      // Ensure we're showing courses, not sessions
+      setSelectedCourseId(null);
+    }
+  }, [activeTab, selectedCourseId]);
 
   const now = new Date();
 
@@ -70,6 +85,7 @@ export default function Classes() {
       views: session.views || 0,
       isFavorite: favoriteIds.has(session.id),
       tags: session.tags || [],
+      courseId: session.course_id || null,
     }));
   }, [recordedSessions, favoriteIds]);
 
@@ -96,6 +112,30 @@ export default function Classes() {
   const filterByCategory = (category: string) =>
     selectedCategory === 'All' || category === selectedCategory;
 
+  // Group sessions by course
+  const sessionsByCourse = useMemo(() => {
+    const grouped: Record<string, typeof mappedRecordedSessions> = {};
+    mappedRecordedSessions.forEach(session => {
+      const courseId = session.courseId;
+      if (courseId) {
+        if (!grouped[courseId]) grouped[courseId] = [];
+        grouped[courseId].push(session);
+      } else {
+        // Sessions without a course go into a "no course" group
+        if (!grouped['no-course']) grouped['no-course'] = [];
+        grouped['no-course'].push(session);
+      }
+    });
+    return grouped;
+  }, [mappedRecordedSessions]);
+
+  // Get sessions for selected course
+  const courseSessions = selectedCourseId 
+    ? (sessionsByCourse[selectedCourseId] || []).filter(
+        (s) => filterBySearch(s.title, s.description) && filterByCategory(s.category)
+      )
+    : [];
+
   // Filtered data
   const filteredLiveClasses = mappedLiveClasses.filter(
     (c) => filterBySearch(c.title, c.description) && filterByCategory(c.category)
@@ -107,7 +147,7 @@ export default function Classes() {
 
   const favoriteSessions = mappedRecordedSessions.filter((s) => s.isFavorite);
 
-  const loading = sessionsLoading || classesLoading;
+  const loading = sessionsLoading || classesLoading || coursesLoading;
 
   return (
     <div className="space-y-8 pb-20 lg:pb-0">
@@ -146,35 +186,58 @@ export default function Classes() {
         ))}
       </div>
 
-      {/* Search and Filter */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="flex-1 relative">
-          <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search classes..."
-            className="input pl-12"
-          />
-        </div>
-      </div>
+      {/* Search and Filter - Only show for live classes or when viewing courses */}
+      {(activeTab === 'live' || (activeTab === 'recorded' && !selectedCourseId)) && (
+        <>
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={activeTab === 'recorded' ? "Search courses..." : "Search classes..."}
+                className="input pl-12"
+              />
+            </div>
+          </div>
 
-      <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-        {categories.map((category) => (
-          <button
-            key={category}
-            onClick={() => setSelectedCategory(category)}
-            className={`px-4 py-2 rounded-xl whitespace-nowrap transition-colors ${
-              selectedCategory === category
-                ? 'bg-coral-500 text-white'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            {category}
-          </button>
-        ))}
-      </div>
+          {/* Category filter - Only show for live classes or courses */}
+          {activeTab === 'live' || (activeTab === 'recorded' && !selectedCourseId) ? (
+            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+              {categories.map((category) => (
+                <button
+                  key={category}
+                  onClick={() => setSelectedCategory(category)}
+                  className={`px-4 py-2 rounded-xl whitespace-nowrap transition-colors ${
+                    selectedCategory === category
+                      ? 'bg-coral-500 text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  {category}
+                </button>
+              ))}
+            </div>
+          ) : null}
+        </>
+      )}
+
+      {/* Search for sessions when viewing a course */}
+      {activeTab === 'recorded' && selectedCourseId && (
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex-1 relative">
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search sessions..."
+              className="input pl-12"
+            />
+          </div>
+        </div>
+      )}
 
       {/* Live Classes */}
       {activeTab === 'live' && (
@@ -218,23 +281,104 @@ export default function Classes() {
 
       {/* Recorded Sessions */}
       {activeTab === 'recorded' && (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {loading ? (
-            <div className="col-span-full card text-center py-12">
-              <p className="text-gray-500">Loading recordings...</p>
+        <div>
+          {/* Only show courses, not all sessions directly */}
+          {selectedCourseId ? (
+            // Show sessions for selected course
+            <div>
+              <button
+                onClick={() => setSelectedCourseId(null)}
+                className="mb-4 flex items-center gap-2 text-coral-600 hover:text-coral-700 font-medium"
+              >
+                <ChevronRight className="w-4 h-4 rotate-180" />
+                Back to Courses
+              </button>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {loading ? (
+                  <div className="col-span-full card text-center py-12">
+                    <p className="text-gray-500">Loading sessions...</p>
+                  </div>
+                ) : courseSessions.length > 0 ? (
+                  courseSessions.map((session) => (
+                    <RecordedSessionCard
+                      key={session.id}
+                      session={session}
+                      onToggleFavorite={() => toggleFavorite(session.id)}
+                      onClick={() => {
+                        if (session.videoUrl) {
+                          window.open(session.videoUrl, '_blank', 'noopener,noreferrer');
+                        } else {
+                          console.error('No video URL for session:', session.id);
+                        }
+                      }}
+                    />
+                  ))
+                ) : (
+                  <div className="col-span-full card text-center py-12">
+                    <Video className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                    <p className="text-gray-500">No sessions found in this course</p>
+                  </div>
+                )}
+              </div>
             </div>
-          ) : filteredRecordedSessions.length > 0 ? (
-            filteredRecordedSessions.map((session) => (
-              <RecordedSessionCard
-                key={session.id}
-                session={session}
-                onToggleFavorite={() => toggleFavorite(session.id)}
-              />
-            ))
           ) : (
-            <div className="col-span-full card text-center py-12">
-              <Video className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500">No recordings found</p>
+            // Show courses
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {loading ? (
+                <div className="col-span-full card text-center py-12">
+                  <p className="text-gray-500">Loading courses...</p>
+                </div>
+              ) : courses.length > 0 ? (
+                courses
+                  .filter(course => 
+                    course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    course.description.toLowerCase().includes(searchQuery.toLowerCase())
+                  )
+                  .filter(course => selectedCategory === 'All' || course.category === selectedCategory)
+                  .map((course) => {
+                    const sessionCount = sessionsByCourse[course.id]?.length || 0;
+                    return (
+                      <div
+                        key={course.id}
+                        onClick={() => setSelectedCourseId(course.id)}
+                        className="card overflow-hidden hover:shadow-elevated transition-shadow cursor-pointer group"
+                      >
+                        <div className="h-40 bg-gradient-to-br from-coral-400 to-coral-600 -mx-6 -mt-6 mb-4 relative">
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <BookOpen className="w-16 h-16 text-white" />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <h3 className="font-semibold text-gray-900 text-lg group-hover:text-coral-600 transition-colors">
+                            {course.title}
+                          </h3>
+                          <p className="text-sm text-gray-600 line-clamp-2">
+                            {course.description}
+                          </p>
+                          <div className="flex items-center gap-4 text-sm text-gray-500 pt-2">
+                            <span className="flex items-center gap-1">
+                              <User className="w-4 h-4" />
+                              {course.instructor}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Video className="w-4 h-4" />
+                              {sessionCount} {sessionCount === 1 ? 'session' : 'sessions'}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                            <span className="text-sm text-gray-500">{course.category}</span>
+                            <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-coral-600 transition-colors" />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+              ) : (
+                <div className="col-span-full card text-center py-12">
+                  <BookOpen className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500">No courses found</p>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -253,6 +397,13 @@ export default function Classes() {
                 key={session.id}
                 session={session}
                 onToggleFavorite={() => toggleFavorite(session.id)}
+                onClick={() => {
+                  if (session.videoUrl) {
+                    window.open(session.videoUrl, '_blank', 'noopener,noreferrer');
+                  } else {
+                    console.error('No video URL for session:', session.id);
+                  }
+                }}
               />
             ))
           ) : (
@@ -355,70 +506,104 @@ interface RecordedSessionCardProps {
     tags: string[];
   };
   onToggleFavorite: () => void;
+  onClick?: () => void;
 }
 
-function RecordedSessionCard({ session, onToggleFavorite }: RecordedSessionCardProps) {
-  const gradientClass = classImages[session.category] || 'from-coral-400 to-coral-600';
+function RecordedSessionCard({ session, onToggleFavorite, onClick }: RecordedSessionCardProps) {
+  // Generate a consistent gradient based on session ID for visual variety
+  const gradients = [
+    'from-coral-400 to-pink-500',
+    'from-blue-400 to-indigo-500',
+    'from-purple-400 to-pink-500',
+    'from-green-400 to-teal-500',
+    'from-orange-400 to-red-500',
+    'from-indigo-400 to-purple-500',
+    'from-teal-400 to-cyan-500',
+    'from-rose-400 to-pink-500',
+  ];
+  const sessionGradient = gradients[parseInt(session.id.slice(-1), 16) % gradients.length];
 
   return (
-    <div className="card overflow-hidden hover:shadow-elevated transition-shadow group">
-      <div className={`h-40 bg-gradient-to-br ${gradientClass} -mx-6 -mt-6 mb-4 relative`}>
-        <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-          <PlayCircle className="w-16 h-16 text-white" />
+    <div 
+      className="card overflow-hidden hover:shadow-elevated transition-all duration-300 group cursor-pointer"
+      onClick={onClick}
+    >
+      {/* Thumbnail/Image Area */}
+      <div className={`h-48 bg-gradient-to-br ${sessionGradient} -mx-6 -mt-6 mb-4 relative overflow-hidden`}>
+        {/* Play overlay */}
+        <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="bg-white/20 backdrop-blur-sm rounded-full p-4 transform group-hover:scale-110 transition-transform">
+            <PlayCircle className="w-12 h-12 text-white" />
+          </div>
         </div>
+        
+        {/* Favorite button */}
         <button
           onClick={(e) => {
             e.stopPropagation();
+            e.preventDefault();
             onToggleFavorite();
           }}
-          className={`absolute top-3 right-3 p-2 rounded-full transition-colors ${
+          className={`absolute top-3 right-3 p-2 rounded-full transition-all z-10 ${
             session.isFavorite
-              ? 'bg-red-500 text-white'
-              : 'bg-white/80 text-gray-600 hover:bg-white'
+              ? 'bg-red-500 text-white shadow-lg'
+              : 'bg-white/90 text-gray-600 hover:bg-white hover:shadow-md'
           }`}
         >
           <Heart className={`w-5 h-5 ${session.isFavorite ? 'fill-current' : ''}`} />
         </button>
-        <div className="absolute bottom-3 right-3 px-2 py-1 bg-black/60 text-white text-xs rounded">
-          {session.duration} min
+        
+        {/* Decorative pattern */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.3),transparent_50%)]"></div>
         </div>
       </div>
 
-      <h3 className="font-semibold text-gray-900 mb-2 group-hover:text-coral-600 transition-colors">
-        {session.title}
-      </h3>
-      <p className="text-sm text-gray-500 mb-4 line-clamp-2">{session.description}</p>
+      {/* Content */}
+      <div className="space-y-3">
+        <h3 className="font-semibold text-gray-900 text-lg group-hover:text-coral-600 transition-colors line-clamp-2">
+          {session.title}
+        </h3>
+        
+        {session.description && (
+          <p className="text-sm text-gray-600 line-clamp-2">{session.description}</p>
+        )}
 
-      <div className="flex items-center gap-4 text-sm text-gray-500 mb-4">
-        <span className="flex items-center gap-1">
-          <User className="w-4 h-4" />
-          {session.instructor}
-        </span>
-        <span className="flex items-center gap-1">
-          <Eye className="w-4 h-4" />
-          {session.views}
-        </span>
-      </div>
-
-      <div className="flex flex-wrap gap-2 mb-4">
-        {session.tags.map((tag) => (
-          <span
-            key={tag}
-            className="px-2 py-1 bg-gray-100 text-gray-600 rounded-full text-xs"
-          >
-            {tag}
+        <div className="flex items-center gap-4 text-sm text-gray-500">
+          <span className="flex items-center gap-1">
+            <User className="w-4 h-4" />
+            {session.instructor}
           </span>
-        ))}
-      </div>
+          {session.views > 0 && (
+            <span className="flex items-center gap-1">
+              <Eye className="w-4 h-4" />
+              {session.views}
+            </span>
+          )}
+        </div>
 
-      <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-        <span className="text-sm text-gray-500">
-          {format(parseISO(session.recordedAt), 'MMM d, yyyy')}
-        </span>
-        <button className="flex items-center gap-2 px-4 py-2 bg-coral-500 hover:bg-coral-600 text-white rounded-xl font-medium transition-colors">
-          <PlayCircle className="w-4 h-4" />
-          Watch
-        </button>
+        {session.tags && session.tags.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {session.tags.slice(0, 3).map((tag) => (
+              <span
+                key={tag}
+                className="px-2.5 py-1 bg-coral-50 text-coral-700 rounded-full text-xs font-medium"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
+
+        <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+          <span className="text-sm text-gray-500">
+            {format(parseISO(session.recordedAt), 'MMM d, yyyy')}
+          </span>
+          <div className="flex items-center gap-2 text-coral-600 group-hover:text-coral-700 font-medium text-sm">
+            <span>Watch</span>
+            <PlayCircle className="w-4 h-4" />
+          </div>
+        </div>
       </div>
     </div>
   );

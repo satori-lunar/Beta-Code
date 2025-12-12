@@ -1,0 +1,2 @@
+// Quick one-liner to extract session URLs - paste this in browser console
+(function(){const links=Array.from(document.querySelectorAll('a[href*="/sessions/"]'));const urls=[...new Set(links.map(l=>l.href))];console.log(`✅ Found ${urls.length} sessions:`);urls.forEach((u,i)=>console.log(`${i+1}. ${u}`));const json=JSON.stringify({session_urls:urls},null,2);navigator.clipboard.writeText(json).then(()=>console.log('\n✅ Copied JSON to clipboard! Paste into sync-sessions-from-urls.ps1')).catch(()=>console.log('\n📋 JSON:',json));return urls;})();

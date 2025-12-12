@@ -310,7 +310,7 @@ export function useRecordedSessions() {
         setLoading(true)
         const { data, error } = await supabase
           .from('recorded_sessions')
-          .select('*')
+          .select('*, course_id')
           .order('recorded_at', { ascending: false })
 
         if (error) throw error

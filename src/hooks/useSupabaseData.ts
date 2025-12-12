@@ -410,7 +410,7 @@ export function useLiveClasses() {
 async function ensureUserExists(userId: string, email: string | undefined) {
   try {
     // Check if user exists (using type assertion since users table might not be in types)
-    const { data: existingUser, error: selectError } = await (supabase
+    const { error: selectError } = await (supabase
       .from('users' as any)
       .select('id')
       .eq('id', userId)
@@ -658,14 +658,13 @@ export function useSessionCompletions() {
         }
       } else {
         // Add completion
-        const { error, data } = await supabase
+        const { error } = await supabase
           .from('user_session_completions')
           .insert({
             user_id: user.id,
             session_id: sessionId,
             completed_at: new Date().toISOString(),
           })
-          .select()
 
         if (error) {
           console.error('[toggleCompletion] Error adding completion:', error)

@@ -11,7 +11,8 @@ import {
   ExternalLink,
   Radio,
   ChevronRight,
-  BookOpen
+  BookOpen,
+  CheckCircle2
 } from 'lucide-react';
 import { useRecordedSessions, useLiveClasses, useFavoriteSessions, useSessionCompletions } from '../hooks/useSupabaseData';
 import { useCourses } from '../hooks/useCourses';
@@ -40,6 +41,7 @@ export default function Classes() {
   const { sessions: recordedSessions, loading: sessionsLoading } = useRecordedSessions();
   const { classes: liveClasses, loading: classesLoading } = useLiveClasses();
   const { favoriteIds, toggleFavorite } = useFavoriteSessions();
+  const { completedIds, toggleCompletion } = useSessionCompletions();
   const { courses, loading: coursesLoading } = useCourses();
   
   const [activeTab, setActiveTab] = useState<'live' | 'recorded' | 'favorites'>('live');
@@ -395,6 +397,7 @@ export default function Classes() {
                 key={session.id}
                 session={session}
                 onToggleFavorite={() => toggleFavorite(session.id)}
+                onToggleComplete={() => toggleCompletion(session.id)}
                 onClick={() => {
                   if (session.videoUrl) {
                     window.open(session.videoUrl, '_blank', 'noopener,noreferrer');

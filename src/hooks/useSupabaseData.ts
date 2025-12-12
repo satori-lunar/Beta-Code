@@ -517,15 +517,14 @@ export function useFavoriteSessions() {
     try {
       if (isFavorite) {
         // Remove from favorites
-        const { error, data } = await supabase
+        const { error } = await supabase
           .from('user_favorite_sessions')
           .delete()
           .eq('user_id', user.id)
           .eq('session_id', sessionId)
-          .select()
 
         // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/1de0ee3c-dda9-4eeb-9faf-c2d8ef7facb1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useSupabaseData.ts:476',message:'delete favorite result',data:{sessionId,error:error?.message,hasError:!!error,errorCode:error?.code,errorDetails:error?.details,data},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+        fetch('http://127.0.0.1:7242/ingest/1de0ee3c-dda9-4eeb-9faf-c2d8ef7facb1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useSupabaseData.ts:476',message:'delete favorite result',data:{sessionId,error:error?.message,hasError:!!error,errorCode:error?.code,errorDetails:error?.details},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
         // #endregion
 
         if (error) {
@@ -540,13 +539,12 @@ export function useFavoriteSessions() {
         }
       } else {
         // Add to favorites
-        const { error, data } = await supabase
+        const { error } = await supabase
           .from('user_favorite_sessions')
           .insert({
             user_id: user.id,
             session_id: sessionId,
           })
-          .select()
 
         // #region agent log
         fetch('http://127.0.0.1:7242/ingest/1de0ee3c-dda9-4eeb-9faf-c2d8ef7facb1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useSupabaseData.ts:492',message:'insert favorite result',data:{sessionId,error:error?.message,hasError:!!error,errorCode:error?.code,errorDetails:error?.details,data},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
@@ -639,12 +637,11 @@ export function useSessionCompletions() {
     try {
       if (isCompleted) {
         // Remove completion
-        const { error, data } = await supabase
+        const { error } = await supabase
           .from('user_session_completions')
           .delete()
           .eq('user_id', user.id)
           .eq('session_id', sessionId)
-          .select()
 
         if (error) {
           console.error('[toggleCompletion] Error removing completion:', error)

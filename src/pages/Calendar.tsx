@@ -100,6 +100,22 @@ export default function Calendar() {
   // Get upcoming classes for tomorrow (the following day in selected timezone)
   const tomorrowInTimezone = addDays(todayInTimezone, 1);
   const upcomingGoogleClasses = getGoogleEventsForDate(tomorrowInTimezone);
+
+  // Debug logging
+  useEffect(() => {
+    console.log('=== Calendar Debug ===');
+    console.log('Selected timezone:', timezone);
+    console.log('Today in timezone:', todayInTimezone.toISOString(), todayInTimezone.toString());
+    console.log('Tomorrow in timezone:', tomorrowInTimezone.toISOString(), tomorrowInTimezone.toString());
+    console.log("Today's classes count:", todaysGoogleClasses.length);
+    console.log("Upcoming classes count:", upcomingGoogleClasses.length);
+    if (todaysGoogleClasses.length > 0) {
+      console.log("Today's classes:", todaysGoogleClasses.map(c => ({ title: c.title, start: c.start.toString() })));
+    }
+    if (upcomingGoogleClasses.length > 0) {
+      console.log("Upcoming classes:", upcomingGoogleClasses.map(c => ({ title: c.title, start: c.start.toString() })));
+    }
+  }, [timezone, todaysGoogleClasses, upcomingGoogleClasses, todayInTimezone, tomorrowInTimezone]);
   
   
   // Combine user calendar events with Google Calendar events for selected date
@@ -492,31 +508,4 @@ export default function Calendar() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Description (optional)
-                </label>
-                <textarea
-                  value={newEvent.description}
-                  onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
-                  placeholder="Add a description..."
-                  rows={3}
-                  className="input resize-none"
-                />
-              </div>
-
-              <div className="flex gap-3 pt-4">
-                <button
-                  onClick={() => setShowAddModal(false)}
-                  className="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button onClick={handleAddEvent} className="flex-1 btn-primary">
-                  Add Event
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
+           

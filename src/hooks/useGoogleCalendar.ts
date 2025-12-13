@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { isAfter, startOfDay } from 'date-fns';
+import { isAfter, startOfDay, format } from 'date-fns';
 
 export interface GoogleCalendarEvent {
   id: string;
@@ -225,10 +225,20 @@ export function useGoogleCalendar(calendarEmail: string = 'emilybrowerlifecoach@
     const dateEnd = new Date(dateStart);
     dateEnd.setDate(dateEnd.getDate() + 1);
     
-    return events.filter(event => {
+    const filtered = events.filter(event => {
       const eventStart = startOfDay(event.start);
-      return eventStart >= dateStart && eventStart < dateEnd;
+      // Compare dates by their date string (YYYY-MM-DD) to avoid timezone issues
+      const eventDateStr = format(eventStart, 'yyyy-MM-dd');
+      const targetDateStr = format(dateStart, 'yyyy-MM-dd');
+      return eventDateStr === targetDateStr;
     });
+    
+    console.log(`getEventsForDate: Looking for date ${format(dateStart, 'yyyy-MM-dd')}, found ${filtered.length} events out of ${events.length} total`);
+    if (filtered.length > 0) {
+      console.log('Matching events:', filtered.map(e => ({ title: e.title, start: e.start.toString(), startDate: format(e.start, 'yyyy-MM-dd') })));
+    }
+    
+    return filtered;
   };
 
   // Get today's events only

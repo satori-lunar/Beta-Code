@@ -115,6 +115,11 @@ export default function Classes() {
     return isAfter(parseISO(scheduledAt), now);
   };
 
+  const isClassPast = (scheduledAt: string, duration: number) => {
+    const endTime = addHours(parseISO(scheduledAt), duration / 60);
+    return isBefore(endTime, now);
+  };
+
   // Map Supabase data to component format
   const mappedRecordedSessions = useMemo(() => {
     return (recordedSessions || []).map(session => ({
@@ -335,22 +340,40 @@ export default function Classes() {
           )}
 
           {/* Upcoming */}
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Upcoming Classes</h2>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredLiveClasses
-                .filter((c) => isClassUpcoming(c.scheduledAt))
-                .map((classItem) => (
-                  <LiveClassCard key={classItem.id} classItem={classItem} />
-                ))}
-            </div>
-            {filteredLiveClasses.filter((c) => isClassUpcoming(c.scheduledAt)).length === 0 && (
-              <div className="card text-center py-12">
-                <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-500">No upcoming classes scheduled</p>
+          {filteredLiveClasses.some((c) => isClassUpcoming(c.scheduledAt)) && (
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Upcoming Classes</h2>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredLiveClasses
+                  .filter((c) => isClassUpcoming(c.scheduledAt))
+                  .map((classItem) => (
+                    <LiveClassCard key={classItem.id} classItem={classItem} />
+                  ))}
               </div>
-            )}
-          </div>
+            </div>
+          )}
+
+          {/* Past Classes */}
+          {filteredLiveClasses.some((c) => isClassPast(c.scheduledAt, c.duration)) && (
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Past Classes</h2>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredLiveClasses
+                  .filter((c) => isClassPast(c.scheduledAt, c.duration))
+                  .map((classItem) => (
+                    <LiveClassCard key={classItem.id} classItem={classItem} />
+                  ))}
+              </div>
+            </div>
+          )}
+
+          {/* No classes message */}
+          {filteredLiveClasses.length === 0 && (
+            <div className="card text-center py-12">
+              <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+              <p className="text-gray-500">No classes found</p>
+            </div>
+          )}
         </div>
       )}
 

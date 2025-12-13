@@ -78,6 +78,16 @@ export default function Calendar() {
   // Get today's classes from Google Calendar
   const todaysGoogleClasses = getTodaysEvents();
   
+  // Get upcoming classes (future only, excluding today to avoid duplication with "Today's Classes")
+  const upcomingGoogleClasses = googleCalendarEvents.filter(event => {
+    const now = new Date();
+    const eventStart = new Date(event.start);
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const eventDay = new Date(eventStart.getFullYear(), eventStart.getMonth(), eventStart.getDate());
+    // Only include events that start after today
+    return eventDay > today;
+  });
+  
   
   // Combine user calendar events with Google Calendar events for selected date
   type CombinedCalendarEvent = {

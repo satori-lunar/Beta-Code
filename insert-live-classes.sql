@@ -30,7 +30,7 @@ INSERT INTO public.live_classes (
     'Rooted Weight Health',
     'Covering a variety of topics related to weight health, common obstacles we all face and strategies we can learn to pair with those obstacles.',
     'Coach Emily B',
-    '2024-12-15 08:30:00-05'::timestamptz, -- Sunday, December 15, 8:30 AM ET
+    '2024-12-15 08:30:00-05'::timestamptz, -- Sunday, 8:30 AM ET
     45,
     NULL,
     'Weight Health'

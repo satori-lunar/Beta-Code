@@ -73,15 +73,33 @@ export default function Calendar() {
   // Fetch Google Calendar events - get ALL events, not just today's
   const { loading: calendarLoading, getEventsForDate: getGoogleEventsForDate, getTodaysEvents } = useGoogleCalendar();
 
+  // Helper function to get current date in the selected timezone
+  const getDateInTimezone = (timezone: string): Date => {
+    const now = new Date();
+    // Format the date in the selected timezone
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
+    const parts = formatter.formatToParts(now);
+    const year = parseInt(parts.find(p => p.type === 'year')?.value || '0', 10);
+    const month = parseInt(parts.find(p => p.type === 'month')?.value || '0', 10) - 1; // month is 0-indexed
+    const day = parseInt(parts.find(p => p.type === 'day')?.value || '0', 10);
+    return new Date(year, month, day);
+  };
+
   // Get Google Calendar events for selected date
   const googleEventsForSelectedDate = getGoogleEventsForDate(selectedDate);
   
-  // Get today's classes from Google Calendar
-  const todaysGoogleClasses = getTodaysEvents();
+  // Get today's classes from Google Calendar (using selected timezone)
+  const todayInTimezone = getDateInTimezone(timezone);
+  const todaysGoogleClasses = getGoogleEventsForDate(todayInTimezone);
   
-  // Get upcoming classes for tomorrow (the following day)
-  const tomorrow = addDays(new Date(), 1);
-  const upcomingGoogleClasses = getGoogleEventsForDate(tomorrow);
+  // Get upcoming classes for tomorrow (the following day in selected timezone)
+  const tomorrowInTimezone = addDays(todayInTimezone, 1);
+  const upcomingGoogleClasses = getGoogleEventsForDate(tomorrowInTimezone);
   
   
   // Combine user calendar events with Google Calendar events for selected date

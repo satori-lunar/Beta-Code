@@ -13,7 +13,8 @@ import { useStore } from '../store/useStore';
 import { useGoogleCalendar, type GoogleCalendarEvent } from '../hooks/useGoogleCalendar';
 import {
   format,
-  isBefore
+  isBefore,
+  addDays
 } from 'date-fns';
 
 const eventTypes = [
@@ -78,15 +79,9 @@ export default function Calendar() {
   // Get today's classes from Google Calendar
   const todaysGoogleClasses = getTodaysEvents();
   
-  // Get upcoming classes (future only, excluding today to avoid duplication with "Today's Classes")
-  const upcomingGoogleClasses: GoogleCalendarEvent[] = googleCalendarEvents.filter(event => {
-    const now = new Date();
-    const eventStart = new Date(event.start);
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const eventDay = new Date(eventStart.getFullYear(), eventStart.getMonth(), eventStart.getDate());
-    // Only include events that start after today
-    return eventDay > today;
-  });
+  // Get upcoming classes for tomorrow (the following day)
+  const tomorrow = addDays(new Date(), 1);
+  const upcomingGoogleClasses = getGoogleEventsForDate(tomorrow);
   
   
   // Combine user calendar events with Google Calendar events for selected date

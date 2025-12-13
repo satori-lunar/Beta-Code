@@ -49,7 +49,7 @@ INSERT INTO public.live_classes (
     'Foundations in Motion',
     'A gentle, yet empowering, entry point into movement for everyday life. This 30-minute weekly session focuses on improving strength, balance, mobility, and confidence through simple, functional movements. Each class blends education and movement, helping participants understand WHY we move certain ways and HOW to build a foundation safely. Our goal is to help participants: Move better in daily life (lifting, reaching, bending, standing up), Improve strength and stamina gradually, Build confidence to join more advanced programs, Feel supported in a welcoming, judgment-free environment. No fancy clothes or equipment required.',
     'Coach Rebecca',
-    '2024-12-15 10:30:00-05'::timestamptz, -- Monday, December 15, 10:30 AM ET
+    '2024-12-16 10:30:00-05'::timestamptz, -- Monday, December 16, 10:30 AM ET
     30,
     NULL,
     'Fitness'
@@ -67,7 +67,7 @@ INSERT INTO public.live_classes (
     'Seedlings',
     'In this gentle, guided class, you''ll learn how to recognize your thoughts, understand your emotions, and begin practicing the tools that help you grow stronger roots. Whether you''re brand new to coaching or simply looking for a refresher in the model, this is a safe, supportive space to ask questions, explore your inner landscape, and build confidence one practice at a time. Together, we''ll revisit and relearn the model, deepen our understanding, and most importantly — connect in community. Come hang out, grow alongside others, and nurture the resilience that helps you thrive.',
     'Coach Emily B',
-    '2024-12-15 17:30:00-05'::timestamptz, -- Monday, December 15, 5:30 PM ET
+    '2024-12-16 17:30:00-05'::timestamptz, -- Monday, December 16, 5:30 PM ET
     45,
     NULL,
     'Coaching Fundamentals'
@@ -87,7 +87,7 @@ INSERT INTO public.live_classes (
     'Strength in Motion',
     'Build strength and confidence as you move with purpose. This class uses a mix of bodyweight and weights-based exercises designed to challenge your muscles, improve posture, and increase stability. Whether you''re new to strength training or ready to push a little further, you''ll leave feeling strong, steady, and empowered.',
     'Coach Rebecca',
-    '2024-12-16 09:00:00-05'::timestamptz, -- Tuesday, December 16, 9:00 AM ET
+    '2024-12-17 09:00:00-05'::timestamptz, -- Tuesday, December 17, 9:00 AM ET
     45,
     NULL,
     'Exercise'
@@ -96,7 +96,7 @@ INSERT INTO public.live_classes (
     'The Reflecting Pool',
     'Explore why we do what we do. This class examines thought patterns, emotional habits, and the psychology of personal growth. Insightful, structured, and thought-provoking.',
     'Coach Emily M',
-    '2024-12-16 10:00:00-05'::timestamptz, -- Tuesday, December 16, 10:00 AM ET
+    '2024-12-17 10:00:00-05'::timestamptz, -- Tuesday, December 17, 10:00 AM ET
     45,
     NULL,
     'Personal Growth'
@@ -105,7 +105,7 @@ INSERT INTO public.live_classes (
     'Wisdom Rising',
     'Wisdom Rising is a weekly class designed to honor the transitions of midlife as a time of growth, strength, and renewal. Together, we''ll explore the foundations of a healthy, vibrant midlife—drawing from a holistic "menopause toolkit" that includes movement, nutrition, stress management, sleep support, and mindset practices, as well as community. Each week offers a blend of education, guided practices, and open conversation. You''ll walk away with both practical tools and a deeper sense of connection—discovering that the challenges of menopause, from hot flashes to brain fog, are not just obstacles to manage but invitations to rise into new wisdom and vitality. This is a space where women gather to feel seen and supported, to share stories, and to cultivate resilience in community. Midlife is not an ending; it''s the rising of a new chapter—one where wisdom, strength, and possibility come together. Join us weekly as we learn, share, and rise stronger—together.',
     'Coach Beth',
-    '2024-12-16 16:00:00-05'::timestamptz, -- Tuesday, December 16, 4:00 PM ET
+    '2024-12-17 16:00:00-05'::timestamptz, -- Tuesday, December 17, 4:00 PM ET
     45,
     NULL,
     'Wisdom'
@@ -114,7 +114,7 @@ INSERT INTO public.live_classes (
     '2-Bite Tuesdays',
     '2-Bite Tuesdays is a gentle, eye-opening workshop that helps you pause long enough to actually taste your food—and your life. In this class, we explore the simple practice of taking just two intentional bites before you decide what comes next. Those two bites become a moment of awareness, a moment of connection, and a moment of truth. Inside the calm, grounded energy of birch & stone, you''ll learn how the first two bites can: reveal whether you''re hungry or just seeking comfort, help you notice taste, texture, and satisfaction, slow down emotional or automatic eating, shift you from "snacking on autopilot" to "eating with intention", reconnect you with your body without rules or restriction. This practice isn''t about eating less—it''s about knowing yourself more. Come curious, come open, come as you are. Let two small bites be the beginning of a much bigger change.',
     'Coach Dani',
-    '2024-12-16 22:00:00-05'::timestamptz, -- Tuesday, December 16, 10:00 PM ET
+    '2024-12-17 22:00:00-05'::timestamptz, -- Tuesday, December 17, 10:00 PM ET
     45,
     NULL,
     'Wellness'
@@ -134,7 +134,7 @@ INSERT INTO public.live_classes (
     'Grief & Growth',
     'Grief has many stages and waves of emotions that go along with it. You don''t need to navigate those waters alone. Coach Emily holds an intimate space for you to connect with others who carry grief, while also gently nudging you not to discount the potential that your life still holds.',
     'Coach Emily M',
-    '2024-12-17 10:00:00-05'::timestamptz, -- Wednesday, December 17, 10:00 AM ET
+    '2024-12-18 10:00:00-05'::timestamptz, -- Wednesday, December 18, 10:00 AM ET
     45,
     NULL,
     'Grief & Growth'

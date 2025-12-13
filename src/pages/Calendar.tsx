@@ -55,12 +55,26 @@ export default function Calendar() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showAddModal, setShowAddModal] = useState(false);
+  const [timezone, setTimezone] = useState<string>(() => {
+    // Get timezone from localStorage or default to Eastern Time
+    const saved = localStorage.getItem('calendar_timezone');
+    return saved || 'America/New_York';
+  });
+  const [showCalendarView, setShowCalendarView] = useState<'grid' | 'iframe'>('iframe');
   const [newEvent, setNewEvent] = useState({
     title: '',
     type: 'reminder',
     time: '',
     description: '',
   });
+
+  // Save timezone to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('calendar_timezone', timezone);
+  }, [timezone]);
+
+  // Build Google Calendar iframe URL
+  const calendarUrl = `https://calendar.google.com/calendar/embed?height=600&wkst=1&ctz=${encodeURIComponent(timezone)}&showPrint=0&mode=WEEK&src=ZW1pbHlicm93ZXJsaWZlY29hY2hAZ21haWwuY29t&color=%237986cb`;
 
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(monthStart);
@@ -170,89 +184,103 @@ export default function Calendar() {
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6">
-        {/* Calendar */}
+        {/* Calendar - Google Calendar Iframe or Grid View */}
         <div className="lg:col-span-2 card">
-          {/* Calendar Header */}
-          <div className="flex items-center justify-between mb-6">
-            <button
-              onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <ChevronLeft className="w-5 h-5 text-gray-600" />
-            </button>
-            <h2 className="text-xl font-display font-semibold text-gray-900">
-              {format(currentMonth, 'MMMM yyyy')}
-            </h2>
-            <button
-              onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <ChevronRight className="w-5 h-5 text-gray-600" />
-            </button>
-          </div>
-
-          {/* Days of Week */}
-          <div className="grid grid-cols-7 mb-2">
-            {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
-              <div key={day} className="text-center text-sm font-medium text-gray-500 py-2">
-                {day}
+          {showCalendarView === 'iframe' ? (
+            <div className="w-full">
+              <iframe
+                src={calendarUrl}
+                style={{ border: 'solid 1px #777' }}
+                width="100%"
+                height="600"
+                frameBorder="0"
+                scrolling="no"
+                className="rounded-lg"
+              />
+            </div>
+          ) : (
+            <>
+              {/* Calendar Header */}
+              <div className="flex items-center justify-between mb-6">
+                <button
+                  onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <ChevronLeft className="w-5 h-5 text-gray-600" />
+                </button>
+                <h2 className="text-xl font-display font-semibold text-gray-900">
+                  {format(currentMonth, 'MMMM yyyy')}
+                </h2>
+                <button
+                  onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <ChevronRight className="w-5 h-5 text-gray-600" />
+                </button>
               </div>
-            ))}
-          </div>
 
-          {/* Calendar Grid */}
-          <div className="border border-gray-100 rounded-xl overflow-hidden">
-            {rows.map((week, weekIndex) => (
-              <div key={weekIndex} className="grid grid-cols-7">
-                {week.map((day, dayIndex) => {
-                  const dayEvents = getEventsForDate(day);
-                  const isCurrentMonth = isSameMonth(day, currentMonth);
-                  const isSelected = isSameDay(day, selectedDate);
-                  const isToday = isSameDay(day, new Date());
+              {/* Days of Week */}
+              <div className="grid grid-cols-7 mb-2">
+                {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
+                  <div key={day} className="text-center text-sm font-medium text-gray-500 py-2">
+                    {day}
+                  </div>
+                ))}
+              </div>
 
-                  return (
-                    <button
-                      key={dayIndex}
-                      onClick={() => setSelectedDate(day)}
-                      className={`min-h-[80px] p-2 border-b border-r border-gray-100 text-left transition-colors ${
-                        !isCurrentMonth ? 'bg-gray-50 text-gray-400' : 'hover:bg-gray-50'
-                      } ${isSelected ? 'bg-coral-50' : ''}`}
-                    >
-                      <div className="flex items-center justify-between mb-1">
-                        <span
-                          className={`text-sm font-medium ${
-                            isToday
-                              ? 'w-7 h-7 bg-coral-500 text-white rounded-full flex items-center justify-center'
-                              : isSelected
-                              ? 'text-coral-600'
-                              : ''
-                          }`}
+              {/* Calendar Grid */}
+              <div className="border border-gray-100 rounded-xl overflow-hidden">
+                {rows.map((week, weekIndex) => (
+                  <div key={weekIndex} className="grid grid-cols-7">
+                    {week.map((day, dayIndex) => {
+                      const dayEvents = getEventsForDate(day);
+                      const isCurrentMonth = isSameMonth(day, currentMonth);
+                      const isSelected = isSameDay(day, selectedDate);
+                      const isToday = isSameDay(day, new Date());
+
+                      return (
+                        <button
+                          key={dayIndex}
+                          onClick={() => setSelectedDate(day)}
+                          className={`min-h-[80px] p-2 border-b border-r border-gray-100 text-left transition-colors ${
+                            !isCurrentMonth ? 'bg-gray-50 text-gray-400' : 'hover:bg-gray-50'
+                          } ${isSelected ? 'bg-coral-50' : ''}`}
                         >
-                          {format(day, 'd')}
-                        </span>
-                      </div>
-                      <div className="space-y-1">
-                        {dayEvents.slice(0, 2).map((event) => (
-                          <div
-                            key={event.id}
-                            className="text-xs px-1.5 py-0.5 rounded truncate"
-                            style={{ backgroundColor: event.color }}
-                          >
-                            {event.title}
+                          <div className="flex items-center justify-between mb-1">
+                            <span
+                              className={`text-sm font-medium ${
+                                isToday
+                                  ? 'w-7 h-7 bg-coral-500 text-white rounded-full flex items-center justify-center'
+                                  : isSelected
+                                  ? 'text-coral-600'
+                                  : ''
+                              }`}
+                            >
+                              {format(day, 'd')}
+                            </span>
                           </div>
-                        ))}
-                        {dayEvents.length > 2 && (
-                          <div className="text-xs text-gray-500">
-                            +{dayEvents.length - 2} more
+                          <div className="space-y-1">
+                            {dayEvents.slice(0, 2).map((event) => (
+                              <div
+                                key={event.id}
+                                className="text-xs px-1.5 py-0.5 rounded truncate"
+                                style={{ backgroundColor: event.color }}
+                              >
+                                {event.title}
+                              </div>
+                            ))}
+                            {dayEvents.length > 2 && (
+                              <div className="text-xs text-gray-500">
+                                +{dayEvents.length - 2} more
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
-                    </button>
-                  );
-                })}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
             </>
           )}
         </div>

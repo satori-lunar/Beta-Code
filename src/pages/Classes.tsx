@@ -210,7 +210,7 @@ export default function Classes() {
   }, [filteredLiveClasses]);
 
   const weekdayOrder = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  const liveClasses = filteredLiveClasses.filter((c) => isClassLive(c.scheduledAt, c.duration));
+  const currentlyLiveClasses = filteredLiveClasses.filter((c) => isClassLive(c.scheduledAt, c.duration));
   const nonLiveClasses = filteredLiveClasses.filter((c) => !isClassLive(c.scheduledAt, c.duration));
 
   const favoriteSessions = mappedRecordedSessions.filter((s) => s.isFavorite);
@@ -344,14 +344,14 @@ export default function Classes() {
       {activeTab === 'live' && (
         <div className="space-y-8">
           {/* Live Now */}
-          {liveClasses.length > 0 && (
+          {currentlyLiveClasses.length > 0 && (
             <div>
               <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                 <span className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
                 Live Now
               </h2>
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {liveClasses.map((classItem) => (
+                {currentlyLiveClasses.map((classItem) => (
                   <LiveClassCard key={classItem.id} classItem={classItem} isLive />
                 ))}
               </div>
@@ -380,7 +380,7 @@ export default function Classes() {
           })}
 
           {/* No classes message */}
-          {nonLiveClasses.length === 0 && liveClasses.length === 0 && (
+          {nonLiveClasses.length === 0 && currentlyLiveClasses.length === 0 && (
             <div className="card text-center py-12">
               <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-4" />
               <p className="text-gray-500">No classes found</p>

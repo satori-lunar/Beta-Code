@@ -1,6 +1,7 @@
 -- Insert Live Classes into Supabase
 -- Run this in Supabase SQL Editor
--- This script inserts all weekly live classes starting from December 14, 2024
+-- This script inserts all weekly live classes with correct dates matching their weekdays
+-- Sunday: Dec 15, Monday: Dec 16, Tuesday: Dec 17, Wednesday: Dec 18, Thursday: Dec 19, Friday: Dec 20
 
 -- First, delete any existing live classes to avoid duplicates (optional - comment out if you want to keep existing)
 -- DELETE FROM public.live_classes;
@@ -29,7 +30,7 @@ INSERT INTO public.live_classes (
     'Rooted Weight Health',
     'Covering a variety of topics related to weight health, common obstacles we all face and strategies we can learn to pair with those obstacles.',
     'Coach Emily B',
-    '2024-12-14 08:30:00-05'::timestamptz, -- Sunday, December 14, 8:30 AM ET
+    '2024-12-15 08:30:00-05'::timestamptz, -- Sunday, December 15, 8:30 AM ET
     45,
     NULL,
     'Weight Health'
@@ -58,7 +59,7 @@ INSERT INTO public.live_classes (
     'Hatha Yoga',
     'Move at your own pace from your own space, with classes encompassing strengthening postures, revitalizing flows, nourishing stretches and soothing relaxation. We''ll alleviate common discomforts, work on balance in the body and in life, and cultivate a calm, clear mind. Recommended props: yoga mat, 2 yoga blocks, yoga strap, blanket.',
     'Meghan',
-    '2024-12-15 16:00:00-05'::timestamptz, -- Monday, December 15, 4:00 PM ET
+    '2024-12-16 16:00:00-05'::timestamptz, -- Monday, December 16, 4:00 PM ET
     60,
     NULL,
     'Yoga'
@@ -125,7 +126,7 @@ INSERT INTO public.live_classes (
     'Refreshed & Ready',
     'Give yourself a midweek moment to breathe, reset, and get clear. In this workshop, we''ll slow down long enough to notice what''s weighing on your mind, sort through the mental clutter, and choose one simple next step that brings you back into focus. You''ll leave feeling lighter, steady, and ready to move through the rest of your week with clarity and confidence.',
     'Birch & Stone Coaching',
-    '2024-12-17 06:30:00-05'::timestamptz, -- Wednesday, December 17, 6:30 AM ET
+    '2024-12-18 06:30:00-05'::timestamptz, -- Wednesday, December 18, 6:30 AM ET
     45,
     NULL,
     'Wellness'
@@ -143,7 +144,7 @@ INSERT INTO public.live_classes (
     'Instinctive Meditation',
     'Instinctive Meditation works with your thoughts, emotions, and energy—not against them. In this space, you''ll learn to meditate in a way that feels natural, restorative, and even pleasurable. Because rest isn''t a reward—it''s a requirement. And reconnection starts right here.',
     'Coach Tobey',
-    '2024-12-17 19:00:00-05'::timestamptz, -- Wednesday, December 17, 7:00 PM ET
+    '2024-12-18 19:00:00-05'::timestamptz, -- Wednesday, December 18, 7:00 PM ET
     45,
     'https://us02web.zoom.us/j/89113624969',
     'Meditation'
@@ -154,7 +155,7 @@ INSERT INTO public.live_classes (
     'Rooted Weight Health',
     'Covering a variety of topics related to weight health, common obstacles we all face and strategies we can learn to pair with those obstacles.',
     'Coach Emily B',
-    '2024-12-18 06:00:00-05'::timestamptz, -- Thursday, December 18, 6:00 AM ET
+    '2024-12-19 06:00:00-05'::timestamptz, -- Thursday, December 19, 6:00 AM ET
     45,
     NULL,
     'Weight Health'
@@ -163,7 +164,7 @@ INSERT INTO public.live_classes (
     'Tangled: Challenging Relationships',
     'Tangled is a space for exploring the complexity of human relationships—whether with partners, parents, children, friends, or colleagues. Many of us find ourselves caught in dynamics that leave us questioning our worth, doubting our voice, or losing sight of who we are. This class helps you gently untangle those knots.',
     'Coach Emily B',
-    '2024-12-18 13:30:00-05'::timestamptz, -- Thursday, December 18, 1:30 PM ET
+    '2024-12-19 13:30:00-05'::timestamptz, -- Thursday, December 19, 1:30 PM ET
     45,
     NULL,
     'Relationships'
@@ -172,7 +173,7 @@ INSERT INTO public.live_classes (
     'Hatha Yoga',
     'Move at your own pace from your own space, with classes encompassing strengthening postures, revitalizing flows, nourishing stretches and soothing relaxation. We''ll alleviate common discomforts, work on balance in the body and in life, and cultivate a calm, clear mind. Recommended props: yoga mat, 2 yoga blocks, yoga strap, blanket.',
     'Meghan',
-    '2024-12-18 16:00:00-05'::timestamptz, -- Thursday, December 18, 4:00 PM ET
+    '2024-12-19 16:00:00-05'::timestamptz, -- Thursday, December 19, 4:00 PM ET
     60,
     NULL,
     'Yoga'
@@ -181,7 +182,7 @@ INSERT INTO public.live_classes (
     'Evenings with Emily B',
     'Settle in for a calm, end-of-day hour with Emily. This class is a soft landing after a long week — a place to exhale, sort through what''s been heavy, and reconnect with yourself before the day is done. Each session offers gentle coaching, simple grounding practices, and one small shift to carry into tomorrow. Come as you are. Leave a little lighter, clearer, and more supported.',
     'Coach Emily B',
-    '2024-12-18 19:30:00-05'::timestamptz, -- Thursday, December 18, 7:30 PM ET
+    '2024-12-19 19:30:00-05'::timestamptz, -- Thursday, December 19, 7:30 PM ET
     45,
     NULL,
     'Wellness'
@@ -192,7 +193,7 @@ INSERT INTO public.live_classes (
     'The Habit Lab',
     'Where intention turns into momentum. Progress in real time — together. Feel like something else has been running the show lately — your phone 📱, snacking 🍫, or saying yes when you mean no 🙃? It''s time to take back the wheel. 💡 In The Habit Lab, you''ll: 🔹 Experiment with small, sustainable changes, 🔹 Use your Habit Tracker to spot patterns + progress, 🔹 Build habits that actually stick, 🔹 Get accountability + authentic support, 🔹 Celebrate real progress — not perfection. 8 weeks. Real data. Real growth. Ready to reclaim your habits? 🚀',
     'Coach Emily M',
-    '2024-12-19 08:00:00-05'::timestamptz, -- Friday, December 19, 8:00 AM ET
+    '2024-12-20 08:00:00-05'::timestamptz, -- Friday, December 20, 8:00 AM ET
     45,
     NULL,
     'Wellness'
@@ -201,7 +202,7 @@ INSERT INTO public.live_classes (
     'Energy in Motion',
     'Ignite your energy with aerobic interval training that keeps your heart pumping and your body moving. Using styles like Tabata and other high-energy intervals, this class blends bursts of effort with moments of recovery to boost endurance, burn calories, and elevate your mood. Expect a fun, sweat-filled session that leaves you recharged and ready for the day.',
     'Coach Rebecca',
-    '2024-12-19 09:00:00-05'::timestamptz, -- Friday, December 19, 9:00 AM ET
+    '2024-12-20 09:00:00-05'::timestamptz, -- Friday, December 20, 9:00 AM ET
     45,
     NULL,
     'Exercise'
@@ -210,7 +211,7 @@ INSERT INTO public.live_classes (
     'Nighttime Nurturing',
     'Nighttime Nurturing is a cozy, calming evening workshop designed to support you when the day winds down… and the urges, emotions, and habits often wind up. If evenings are when you snack, scroll, graze, wander the pantry, or feel yourself slipping into old routines, this class is your soft landing place. Each session offers: gentle coaching around nighttime snacking, overeating, and emotional urges, practices for comfort, grounding, and emotional regulation, simple tools to unwind without using food to soothe, cozy rituals that cue rest, not cravings, a warm, supportive community to end your day with intention. Nighttime Nurturing is where you learn to care for yourself after hours—with warmth, honesty, and zero shame. It''s the quiet shift that changes everything about your nights… and your tomorrow.',
     'Coach Dani',
-    '2024-12-19 23:00:00-05'::timestamptz, -- Friday, December 19, 11:00 PM ET
+    '2024-12-20 23:00:00-05'::timestamptz, -- Friday, December 20, 11:00 PM ET
     45,
     'https://us02web.zoom.us/j/87954176691',
     'Wellness'

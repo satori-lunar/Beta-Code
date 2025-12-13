@@ -24,8 +24,7 @@ import {
   subMonths,
   isSameMonth,
   isSameDay,
-  isBefore,
-  isAfter
+  isBefore
 } from 'date-fns';
 
 const eventTypes = [
@@ -62,7 +61,6 @@ export default function Calendar() {
     const saved = localStorage.getItem('calendar_timezone');
     return saved || 'America/New_York';
   });
-  const [showCalendarView, setShowCalendarView] = useState<'grid' | 'iframe'>('iframe');
   const [newEvent, setNewEvent] = useState({
     title: '',
     type: 'reminder',
@@ -74,9 +72,6 @@ export default function Calendar() {
   useEffect(() => {
     localStorage.setItem('calendar_timezone', timezone);
   }, [timezone]);
-
-  // Build Google Calendar iframe URL
-  const calendarUrl = `https://calendar.google.com/calendar/embed?height=600&wkst=1&ctz=${encodeURIComponent(timezone)}&showPrint=0&mode=WEEK&src=ZW1pbHlicm93ZXJsaWZlY29hY2hAZ21haWwuY29t&color=%237986cb`;
 
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(monthStart);

@@ -175,7 +175,7 @@ export function useGoogleCalendar(calendarEmail: string = 'emilybrowerlifecoach@
         console.log('Total parsed events:', parsedEvents.length);
         
         // Keep ALL upcoming events (not just today) for the calendar view
-        const now = new Date();
+        const currentTime = new Date();
         const allUpcomingEvents = parsedEvents
           .filter(event => {
             // Include events that are today or in the future
@@ -184,12 +184,12 @@ export function useGoogleCalendar(calendarEmail: string = 'emilybrowerlifecoach@
             
             // Include if event hasn't ended yet, or if it's today
             const eventStartDay = startOfDay(eventStart);
-            const today = startOfDay(now);
+            const today = startOfDay(currentTime);
             const tomorrow = new Date(today);
             tomorrow.setDate(tomorrow.getDate() + 1);
             
             const isToday = eventStartDay.getTime() >= today.getTime() && eventStartDay.getTime() < tomorrow.getTime();
-            const isUpcoming = eventEnd.getTime() > now.getTime();
+            const isUpcoming = eventEnd.getTime() > currentTime.getTime();
             
             return isToday || isUpcoming;
           })

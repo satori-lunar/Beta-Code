@@ -21,7 +21,7 @@ INSERT INTO public.live_classes (
     'Plan Your Week',
     'Create a calendar/meal/exercise/work plan for your week that you feel confident in following. This is essentially a study hall session to plan your week with a coach available for questions and coaching on calendar follow through.',
     'Coach Emily B',
-    '2024-12-14 07:30:00-05'::timestamptz, -- Sunday, December 14, 7:30 AM ET
+    '2024-12-15 07:30:00-05'::timestamptz, -- Sunday, December 15, 7:30 AM ET
     45,
     NULL,
     'Planning'
@@ -79,7 +79,7 @@ INSERT INTO public.live_classes (
     'Inner Chords',
     'A unique space where music and poetry meet reflection. This class helps you access feelings you may not otherwise know how to reach. Come ready to journal, listen, and let the notes guide you into deeper awareness. Ride into your day with company as you tune in — this hour offers a mix of calm, uplift, and transformative energy. Because this class meets at the start of your morning, we''ll steer toward emotions that energize and ground you: peace, clarity, connection, and lightness. Think of it as a reset for your inner world — helping you feel better on purpose before the day begins.',
     'Coach Emily M',
-    '2024-12-16 08:00:00-05'::timestamptz, -- Tuesday, December 16, 8:00 AM ET
+    '2024-12-17 08:00:00-05'::timestamptz, -- Tuesday, December 17, 8:00 AM ET
     45,
     NULL,
     'Meditation'

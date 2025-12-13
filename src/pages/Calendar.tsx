@@ -78,15 +78,6 @@ export default function Calendar() {
   // Get today's classes from Google Calendar
   const todaysGoogleClasses = getTodaysEvents();
   
-  // Get Google Calendar events for any date (for the upcoming classes calendar)
-  // @ts-ignore - unused function, kept for potential future use
-  const _getGoogleEventsForCalendarDate = (date: Date) => {
-    const dateString = format(date, 'yyyy-MM-dd');
-    return googleCalendarEvents.filter((event) => {
-      const eventDate = format(event.start, 'yyyy-MM-dd');
-      return eventDate === dateString;
-    });
-  };
   
   // Combine user calendar events with Google Calendar events for selected date
   type CombinedCalendarEvent = {

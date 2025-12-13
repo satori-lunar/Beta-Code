@@ -224,6 +224,18 @@ export default function Classes() {
   const currentlyLiveClasses = filteredLiveClasses.filter((c) => isClassLive(c.scheduledAt, c.duration));
   const nonLiveClasses = filteredLiveClasses.filter((c) => !isClassLive(c.scheduledAt, c.duration));
 
+  // Set initial selected weekday to first weekday that has classes
+  useEffect(() => {
+    if (activeTab === 'live') {
+      const firstWeekdayWithClasses = weekdayOrder.find(
+        (weekday) => (classesByWeekday[weekday] || []).length > 0
+      );
+      if (firstWeekdayWithClasses && selectedWeekday !== firstWeekdayWithClasses) {
+        setSelectedWeekday(firstWeekdayWithClasses);
+      }
+    }
+  }, [activeTab, classesByWeekday, selectedWeekday]);
+
   const favoriteSessions = mappedRecordedSessions.filter((s) => s.isFavorite);
   const completedSessions = mappedRecordedSessions.filter((s) => s.isCompleted);
 
@@ -351,7 +363,7 @@ export default function Classes() {
 
       {/* Live Classes */}
       {activeTab === 'live' && (
-        <div className="space-y-8">
+        <div className="space-y-6">
           {/* Live Now */}
           {currentlyLiveClasses.length > 0 && (
             <div>
@@ -367,34 +379,55 @@ export default function Classes() {
             </div>
           )}
 
-          {/* Classes grouped by weekday */}
-          {weekdayOrder.map((weekday) => {
-            const classesForDay = classesByWeekday[weekday] || [];
-            if (classesForDay.length === 0) return null;
+          {/* Weekday Tabs */}
+          <div className="flex gap-2 border-b border-gray-100 overflow-x-auto scrollbar-hide">
+            {weekdayOrder.map((weekday) => {
+              const classesForDay = classesByWeekday[weekday] || [];
+              if (classesForDay.length === 0) return null;
+
+              return (
+                <button
+                  key={weekday}
+                  onClick={() => setSelectedWeekday(weekday)}
+                  className={`flex items-center gap-2 px-4 py-3 font-medium transition-colors border-b-2 -mb-px whitespace-nowrap ${
+                    selectedWeekday === weekday
+                      ? 'text-coral-600 border-coral-500'
+                      : 'text-gray-500 border-transparent hover:text-gray-700'
+                  }`}
+                >
+                  {weekday}
+                  <span className="ml-1 px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full">
+                    {classesForDay.length}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Classes for selected weekday */}
+          {(() => {
+            const classesForDay = classesByWeekday[selectedWeekday] || [];
+            if (classesForDay.length === 0) {
+              return (
+                <div className="card text-center py-12">
+                  <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500">No classes found for {selectedWeekday}</p>
+                </div>
+              );
+            }
 
             return (
-              <div key={weekday}>
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">{weekday} Classes</h2>
-                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {classesForDay.map((classItem) => (
-                    <LiveClassCard 
-                      key={classItem.id} 
-                      classItem={classItem} 
-                      isLive={isClassLive(classItem.scheduledAt, classItem.duration)}
-                    />
-                  ))}
-                </div>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {classesForDay.map((classItem) => (
+                  <LiveClassCard 
+                    key={classItem.id} 
+                    classItem={classItem} 
+                    isLive={isClassLive(classItem.scheduledAt, classItem.duration)}
+                  />
+                ))}
               </div>
             );
-          })}
-
-          {/* No classes message */}
-          {nonLiveClasses.length === 0 && currentlyLiveClasses.length === 0 && (
-            <div className="card text-center py-12">
-              <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500">No classes found</p>
-            </div>
-          )}
+          })()}
         </div>
       )}
 

@@ -42,9 +42,12 @@ function parseICal(icalData: string): GoogleCalendarEvent[] {
       currentEvent = null;
     } else if (currentEvent) {
       if (line.startsWith('DTSTART')) {
-        const dateStr = line.split(':')[1];
+        // Handle DTSTART with parameters (e.g., DTSTART;TZID=America/New_York:20240115T190000)
+        // Split by colon and get the last part (the actual date string)
+        const colonIndex = line.lastIndexOf(':');
+        const dateStr = colonIndex >= 0 ? line.substring(colonIndex + 1) : line.split(':')[1];
         // Handle both DATE and DATE-TIME formats
-        if (line.includes(';VALUE=DATE')) {
+        if (line.includes(';VALUE=DATE') || line.includes('VALUE=DATE')) {
           // All-day event: YYYYMMDD
           currentEvent.start = parseICalDate(dateStr, true);
           currentEvent.allDay = true;
@@ -54,8 +57,10 @@ function parseICal(icalData: string): GoogleCalendarEvent[] {
           currentEvent.allDay = false;
         }
       } else if (line.startsWith('DTEND')) {
-        const dateStr = line.split(':')[1];
-        if (line.includes(';VALUE=DATE')) {
+        // Handle DTEND with parameters
+        const colonIndex = line.lastIndexOf(':');
+        const dateStr = colonIndex >= 0 ? line.substring(colonIndex + 1) : line.split(':')[1];
+        if (line.includes(';VALUE=DATE') || line.includes('VALUE=DATE')) {
           currentEvent.end = parseICalDate(dateStr, true);
         } else {
           currentEvent.end = parseICalDate(dateStr);
@@ -192,7 +197,7 @@ export function useGoogleCalendar(calendarEmail: string = 'emilybrowerlifecoach@
           console.log(`  End: ${eventEnd.toISOString()} (${eventEnd.toString()})`);
           console.log(`  Start day: ${eventStartDay.toISOString()}`);
           console.log(`  Starts today: ${startsToday}, Ends today: ${endsToday}, Spans today: ${spansToday}`);
-          console.log(`  Result: ${isToday ? '✓ INCLUDED' : '✗ EXCLUDED'}`);
+          console.log(`  Result: ${isToday ? '? INCLUDED' : '? EXCLUDED'}`);
           
           return isToday;
         });

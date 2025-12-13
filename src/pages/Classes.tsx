@@ -12,7 +12,26 @@ import {
   Radio,
   ChevronRight,
   BookOpen,
-  CheckCircle2
+  CheckCircle2,
+  Moon,
+  Sun,
+  UtensilsCrossed,
+  Sparkles,
+  Target,
+  Sunrise,
+  Sunset,
+  Dumbbell,
+  Yoga,
+  Brain,
+  Users,
+  Leaf,
+  Timer,
+  Lightbulb,
+  Activity,
+  Flame,
+  Waves,
+  Flower2,
+  Compass
 } from 'lucide-react';
 import { useRecordedSessions, useLiveClasses, useFavoriteSessions, useSessionCompletions } from '../hooks/useSupabaseData';
 import { useCourses } from '../hooks/useCourses';
@@ -35,6 +54,32 @@ const classImages: Record<string, string> = {
   'Nutrition': 'from-orange-400 to-amber-500',
   'Sleep': 'from-blue-400 to-indigo-500',
   'Wellness': 'from-coral-400 to-pink-500',
+};
+
+// Course-specific gradients and icons for visual variety
+const courseStyles: Record<string, { gradient: string; icon: any }> = {
+  'Wisdom Rising': { gradient: 'from-purple-500 to-indigo-600', icon: Sparkles },
+  'Hatha Yoga with Meghan': { gradient: 'from-pink-400 to-rose-500', icon: Yoga },
+  'Time Management Replay': { gradient: 'from-blue-500 to-cyan-600', icon: Timer },
+  'Foundations in Motion': { gradient: 'from-green-500 to-emerald-600', icon: Activity },
+  'Nighttime Nurturing': { gradient: 'from-indigo-500 to-purple-600', icon: Moon },
+  '2-Bite Tuesdays': { gradient: 'from-orange-400 to-amber-500', icon: UtensilsCrossed },
+  'Refreshed and Ready': { gradient: 'from-yellow-400 to-orange-500', icon: Sunrise },
+  'Evenings with Emily B': { gradient: 'from-pink-500 to-rose-600', icon: Sunset },
+  'Habit Lab': { gradient: 'from-teal-500 to-cyan-600', icon: Target },
+  'Energy in Motion': { gradient: 'from-red-500 to-orange-600', icon: Flame },
+  'Strength in Motion': { gradient: 'from-slate-600 to-gray-700', icon: Dumbbell },
+  'Made 2 Move: Group Exercise Replays': { gradient: 'from-green-500 to-teal-600', icon: Activity },
+  'Inner Chords': { gradient: 'from-violet-500 to-purple-600', icon: Waves },
+  'Instinctive Meditation': { gradient: 'from-indigo-400 to-blue-500', icon: Brain },
+  'The Reflecting Pool': { gradient: 'from-blue-400 to-indigo-500', icon: Compass },
+  'Tangled: Challenging Relationships': { gradient: 'from-rose-500 to-pink-600', icon: Users },
+  'The Heart of Nourishment': { gradient: 'from-amber-400 to-orange-500', icon: Heart },
+  'Grief & Growth': { gradient: 'from-gray-500 to-slate-600', icon: Flower2 },
+  'Rooted Weight Health': { gradient: 'from-emerald-500 to-green-600', icon: Leaf },
+  'Declutter to Breathe': { gradient: 'from-sky-400 to-blue-500', icon: Waves },
+  'Seedlings': { gradient: 'from-lime-400 to-green-500', icon: Leaf },
+  'Plan Your Week': { gradient: 'from-cyan-500 to-blue-600', icon: Calendar },
 };
 
 export default function Classes() {
@@ -378,15 +423,26 @@ export default function Classes() {
                   .filter(course => selectedCategory === 'All' || course.category === selectedCategory)
                   .map((course) => {
                     const sessionCount = sessionsByCourse[course.id]?.length || 0;
+                    const courseStyle = courseStyles[course.title] || {
+                      gradient: classImages[course.category] || 'from-coral-400 to-coral-600',
+                      icon: BookOpen
+                    };
+                    const IconComponent = courseStyle.icon;
+                    
                     return (
                       <div
                         key={course.id}
                         onClick={() => setSelectedCourseId(course.id)}
                         className="card overflow-hidden hover:shadow-elevated transition-shadow cursor-pointer group"
                       >
-                        <div className="h-40 bg-gradient-to-br from-coral-400 to-coral-600 -mx-6 -mt-6 mb-4 relative">
+                        <div className={`h-40 bg-gradient-to-br ${courseStyle.gradient} -mx-6 -mt-6 mb-4 relative`}>
                           <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <BookOpen className="w-16 h-16 text-white" />
+                            <IconComponent className="w-16 h-16 text-white" />
+                          </div>
+                          {/* Decorative pattern overlay */}
+                          <div className="absolute inset-0 opacity-10">
+                            <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.3),transparent_50%)]"></div>
+                            <div className="absolute bottom-0 right-0 w-full h-full bg-[radial-gradient(circle_at_70%_70%,rgba(255,255,255,0.2),transparent_50%)]"></div>
                           </div>
                         </div>
                         <div className="space-y-2">

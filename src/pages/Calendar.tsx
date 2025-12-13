@@ -70,52 +70,68 @@ export default function Calendar() {
   const selectedDateEvents = getEventsForDate(selectedDate);
   const selectedDateString = format(selectedDate, 'yyyy-MM-dd');
 
-  // Fetch Google Calendar events - get ALL events, not just today's
-  const { loading: calendarLoading, getEventsForDate: getGoogleEventsForDate } = useGoogleCalendar();
+  // Fetch Google Calendar events - get ALL events
+  const { loading: calendarLoading, events: allGoogleEvents, getEventsForDate: getGoogleEventsForDate } = useGoogleCalendar();
 
-  // Helper function to get current date in the selected timezone
-  const getDateInTimezone = (timezone: string): Date => {
-    const now = new Date();
-    // Format the date in the selected timezone
-    const formatter = new Intl.DateTimeFormat('en-US', {
-      timeZone: timezone,
+  // Helper function to get date string (YYYY-MM-DD) in the selected timezone
+  const getDateStringInTimezone = (date: Date, tz: string): string => {
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: tz,
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
-    });
-    const parts = formatter.formatToParts(now);
-    const year = parseInt(parts.find(p => p.type === 'year')?.value || '0', 10);
-    const month = parseInt(parts.find(p => p.type === 'month')?.value || '0', 10) - 1; // month is 0-indexed
-    const day = parseInt(parts.find(p => p.type === 'day')?.value || '0', 10);
-    return new Date(year, month, day);
+    }).format(date);
+  };
+
+  // Helper function to get event date string in selected timezone
+  const getEventDateInTimezone = (eventStart: Date, tz: string): string => {
+    return getDateStringInTimezone(eventStart, tz);
   };
 
   // Get Google Calendar events for selected date
   const googleEventsForSelectedDate = getGoogleEventsForDate(selectedDate);
   
-  // Get today's classes from Google Calendar (using selected timezone)
-  const todayInTimezone = getDateInTimezone(timezone);
-  const todaysGoogleClasses = getGoogleEventsForDate(todayInTimezone);
+  // Get today's and tomorrow's date strings in the selected timezone
+  const now = new Date();
+  const todayDateStr = getDateStringInTimezone(now, timezone);
+  const tomorrowDateStr = getDateStringInTimezone(addDays(now, 1), timezone);
   
-  // Get upcoming classes for tomorrow (the following day in selected timezone)
-  const tomorrowInTimezone = addDays(todayInTimezone, 1);
-  const upcomingGoogleClasses = getGoogleEventsForDate(tomorrowInTimezone);
+  // Get today's classes - events that fall on today in the selected timezone
+  const todaysGoogleClasses = allGoogleEvents.filter(event => {
+    const eventDateStr = getEventDateInTimezone(event.start, timezone);
+    return eventDateStr === todayDateStr;
+  });
+  
+  // Get upcoming classes - events that fall on tomorrow in the selected timezone
+  const upcomingGoogleClasses = allGoogleEvents.filter(event => {
+    const eventDateStr = getEventDateInTimezone(event.start, timezone);
+    return eventDateStr === tomorrowDateStr;
+  });
 
   // Debug logging
   useEffect(() => {
     console.log('=== Calendar Debug ===');
     console.log('Selected timezone:', timezone);
-    console.log('Today in timezone:', todayInTimezone.toISOString(), todayInTimezone.toString());
-    console.log('Tomorrow in timezone:', tomorrowInTimezone.toISOString(), tomorrowInTimezone.toString());
+    console.log('Today date string:', todayDateStr);
+    console.log('Tomorrow date string:', tomorrowDateStr);
+    console.log('Total events fetched:', allGoogleEvents.length);
     console.log("Today's classes count:", todaysGoogleClasses.length);
     console.log("Upcoming classes count:", upcomingGoogleClasses.length);
     if (todaysGoogleClasses.length > 0) {
-      console.log("Today's classes:", todaysGoogleClasses.map(c => ({ title: c.title, start: c.start.toString() })));
+      console.log("Today's classes:", todaysGoogleClasses.map(c => ({ 
+        title: c.title, 
+        start: c.start.toString(),
+        dateInTz: getEventDateInTimezone(c.start, timezone)
+      })));
     }
     if (upcomingGoogleClasses.length > 0) {
-      console.log("Upcoming classes:", upcomingGoogleClasses.map(c => ({ title: c.title, start: c.start.toString() })));
+      console.log("Upcoming classes:", upcomingGoogleClasses.map(c => ({ 
+        title: c.title, 
+        start: c.start.toString(),
+        dateInTz: getEventDateInTimezone(c.start, timezone)
+      })));
     }
-  }, [timezone, todaysGoogleClasses, upcomingGoogleClasses, todayInTimezone, tomorrowInTimezone]);
+  }, [timezone, todaysGoogleClasses, upcomingGoogleClasses, todayDateStr, tomorrowDateStr, allGoogleEvents]);
   
   
   // Combine user calendar events with Google Calendar events for selected date
@@ -508,4 +524,31 @@ export default function Calendar() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Description (optional)
-           
+                </label>
+                <textarea
+                  value={newEvent.description}
+                  onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
+                  placeholder="Add a description..."
+                  rows={3}
+                  className="input resize-none"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={() => setShowAddModal(false)}
+                  className="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button onClick={handleAddEvent} className="flex-1 btn-primary">
+                  Add Event
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

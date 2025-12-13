@@ -23,10 +23,7 @@ import {
   addMonths,
   subMonths,
   isSameMonth,
-  isSameDay,
-  parseISO,
-  isSameDay as isSameDayCheck,
-  startOfDay
+  isSameDay
 } from 'date-fns';
 
 const eventTypes = [
@@ -106,7 +103,7 @@ export default function Calendar() {
   const selectedDateString = format(selectedDate, 'yyyy-MM-dd');
 
   // Fetch Google Calendar events
-  const { events: googleCalendarEvents, loading: calendarLoading, getEventsForDate: getGoogleEventsForDate, getUpcomingEvents } = useGoogleCalendar();
+  const { loading: calendarLoading, getEventsForDate: getGoogleEventsForDate, getUpcomingEvents } = useGoogleCalendar();
 
   // Get Google Calendar events for selected date
   const googleEventsForSelectedDate = getGoogleEventsForDate(selectedDate);
@@ -352,12 +349,14 @@ export default function Calendar() {
                           <p className="text-sm text-gray-500 mt-1">{event.description}</p>
                         )}
                       </div>
-                      <button
-                        onClick={() => deleteCalendarEvent(event.id)}
-                        className="p-1 text-gray-400 hover:text-red-500 rounded"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
+                      {!event.isGoogleCalendar && (
+                        <button
+                          onClick={() => deleteCalendarEvent(event.id)}
+                          className="p-1 text-gray-400 hover:text-red-500 rounded"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
                   );
                 })}

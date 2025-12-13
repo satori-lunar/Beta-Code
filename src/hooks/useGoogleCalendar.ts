@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { format, parseISO, isAfter, startOfDay } from 'date-fns';
+import { isAfter, startOfDay } from 'date-fns';
 
 export interface GoogleCalendarEvent {
   id: string;
@@ -21,7 +21,6 @@ function parseICal(icalData: string): GoogleCalendarEvent[] {
     const line = lines[i];
     
     // Handle continuation lines (lines starting with space)
-    let fullLine = line;
     if (line.startsWith(' ') && currentEvent) {
       // This is a continuation of the previous line
       continue;

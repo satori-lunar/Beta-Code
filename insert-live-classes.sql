@@ -41,7 +41,7 @@ INSERT INTO public.live_classes (
     'The Heart of Nourishment',
     'Nourishment is more than food — it''s what feeds your body, mind, heart, and spirit. In this reflective and creative workshop, you''ll be guided through visualization and self-discovery to explore what true nourishment means to you. You''ll create your own "nourishment menu" and reconnect with intention and compassion for your well-being.',
     'Coach Emily M',
-    '2024-12-15 09:00:00-05'::timestamptz, -- Monday, December 15, 9:00 AM ET
+    '2024-12-16 09:00:00-05'::timestamptz, -- Monday, December 16, 9:00 AM ET
     45,
     NULL,
     'Nourishment'

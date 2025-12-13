@@ -91,6 +91,7 @@ export default function Classes() {
   const { courses, loading: coursesLoading } = useCourses();
   
   const [activeTab, setActiveTab] = useState<'live' | 'recorded' | 'favorites' | 'completed'>('live');
+  const [selectedWeekday, setSelectedWeekday] = useState<string>('Sunday');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
@@ -182,14 +183,24 @@ export default function Classes() {
       )
     : [];
 
-  // Filtered data
-  const filteredLiveClasses = mappedLiveClasses.filter(
-    (c) => filterBySearch(c.title, c.description) && filterByCategory(c.category)
-  );
+  // Filtered data - no filters for live classes, just use all classes
+  const filteredLiveClasses = mappedLiveClasses;
 
-  // Group live classes by weekday
+  // Deduplicate classes by title + scheduled time, then group by weekday
   const classesByWeekday = useMemo(() => {
-    const grouped: Record<string, typeof filteredLiveClasses> = {
+    // First, deduplicate classes by title + scheduled time
+    const seen = new Set<string>();
+    const uniqueClasses = filteredLiveClasses.filter((classItem) => {
+      const key = `${classItem.title}|${classItem.scheduledAt}`;
+      if (seen.has(key)) {
+        return false; // Duplicate
+      }
+      seen.add(key);
+      return true;
+    });
+
+    // Then group by weekday
+    const grouped: Record<string, typeof uniqueClasses> = {
       'Sunday': [],
       'Monday': [],
       'Tuesday': [],
@@ -199,7 +210,7 @@ export default function Classes() {
       'Saturday': [],
     };
 
-    filteredLiveClasses.forEach((classItem) => {
+    uniqueClasses.forEach((classItem) => {
       const weekday = format(parseISO(classItem.scheduledAt), 'EEEE');
       if (grouped[weekday]) {
         grouped[weekday].push(classItem);
@@ -287,8 +298,8 @@ export default function Classes() {
         ))}
       </div>
 
-      {/* Search and Filter - Only show for live classes or when viewing courses */}
-      {(activeTab === 'live' || (activeTab === 'recorded' && !selectedCourseId)) && (
+      {/* Search and Filter - Only show for recorded courses (not live classes) */}
+      {activeTab === 'recorded' && !selectedCourseId && (
         <>
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1 relative">
@@ -297,30 +308,28 @@ export default function Classes() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={activeTab === 'recorded' ? "Search courses..." : "Search classes..."}
+                placeholder="Search courses..."
                 className="input pl-12"
               />
             </div>
           </div>
 
-          {/* Category filter - Only show for live classes or courses */}
-          {activeTab === 'live' || (activeTab === 'recorded' && !selectedCourseId) ? (
-            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-              {categories.map((category) => (
-                <button
-                  key={category}
-                  onClick={() => setSelectedCategory(category)}
-                  className={`px-4 py-2 rounded-xl whitespace-nowrap transition-colors ${
-                    selectedCategory === category
-                      ? 'bg-coral-500 text-white'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  {category}
-                </button>
-              ))}
-            </div>
-          ) : null}
+          {/* Category filter - Only show for courses */}
+          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+            {categories.map((category) => (
+              <button
+                key={category}
+                onClick={() => setSelectedCategory(category)}
+                className={`px-4 py-2 rounded-xl whitespace-nowrap transition-colors ${
+                  selectedCategory === category
+                    ? 'bg-coral-500 text-white'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                {category}
+              </button>
+            ))}
+          </div>
         </>
       )}
 

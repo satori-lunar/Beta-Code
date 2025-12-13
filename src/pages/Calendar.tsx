@@ -23,7 +23,8 @@ import {
   addMonths,
   subMonths,
   isSameMonth,
-  isSameDay
+  isSameDay,
+  isBefore
 } from 'date-fns';
 
 const eventTypes = [
@@ -103,10 +104,13 @@ export default function Calendar() {
   const selectedDateString = format(selectedDate, 'yyyy-MM-dd');
 
   // Fetch Google Calendar events
-  const { loading: calendarLoading, getEventsForDate: getGoogleEventsForDate, getUpcomingEvents } = useGoogleCalendar();
+  const { loading: calendarLoading, getEventsForDate: getGoogleEventsForDate, getTodaysEvents } = useGoogleCalendar();
 
   // Get Google Calendar events for selected date
   const googleEventsForSelectedDate = getGoogleEventsForDate(selectedDate);
+  
+  // Get today's classes from Google Calendar
+  const todaysGoogleClasses = getTodaysEvents();
   
   // Combine user calendar events with Google Calendar events for selected date
   type CombinedCalendarEvent = {
@@ -140,14 +144,11 @@ export default function Calendar() {
     }))
   ];
 
-  // Get upcoming classes from Google Calendar
-  const upcomingGoogleClasses = getUpcomingEvents(10);
-  
   // Debug logging
   useEffect(() => {
-    console.log('Upcoming Google Classes:', upcomingGoogleClasses);
+    console.log("Today's Google Classes:", todaysGoogleClasses);
     console.log('Calendar loading:', calendarLoading);
-  }, [upcomingGoogleClasses, calendarLoading]);
+  }, [todaysGoogleClasses, calendarLoading]);
 
   const handleAddEvent = () => {
     if (newEvent.title.trim()) {
@@ -397,26 +398,35 @@ export default function Calendar() {
               <p className="text-gray-500 text-sm">Loading calendar events...</p>
             ) : (
               <div className="space-y-3">
-                {upcomingGoogleClasses.map((classItem) => (
-                  <div
-                    key={classItem.id}
-                    className="flex items-center gap-3 p-3 bg-navy-50 rounded-xl"
-                  >
-                    <div className="w-10 h-10 rounded-lg bg-navy-800 flex items-center justify-center flex-shrink-0">
-                      <Video className="w-5 h-5 text-white" />
+                {upcomingGoogleClasses.length > 0 ? (
+                  upcomingGoogleClasses.slice(0, 5).map((classItem) => (
+                    <div
+                      key={classItem.id}
+                      className="flex items-center gap-3 p-3 bg-navy-50 rounded-xl"
+                    >
+                      <div className="w-10 h-10 rounded-lg bg-navy-800 flex items-center justify-center flex-shrink-0">
+                        <Video className="w-5 h-5 text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-gray-900 truncate">{classItem.title}</p>
+                        <p className="text-sm text-gray-500">
+                          {classItem.allDay 
+                            ? format(classItem.start, 'MMM d, yyyy')
+                            : format(classItem.start, 'MMM d, h:mm a')}
+                        </p>
+                        {classItem.description && (
+                          <p className="text-xs text-gray-400 mt-1 truncate">{classItem.description}</p>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-900 truncate">{classItem.title}</p>
-                      <p className="text-sm text-gray-500">
-                        {classItem.allDay 
-                          ? format(classItem.start, 'MMM d, yyyy')
-                          : format(classItem.start, 'MMM d, h:mm a')}
-                      </p>
-                    </div>
+                  ))
+                ) : (
+                  <div>
+                    <p className="text-gray-500 text-sm mb-2">No upcoming classes found.</p>
+                    <p className="text-xs text-gray-400">
+                      Make sure your Google Calendar is set to &quot;Public&quot; in sharing settings.
+                    </p>
                   </div>
-                ))}
-                {upcomingGoogleClasses.length === 0 && (
-                  <p className="text-gray-500 text-sm">No upcoming classes</p>
                 )}
               </div>
             )}

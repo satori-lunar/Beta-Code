@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { isAfter, startOfDay } from 'date-fns';
+import { isAfter, startOfDay, isBefore, isToday, format } from 'date-fns';
 
 export interface GoogleCalendarEvent {
   id: string;
@@ -173,18 +173,26 @@ export function useGoogleCalendar(calendarEmail: string = 'emilybrowerlifecoach@
         console.log('Parsed events count:', parsedEvents.length);
         console.log('Parsed events:', parsedEvents);
         
-        // Filter out past events and sort by start time
+        // Filter for today's events or upcoming events, sort by start time
         const now = new Date();
+        const today = startOfDay(now);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        
         console.log('Current time:', now);
+        console.log('Today:', today);
+        
         const upcomingEvents = parsedEvents
           .filter(event => {
-            const isUpcoming = isAfter(event.start, now) || isAfter(event.end, now);
-            console.log(`Event "${event.title}" at ${event.start}: ${isUpcoming ? 'upcoming' : 'past'}`);
+            const eventStart = startOfDay(event.start);
+            const isToday = eventStart >= today && eventStart < tomorrow;
+            const isUpcoming = isAfter(event.start, now) || isAfter(event.end, now) || isToday;
+            console.log(`Event "${event.title}" at ${event.start} (today: ${isToday}, upcoming: ${isUpcoming})`);
             return isUpcoming;
           })
           .sort((a, b) => a.start.getTime() - b.start.getTime());
         
-        console.log('Upcoming events count:', upcomingEvents.length);
+        console.log('Upcoming/Today events count:', upcomingEvents.length);
         setEvents(upcomingEvents);
       } catch (err) {
         console.error('Error fetching Google Calendar:', err);
@@ -214,6 +222,18 @@ export function useGoogleCalendar(calendarEmail: string = 'emilybrowerlifecoach@
     });
   };
 
+  // Get today's events (events happening today, whether past or future)
+  const getTodaysEvents = (): GoogleCalendarEvent[] => {
+    const today = startOfDay(new Date());
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    return events.filter(event => {
+      const eventStart = startOfDay(event.start);
+      return eventStart >= today && eventStart < tomorrow;
+    }).sort((a, b) => a.start.getTime() - b.start.getTime());
+  };
+  
   // Get upcoming events (next N events)
   const getUpcomingEvents = (limit: number = 10): GoogleCalendarEvent[] => {
     const now = new Date();

@@ -209,186 +209,97 @@ export default function Calendar() {
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6">
-        {/* Two Calendar Grids Side by Side */}
+        {/* Main Content Area */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Main Calendar */}
+          {/* Embedded Google Calendar */}
           <div className="card">
-            {/* Calendar Header */}
-            <div className="flex items-center justify-between mb-6">
-              <button
-                onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <ChevronLeft className="w-5 h-5 text-gray-600" />
-              </button>
-              <h2 className="text-xl font-display font-semibold text-gray-900">
-                {format(currentMonth, 'MMMM yyyy')}
-              </h2>
-              <button
-                onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <ChevronRight className="w-5 h-5 text-gray-600" />
-              </button>
-            </div>
-
-            {/* Days of Week */}
-            <div className="grid grid-cols-7 mb-2">
-              {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
-                <div key={day} className="text-center text-sm font-medium text-gray-500 py-2">
-                  {day}
-                </div>
-              ))}
-            </div>
-
-            {/* Calendar Grid */}
-            <div className="border border-gray-100 rounded-xl overflow-hidden">
-              {rows.map((week, weekIndex) => (
-                <div key={weekIndex} className="grid grid-cols-7">
-                  {week.map((day, dayIndex) => {
-                    const dayEvents = getEventsForDate(day);
-                    const isCurrentMonth = isSameMonth(day, currentMonth);
-                    const isSelected = isSameDay(day, selectedDate);
-                    const isToday = isSameDay(day, new Date());
-
-                    return (
-                      <button
-                        key={dayIndex}
-                        onClick={() => setSelectedDate(day)}
-                        className={`min-h-[80px] p-2 border-b border-r border-gray-100 text-left transition-colors ${
-                          !isCurrentMonth ? 'bg-gray-50 text-gray-400' : 'hover:bg-gray-50'
-                        } ${isSelected ? 'bg-coral-50' : ''}`}
-                      >
-                        <div className="flex items-center justify-between mb-1">
-                          <span
-                            className={`text-sm font-medium ${
-                              isToday
-                                ? 'w-7 h-7 bg-coral-500 text-white rounded-full flex items-center justify-center'
-                                : isSelected
-                                ? 'text-coral-600'
-                                : ''
-                            }`}
-                          >
-                            {format(day, 'd')}
-                          </span>
-                        </div>
-                        <div className="space-y-1">
-                          {dayEvents.slice(0, 2).map((event) => (
-                            <div
-                              key={event.id}
-                              className="text-xs px-1.5 py-0.5 rounded truncate"
-                              style={{ backgroundColor: event.color }}
-                            >
-                              {event.title}
-                            </div>
-                          ))}
-                          {dayEvents.length > 2 && (
-                            <div className="text-xs text-gray-500">
-                              +{dayEvents.length - 2} more
-                            </div>
-                          )}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              ))}
+            <h2 className="text-xl font-display font-semibold text-gray-900 mb-4">
+              Calendar
+            </h2>
+            <div className="w-full" style={{ height: '600px' }}>
+              <iframe
+                src={`https://calendar.google.com/calendar/embed?height=600&wkst=1&ctz=${encodeURIComponent(timezone)}&showPrint=0&mode=WEEK&src=ZW1pbHlicm93ZXJsaWZlY29hY2hAZ21haWwuY29t&color=%237986cb`}
+                style={{ border: 'solid 1px #777', width: '100%', height: '100%', borderWidth: 0 }}
+                frameBorder="0"
+                scrolling="no"
+              />
             </div>
           </div>
 
-          {/* Upcoming Classes Calendar */}
+          {/* Upcoming Classes - Schedule View */}
           <div className="card">
             <div className="mb-6">
               <h2 className="text-xl font-display font-semibold text-gray-900 mb-2">
                 Upcoming Classes
               </h2>
-              <p className="text-sm text-gray-500">Classes from Google Calendar</p>
+              <p className="text-sm text-gray-500">Schedule view of classes from Google Calendar</p>
             </div>
 
             {calendarLoading ? (
               <div className="flex items-center justify-center py-12">
                 <p className="text-gray-500">Loading classes...</p>
               </div>
-            ) : (
-              <>
-                {/* Calendar Header */}
-                <div className="flex items-center justify-between mb-6">
-                  <button
-                    onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                  >
-                    <ChevronLeft className="w-5 h-5 text-gray-600" />
-                  </button>
-                  <h3 className="text-lg font-display font-semibold text-gray-900">
-                    {format(currentMonth, 'MMMM yyyy')}
-                  </h3>
-                  <button
-                    onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                  >
-                    <ChevronRight className="w-5 h-5 text-gray-600" />
-                  </button>
-                </div>
-
-                {/* Days of Week */}
-                <div className="grid grid-cols-7 mb-2">
-                  {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
-                    <div key={day} className="text-center text-sm font-medium text-gray-500 py-2">
-                      {day}
-                    </div>
-                  ))}
-                </div>
-
-                {/* Calendar Grid for Google Calendar Events */}
-                <div className="border border-gray-100 rounded-xl overflow-hidden">
-                  {rows.map((week, weekIndex) => (
-                    <div key={weekIndex} className="grid grid-cols-7">
-                      {week.map((day, dayIndex) => {
-                        const dayGoogleEvents = getGoogleEventsForCalendarDate(day);
-                        const isCurrentMonth = isSameMonth(day, currentMonth);
-                        const isToday = isSameDay(day, new Date());
-
-                        return (
-                          <div
-                            key={dayIndex}
-                            className={`min-h-[80px] p-2 border-b border-r border-gray-100 text-left ${
-                              !isCurrentMonth ? 'bg-gray-50 text-gray-400' : ''
-                            }`}
-                          >
-                            <div className="flex items-center justify-between mb-1">
-                              <span
-                                className={`text-sm font-medium ${
-                                  isToday
-                                    ? 'w-7 h-7 bg-blue-500 text-white rounded-full flex items-center justify-center'
-                                    : ''
-                                }`}
-                              >
-                                {format(day, 'd')}
-                              </span>
+            ) : googleCalendarEvents.length > 0 ? (
+              <div className="space-y-4">
+                {googleCalendarEvents.map((classItem) => {
+                  const now = new Date();
+                  const hasPassed = isBefore(classItem.end || classItem.start, now);
+                  const classColor = '#7986cb';
+                  
+                  return (
+                    <div
+                      key={classItem.id}
+                      className={`flex items-start gap-4 p-4 rounded-xl border-l-4 transition-all ${
+                        hasPassed 
+                          ? 'opacity-60 bg-gray-50 border-gray-300' 
+                          : 'bg-blue-50 border-blue-500 hover:bg-blue-100'
+                      }`}
+                    >
+                      <div className="flex-shrink-0">
+                        <div
+                          className="w-12 h-12 rounded-lg flex items-center justify-center"
+                          style={{ backgroundColor: hasPassed ? '#9ca3af' : classColor }}
+                        >
+                          <Video className="w-6 h-6 text-white" />
+                        </div>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1">
+                            <h3 className={`font-semibold text-gray-900 mb-1 ${
+                              hasPassed ? 'line-through' : ''
+                            }`}>
+                              {classItem.title}
+                            </h3>
+                            <div className="flex items-center gap-4 text-sm text-gray-600">
+                              <div className="flex items-center gap-1">
+                                <Clock className="w-4 h-4" />
+                                <span>
+                                  {classItem.allDay 
+                                    ? 'All Day'
+                                    : `${format(classItem.start, 'EEE, MMM d, h:mm a')}${classItem.end ? ` - ${format(classItem.end, 'h:mm a')}` : ''}`}
+                                </span>
+                              </div>
                             </div>
-                            <div className="space-y-1">
-                              {dayGoogleEvents.slice(0, 2).map((event) => (
-                                <div
-                                  key={event.id}
-                                  className="text-xs px-1.5 py-0.5 rounded truncate"
-                                  style={{ backgroundColor: '#7986cb' }}
-                                >
-                                  {event.title}
-                                </div>
-                              ))}
-                              {dayGoogleEvents.length > 2 && (
-                                <div className="text-xs text-gray-500">
-                                  +{dayGoogleEvents.length - 2} more
-                                </div>
-                              )}
-                            </div>
+                            {classItem.description && !hasPassed && (
+                              <p className="text-sm text-gray-500 mt-2">{classItem.description}</p>
+                            )}
                           </div>
-                        );
-                      })}
+                          {hasPassed && (
+                            <span className="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded">
+                              Past
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  ))}
-                </div>
-              </>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="flex items-center justify-center py-12">
+                <p className="text-gray-500">No upcoming classes scheduled.</p>
+              </div>
             )}
           </div>
         </div>

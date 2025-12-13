@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import {
   Plus,
   X,
-  Clock,
   Video,
   Target,
   Bell,
@@ -10,12 +9,7 @@ import {
   Globe
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
-import { useGoogleCalendar } from '../hooks/useGoogleCalendar';
-import {
-  format,
-  isBefore,
-  addDays
-} from 'date-fns';
+import { format } from 'date-fns';
 
 const eventTypes = [
   { id: 'class', name: 'Class', icon: Video, color: '#f8b4b4' },
@@ -42,7 +36,7 @@ const timezones = [
 ];
 
 export default function Calendar() {
-  const { calendarEvents, addCalendarEvent, deleteCalendarEvent } = useStore();
+  const { addCalendarEvent } = useStore();
   const [selectedDate] = useState(new Date());
   const [showAddModal, setShowAddModal] = useState(false);
   const [timezone, setTimezone] = useState<string>(() => {
@@ -62,115 +56,7 @@ export default function Calendar() {
     localStorage.setItem('calendar_timezone', timezone);
   }, [timezone]);
 
-  const getEventsForDate = (date: Date) => {
-    const dateString = format(date, 'yyyy-MM-dd');
-    return calendarEvents.filter((event) => event.date === dateString);
-  };
-
-  const selectedDateEvents = getEventsForDate(selectedDate);
   const selectedDateString = format(selectedDate, 'yyyy-MM-dd');
-
-  // Fetch Google Calendar events - get ALL events
-  const { loading: calendarLoading, events: allGoogleEvents, getEventsForDate: getGoogleEventsForDate } = useGoogleCalendar();
-
-  // Helper function to get date string (YYYY-MM-DD) in the selected timezone
-  const getDateStringInTimezone = (date: Date, tz: string): string => {
-    return new Intl.DateTimeFormat('en-CA', {
-      timeZone: tz,
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    }).format(date);
-  };
-
-  // Helper function to get event date string in selected timezone
-  const getEventDateInTimezone = (eventStart: Date, tz: string): string => {
-    return getDateStringInTimezone(eventStart, tz);
-  };
-
-  // Get Google Calendar events for selected date
-  const googleEventsForSelectedDate = getGoogleEventsForDate(selectedDate);
-  
-  // Get today's and tomorrow's date strings in the selected timezone
-  const now = new Date();
-  const todayDateStr = getDateStringInTimezone(now, timezone);
-  const tomorrowDateStr = getDateStringInTimezone(addDays(now, 1), timezone);
-  
-  // Get today's classes - events that fall on today in the selected timezone
-  const todaysGoogleClasses = allGoogleEvents.filter(event => {
-    const eventDateStr = getEventDateInTimezone(event.start, timezone);
-    return eventDateStr === todayDateStr;
-  });
-  
-  // Get upcoming classes - events that fall on tomorrow in the selected timezone
-  const upcomingGoogleClasses = allGoogleEvents.filter(event => {
-    const eventDateStr = getEventDateInTimezone(event.start, timezone);
-    return eventDateStr === tomorrowDateStr;
-  });
-
-  // Debug logging
-  useEffect(() => {
-    console.log('=== Calendar Debug ===');
-    console.log('Selected timezone:', timezone);
-    console.log('Today date string:', todayDateStr);
-    console.log('Tomorrow date string:', tomorrowDateStr);
-    console.log('Total events fetched:', allGoogleEvents.length);
-    console.log("Today's classes count:", todaysGoogleClasses.length);
-    console.log("Upcoming classes count:", upcomingGoogleClasses.length);
-    if (todaysGoogleClasses.length > 0) {
-      console.log("Today's classes:", todaysGoogleClasses.map(c => ({ 
-        title: c.title, 
-        start: c.start.toString(),
-        dateInTz: getEventDateInTimezone(c.start, timezone)
-      })));
-    }
-    if (upcomingGoogleClasses.length > 0) {
-      console.log("Upcoming classes:", upcomingGoogleClasses.map(c => ({ 
-        title: c.title, 
-        start: c.start.toString(),
-        dateInTz: getEventDateInTimezone(c.start, timezone)
-      })));
-    }
-  }, [timezone, todaysGoogleClasses, upcomingGoogleClasses, todayDateStr, tomorrowDateStr, allGoogleEvents]);
-  
-  
-  // Combine user calendar events with Google Calendar events for selected date
-  type CombinedCalendarEvent = {
-    id: string;
-    title: string;
-    time?: string;
-    description?: string;
-    type: 'class' | 'habit' | 'reminder' | 'goal';
-    color: string;
-    isGoogleCalendar: boolean;
-  };
-  
-  const allSelectedDateEvents: CombinedCalendarEvent[] = [
-    ...selectedDateEvents.map(event => ({
-      id: event.id,
-      title: event.title,
-      time: event.time,
-      description: event.description,
-      type: event.type,
-      color: event.color,
-      isGoogleCalendar: false,
-    })),
-    ...googleEventsForSelectedDate.map(event => ({
-      id: `google-${event.id}`,
-      title: event.title,
-      time: event.allDay ? undefined : format(event.start, 'HH:mm'),
-      description: event.description,
-      type: 'class' as const,
-      color: '#7986cb',
-      isGoogleCalendar: true,
-    }))
-  ];
-
-  // Debug logging
-  useEffect(() => {
-    console.log("Today's Google Classes:", todaysGoogleClasses);
-    console.log('Calendar loading:', calendarLoading);
-  }, [todaysGoogleClasses, calendarLoading]);
 
   const handleAddEvent = () => {
     if (newEvent.title.trim()) {
@@ -225,222 +111,18 @@ export default function Calendar() {
         </div>
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-6">
-        {/* Main Content Area */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Embedded Google Calendar */}
-          <div className="card">
-            <h2 className="text-xl font-display font-semibold text-gray-900 mb-4">
-              Calendar
-            </h2>
-            <div className="w-full" style={{ height: '600px' }}>
-              <iframe
-                src={`https://calendar.google.com/calendar/embed?height=600&wkst=1&ctz=${encodeURIComponent(timezone)}&showPrint=0&mode=WEEK&src=ZW1pbHlicm93ZXJsaWZlY29hY2hAZ21haWwuY29t&color=%237986cb`}
-                style={{ border: 'solid 1px #777', width: '100%', height: '100%', borderWidth: 0 }}
-                frameBorder="0"
-                scrolling="no"
-              />
-            </div>
-          </div>
-
-        </div>
-
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Selected Date Events */}
-          <div className="card">
-            <h3 className="font-semibold text-gray-900 mb-4">
-              {format(selectedDate, 'EEEE, MMMM d')}
-            </h3>
-
-            {allSelectedDateEvents.length > 0 ? (
-              <div className="space-y-3">
-                {allSelectedDateEvents.map((event) => {
-                  const eventType = eventTypes.find((t) => t.id === event.type);
-                  const IconComponent = eventType?.icon || Bell;
-
-                  return (
-                    <div
-                      key={event.id}
-                      className="flex items-start gap-3 p-3 rounded-xl"
-                      style={{ backgroundColor: event.color + '30' }}
-                    >
-                      <div
-                        className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                        style={{ backgroundColor: event.color }}
-                      >
-                        <IconComponent className="w-4 h-4 text-gray-700" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-gray-900">{event.title}</p>
-                        {event.time && (
-                          <p className="text-sm text-gray-500 flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            {event.time}
-                          </p>
-                        )}
-                        {event.description && (
-                          <p className="text-sm text-gray-500 mt-1">{event.description}</p>
-                        )}
-                      </div>
-                      {!event.isGoogleCalendar && (
-                        <button
-                          onClick={() => deleteCalendarEvent(event.id)}
-                          className="p-1 text-gray-400 hover:text-red-500 rounded"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <p className="text-gray-500 text-sm">No events scheduled for this day</p>
-            )}
-
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="w-full mt-4 py-2 px-4 rounded-xl border-2 border-dashed border-gray-200 text-gray-500 hover:border-coral-300 hover:text-coral-500 transition-colors flex items-center justify-center gap-2"
-            >
-              <Plus className="w-4 h-4" />
-              Add Event
-            </button>
-          </div>
-
-          {/* Upcoming Classes - Schedule View */}
-          <div className="card">
-            <h3 className="font-semibold text-gray-900 mb-4">Upcoming Classes</h3>
-            {calendarLoading ? (
-              <p className="text-gray-500 text-sm">Loading classes...</p>
-            ) : upcomingGoogleClasses.length > 0 ? (
-              <div className="space-y-3">
-                {upcomingGoogleClasses.map((classItem) => {
-                  const now = new Date();
-                  const hasPassed = isBefore(classItem.end || classItem.start, now);
-                  const classColor = '#7986cb';
-                  
-                  return (
-                    <div
-                      key={classItem.id}
-                      className={`flex items-start gap-3 p-3 rounded-xl border-l-4 transition-all ${
-                        hasPassed 
-                          ? 'opacity-60 bg-gray-50 border-gray-300' 
-                          : 'bg-blue-50 border-blue-500 hover:bg-blue-100'
-                      }`}
-                    >
-                      <div className="flex-shrink-0">
-                        <div
-                          className="w-8 h-8 rounded-lg flex items-center justify-center"
-                          style={{ backgroundColor: hasPassed ? '#9ca3af' : classColor }}
-                        >
-                          <Video className="w-4 h-4 text-white" />
-                        </div>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex-1">
-                            <p className={`font-medium text-gray-900 mb-1 ${
-                              hasPassed ? 'line-through' : ''
-                            }`}>
-                              {classItem.title}
-                            </p>
-                            <div className="flex items-center gap-1 text-sm text-gray-600">
-                              <Clock className="w-3 h-3" />
-                              <span>
-                                {classItem.allDay 
-                                  ? 'All Day'
-                                  : `${format(classItem.start, 'EEE, MMM d, h:mm a')}${classItem.end ? ` - ${format(classItem.end, 'h:mm a')}` : ''}`}
-                              </span>
-                            </div>
-                            {classItem.description && !hasPassed && (
-                              <p className="text-sm text-gray-500 mt-1">{classItem.description}</p>
-                            )}
-                          </div>
-                          {hasPassed && (
-                            <span className="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded flex-shrink-0">
-                              Past
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <p className="text-gray-500 text-sm">No upcoming classes scheduled.</p>
-            )}
-          </div>
-
-          {/* Today's Classes */}
-          <div className="card">
-            <h3 className="font-semibold text-gray-900 mb-4">Today&apos;s Classes</h3>
-            {calendarLoading ? (
-              <p className="text-gray-500 text-sm">Loading calendar events...</p>
-            ) : (
-              <div className="space-y-3">
-                {todaysGoogleClasses.length > 0 ? (
-                  todaysGoogleClasses.map((classItem) => {
-                    const now = new Date();
-                    const hasPassed = isBefore(classItem.end || classItem.start, now);
-                    const classColor = '#7986cb'; // Google Calendar blue color
-                    
-                    return (
-                      <div
-                        key={classItem.id}
-                        className={`flex items-start gap-3 p-3 rounded-xl transition-opacity ${
-                          hasPassed ? 'opacity-60' : ''
-                        }`}
-                        style={{ backgroundColor: hasPassed ? '#f3f4f6' : classColor + '30' }}
-                      >
-                        <div
-                          className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                          style={{ backgroundColor: hasPassed ? '#9ca3af' : classColor }}
-                        >
-                          <Video className="w-4 h-4 text-white" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className={`font-medium text-gray-900 ${
-                            hasPassed ? 'line-through' : ''
-                          }`}>
-                            {classItem.title}
-                          </p>
-                          <p className="text-sm text-gray-500 flex items-center gap-1 mt-1">
-                            <Clock className="w-3 h-3" />
-                            {classItem.allDay 
-                              ? 'All Day'
-                              : `${format(classItem.start, 'h:mm a')}${classItem.end ? ` - ${format(classItem.end, 'h:mm a')}` : ''}`}
-                          </p>
-                          {classItem.description && !hasPassed && (
-                            <p className="text-sm text-gray-500 mt-1">{classItem.description}</p>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })
-                ) : (
-                  <p className="text-gray-500 text-sm">No classes scheduled for today.</p>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Event Type Legend */}
-          <div className="card">
-            <h3 className="font-semibold text-gray-900 mb-4">Event Types</h3>
-            <div className="space-y-2">
-              {eventTypes.map((type) => (
-                <div key={type.id} className="flex items-center gap-3">
-                  <div
-                    className="w-4 h-4 rounded"
-                    style={{ backgroundColor: type.color }}
-                  />
-                  <span className="text-sm text-gray-600">{type.name}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+      {/* Embedded Google Calendar */}
+      <div className="card">
+        <h2 className="text-xl font-display font-semibold text-gray-900 mb-4">
+          Calendar
+        </h2>
+        <div className="w-full" style={{ height: '600px' }}>
+          <iframe
+            src={`https://calendar.google.com/calendar/embed?height=600&wkst=1&ctz=${encodeURIComponent(timezone)}&showPrint=0&mode=WEEK&src=ZW1pbHlicm93ZXJsaWZlY29hY2hAZ21haWwuY29t&color=%237986cb`}
+            style={{ border: 'solid 1px #777', width: '100%', height: '100%', borderWidth: 0 }}
+            frameBorder="0"
+            scrolling="no"
+          />
         </div>
       </div>
 

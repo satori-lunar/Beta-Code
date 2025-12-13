@@ -92,11 +92,10 @@ function parseICalDate(dateStr: string, isDate = false): Date {
   }
   
   if (isDate) {
-    // YYYYMMDD format (all-day events)
+    // YYYYMMDD format (all-day events) - use local timezone
     const year = parseInt(dateStr.substring(0, 4), 10);
     const month = parseInt(dateStr.substring(4, 6), 10) - 1;
     const day = parseInt(dateStr.substring(6, 8), 10);
-    // Create date in local timezone for all-day events
     return new Date(year, month, day);
   } else {
     // YYYYMMDDTHHMMSS[Z] format
@@ -135,82 +134,83 @@ export function useGoogleCalendar(calendarEmail: string = 'emilybrowerlifecoach@
         setLoading(true);
         setError(null);
         
-        // Try to fetch via Supabase Edge Function first (avoids CORS)
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-        let icalData: string | null = null;
+        // Direct fetch from Google Calendar iCal feed
+        const encodedEmail = encodeURIComponent(calendarEmail);
+        const icalUrl = `https://calendar.google.com/calendar/ical/${encodedEmail}/public/basic.ics`;
         
-        if (supabaseUrl) {
-          try {
-            console.log('Attempting to fetch via Supabase Edge Function...');
-            const functionUrl = `${supabaseUrl}/functions/v1/fetch-google-calendar`;
-            const functionResponse = await fetch(functionUrl, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-              },
-              body: JSON.stringify({ calendarEmail }),
-            });
-            
-            if (functionResponse.ok) {
-              const result = await functionResponse.json();
-              icalData = result.data;
-              console.log('Fetched via Edge Function, iCal length:', icalData?.length);
-            } else {
-              console.log('Edge Function failed, trying direct fetch...');
-            }
-          } catch (edgeFunctionError) {
-            console.log('Edge Function error, trying direct fetch:', edgeFunctionError);
-          }
+        console.log('Fetching Google Calendar from:', icalUrl);
+        const response = await fetch(icalUrl);
+        
+        if (!response.ok) {
+          const errorText = await response.text().catch(() => 'Unknown error');
+          console.error('Calendar fetch failed:', response.status, response.statusText, errorText);
+          throw new Error(`Failed to fetch calendar: ${response.status} ${response.statusText}. Make sure the calendar is set to "Public" in Google Calendar sharing settings.`);
         }
         
-        // Fallback to direct fetch if Edge Function doesn't work
-        if (!icalData) {
-          const encodedEmail = encodeURIComponent(calendarEmail);
-          const icalUrl = `https://calendar.google.com/calendar/ical/${encodedEmail}/public/basic.ics`;
-          
-          console.log('Fetching Google Calendar directly from:', icalUrl);
-          const response = await fetch(icalUrl);
-          
-          if (!response.ok) {
-            console.error('Calendar fetch failed:', response.status, response.statusText);
-            throw new Error(`Failed to fetch calendar: ${response.status} ${response.statusText}. Make sure the calendar is set to "Public" in Google Calendar sharing settings.`);
-          }
-          
-          icalData = await response.text();
-          console.log('Fetched directly, iCal length:', icalData.length);
-        }
-        
-        console.log('iCal data preview:', icalData.substring(0, 500));
+        const icalData = await response.text();
+        console.log('iCal data fetched, length:', icalData.length);
+        console.log('iCal data preview (first 1000 chars):', icalData.substring(0, 1000));
         
         const parsedEvents = parseICal(icalData);
-        console.log('Parsed events count:', parsedEvents.length);
-        console.log('Parsed events:', parsedEvents);
+        console.log('Total parsed events:', parsedEvents.length);
+        parsedEvents.forEach((event, idx) => {
+          console.log(`Event ${idx + 1}: "${event.title}" - Start: ${event.start}, End: ${event.end}, AllDay: ${event.allDay}`);
+        });
         
-        // Filter for today's events or upcoming events, sort by start time
+        // Get today's date range (start and end of today) in local timezone
         const now = new Date();
         const today = startOfDay(now);
         const tomorrow = new Date(today);
         tomorrow.setDate(tomorrow.getDate() + 1);
         
-        console.log('Current time:', now);
-        console.log('Today:', today);
+        console.log('=== FILTERING FOR TODAY ===');
+        console.log('Current time:', now.toISOString(), now.toString());
+        console.log('Today start:', today.toISOString(), today.toString());
+        console.log('Tomorrow start:', tomorrow.toISOString(), tomorrow.toString());
+        console.log('Total parsed events:', parsedEvents.length);
         
-        const upcomingEvents = parsedEvents
-          .filter(event => {
-            const eventStart = startOfDay(event.start);
-            const isToday = eventStart >= today && eventStart < tomorrow;
-            const isUpcoming = isAfter(event.start, now) || isAfter(event.end, now) || isToday;
-            console.log(`Event "${event.title}" at ${event.start} (today: ${isToday}, upcoming: ${isUpcoming})`);
-            return isUpcoming;
-          })
-          .sort((a, b) => a.start.getTime() - b.start.getTime());
+        // Filter for ALL events that occur today (regardless of time)
+        const todaysEvents = parsedEvents.filter(event => {
+          const eventStart = new Date(event.start);
+          const eventEnd = new Date(event.end || event.start);
+          const eventStartDay = startOfDay(eventStart);
+          const eventEndDay = startOfDay(eventEnd);
+          
+          // Check if event starts today
+          const startsToday = eventStartDay.getTime() >= today.getTime() && eventStartDay.getTime() < tomorrow.getTime();
+          
+          // Check if event ends today
+          const endsToday = eventEndDay.getTime() >= today.getTime() && eventEndDay.getTime() < tomorrow.getTime();
+          
+          // Check if event spans today (multi-day event)
+          const spansToday = eventStart.getTime() < tomorrow.getTime() && eventEnd.getTime() > today.getTime();
+          
+          const isToday = startsToday || endsToday || spansToday;
+          
+          console.log(`Event: "${event.title}"`);
+          console.log(`  Start: ${eventStart.toISOString()} (${eventStart.toString()})`);
+          console.log(`  End: ${eventEnd.toISOString()} (${eventEnd.toString()})`);
+          console.log(`  Start day: ${eventStartDay.toISOString()}`);
+          console.log(`  Starts today: ${startsToday}, Ends today: ${endsToday}, Spans today: ${spansToday}`);
+          console.log(`  Result: ${isToday ? '✓ INCLUDED' : '✗ EXCLUDED'}`);
+          
+          return isToday;
+        });
         
-        console.log('Upcoming/Today events count:', upcomingEvents.length);
-        setEvents(upcomingEvents);
+        // Sort by start time
+        todaysEvents.sort((a, b) => a.start.getTime() - b.start.getTime());
+        
+        console.log(`=== TODAY'S EVENTS COUNT: ${todaysEvents.length} ===`);
+        todaysEvents.forEach((event, idx) => {
+          console.log(`${idx + 1}. "${event.title}" at ${event.start.toString()}`);
+        });
+        
+        setEvents(todaysEvents);
       } catch (err) {
         console.error('Error fetching Google Calendar:', err);
         setError(err as Error);
+        // Set empty array on error so UI shows "no classes" instead of crashing
+        setEvents([]);
       } finally {
         setLoading(false);
       }

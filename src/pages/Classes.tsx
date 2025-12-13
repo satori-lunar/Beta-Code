@@ -616,7 +616,7 @@ function LiveClassCard({ classItem, isLive }: LiveClassCardProps) {
       <div className="flex items-center justify-between pt-4 border-t border-gray-100">
         <div className="text-sm">
           <span className="text-gray-500">
-            {format(parseISO(classItem.scheduledAt), 'MMM d, h:mm a')}
+            {format(parseISO(classItem.scheduledAt), 'EEEE')}, {format(parseISO(classItem.scheduledAt), 'h:mm a')}
           </span>
         </div>
         <a

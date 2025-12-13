@@ -187,6 +187,32 @@ export default function Classes() {
     (c) => filterBySearch(c.title, c.description) && filterByCategory(c.category)
   );
 
+  // Group live classes by weekday
+  const classesByWeekday = useMemo(() => {
+    const grouped: Record<string, typeof filteredLiveClasses> = {
+      'Sunday': [],
+      'Monday': [],
+      'Tuesday': [],
+      'Wednesday': [],
+      'Thursday': [],
+      'Friday': [],
+      'Saturday': [],
+    };
+
+    filteredLiveClasses.forEach((classItem) => {
+      const weekday = format(parseISO(classItem.scheduledAt), 'EEEE');
+      if (grouped[weekday]) {
+        grouped[weekday].push(classItem);
+      }
+    });
+
+    return grouped;
+  }, [filteredLiveClasses]);
+
+  const weekdayOrder = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const liveClasses = filteredLiveClasses.filter((c) => isClassLive(c.scheduledAt, c.duration));
+  const nonLiveClasses = filteredLiveClasses.filter((c) => !isClassLive(c.scheduledAt, c.duration));
+
   const favoriteSessions = mappedRecordedSessions.filter((s) => s.isFavorite);
   const completedSessions = mappedRecordedSessions.filter((s) => s.isCompleted);
 
@@ -316,41 +342,50 @@ export default function Classes() {
 
       {/* Live Classes */}
       {activeTab === 'live' && (
-        <div className="space-y-6">
+        <div className="space-y-8">
           {/* Live Now */}
-          {filteredLiveClasses.some((c) => isClassLive(c.scheduledAt, c.duration)) && (
+          {liveClasses.length > 0 && (
             <div>
               <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                 <span className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
                 Live Now
               </h2>
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredLiveClasses
-                  .filter((c) => isClassLive(c.scheduledAt, c.duration))
-                  .map((classItem) => (
-                    <LiveClassCard key={classItem.id} classItem={classItem} isLive />
-                  ))}
+                {liveClasses.map((classItem) => (
+                  <LiveClassCard key={classItem.id} classItem={classItem} isLive />
+                ))}
               </div>
             </div>
           )}
 
-          {/* All Classes (recurring weekly, so show all) */}
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">All Classes</h2>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredLiveClasses
-                .filter((c) => !isClassLive(c.scheduledAt, c.duration)) // Exclude live ones (shown in Live Now section)
-                .map((classItem) => (
-                  <LiveClassCard key={classItem.id} classItem={classItem} />
-                ))}
-            </div>
-            {filteredLiveClasses.filter((c) => !isClassLive(c.scheduledAt, c.duration)).length === 0 && (
-              <div className="card text-center py-12">
-                <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-500">No classes found</p>
+          {/* Classes grouped by weekday */}
+          {weekdayOrder.map((weekday) => {
+            const classesForDay = classesByWeekday[weekday] || [];
+            if (classesForDay.length === 0) return null;
+
+            return (
+              <div key={weekday}>
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">{weekday} Classes</h2>
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {classesForDay.map((classItem) => (
+                    <LiveClassCard 
+                      key={classItem.id} 
+                      classItem={classItem} 
+                      isLive={isClassLive(classItem.scheduledAt, classItem.duration)}
+                    />
+                  ))}
+                </div>
               </div>
-            )}
-          </div>
+            );
+          })}
+
+          {/* No classes message */}
+          {nonLiveClasses.length === 0 && liveClasses.length === 0 && (
+            <div className="card text-center py-12">
+              <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+              <p className="text-gray-500">No classes found</p>
+            </div>
+          )}
         </div>
       )}
 

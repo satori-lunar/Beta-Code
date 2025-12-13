@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   ChevronLeft,
   ChevronRight,
@@ -8,7 +8,8 @@ import {
   Video,
   Target,
   Bell,
-  Flag
+  Flag,
+  Globe
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import {
@@ -30,6 +31,23 @@ const eventTypes = [
   { id: 'habit', name: 'Habit', icon: Target, color: '#d8f3dc' },
   { id: 'reminder', name: 'Reminder', icon: Bell, color: '#bde0fe' },
   { id: 'goal', name: 'Goal', icon: Flag, color: '#e2d5f1' },
+];
+
+// Common timezones
+const timezones = [
+  { value: 'America/New_York', label: 'Eastern Time (ET)' },
+  { value: 'America/Chicago', label: 'Central Time (CT)' },
+  { value: 'America/Denver', label: 'Mountain Time (MT)' },
+  { value: 'America/Los_Angeles', label: 'Pacific Time (PT)' },
+  { value: 'America/Phoenix', label: 'Arizona Time (MST)' },
+  { value: 'America/Anchorage', label: 'Alaska Time (AKT)' },
+  { value: 'Pacific/Honolulu', label: 'Hawaii Time (HST)' },
+  { value: 'UTC', label: 'UTC' },
+  { value: 'Europe/London', label: 'London (GMT)' },
+  { value: 'Europe/Paris', label: 'Paris (CET)' },
+  { value: 'Asia/Tokyo', label: 'Tokyo (JST)' },
+  { value: 'Asia/Shanghai', label: 'Shanghai (CST)' },
+  { value: 'Australia/Sydney', label: 'Sydney (AEDT)' },
 ];
 
 export default function Calendar() {
@@ -102,13 +120,53 @@ export default function Calendar() {
           </h1>
           <p className="text-gray-500 mt-1">Manage your wellness schedule</p>
         </div>
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="btn-primary flex items-center gap-2 self-start"
-        >
-          <Plus className="w-5 h-5" />
-          Add Event
-        </button>
+        <div className="flex items-center gap-3">
+          {/* Timezone Selector */}
+          <div className="flex items-center gap-2">
+            <Globe className="w-4 h-4 text-gray-500" />
+            <select
+              value={timezone}
+              onChange={(e) => setTimezone(e.target.value)}
+              className="input text-sm py-2 pr-8"
+            >
+              {timezones.map((tz) => (
+                <option key={tz.value} value={tz.value}>
+                  {tz.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          {/* View Toggle */}
+          <div className="flex bg-gray-100 rounded-lg p-1">
+            <button
+              onClick={() => setShowCalendarView('iframe')}
+              className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
+                showCalendarView === 'iframe'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Google Calendar
+            </button>
+            <button
+              onClick={() => setShowCalendarView('grid')}
+              className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
+                showCalendarView === 'grid'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Event Grid
+            </button>
+          </div>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="btn-primary flex items-center gap-2"
+          >
+            <Plus className="w-5 h-5" />
+            Add Event
+          </button>
+        </div>
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6">
@@ -195,6 +253,8 @@ export default function Calendar() {
               </div>
             ))}
           </div>
+            </>
+          )}
         </div>
 
         {/* Sidebar */}

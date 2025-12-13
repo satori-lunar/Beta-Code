@@ -188,82 +188,6 @@ export default function Calendar() {
             </div>
           </div>
 
-          {/* Upcoming Classes - Schedule View */}
-          <div className="card">
-            <div className="mb-6">
-              <h2 className="text-xl font-display font-semibold text-gray-900 mb-2">
-                Upcoming Classes
-              </h2>
-              <p className="text-sm text-gray-500">Schedule view of classes from Google Calendar</p>
-            </div>
-
-            {calendarLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <p className="text-gray-500">Loading classes...</p>
-              </div>
-            ) : googleCalendarEvents.length > 0 ? (
-              <div className="space-y-4">
-                {googleCalendarEvents.map((classItem) => {
-                  const now = new Date();
-                  const hasPassed = isBefore(classItem.end || classItem.start, now);
-                  const classColor = '#7986cb';
-                  
-                  return (
-                    <div
-                      key={classItem.id}
-                      className={`flex items-start gap-4 p-4 rounded-xl border-l-4 transition-all ${
-                        hasPassed 
-                          ? 'opacity-60 bg-gray-50 border-gray-300' 
-                          : 'bg-blue-50 border-blue-500 hover:bg-blue-100'
-                      }`}
-                    >
-                      <div className="flex-shrink-0">
-                        <div
-                          className="w-12 h-12 rounded-lg flex items-center justify-center"
-                          style={{ backgroundColor: hasPassed ? '#9ca3af' : classColor }}
-                        >
-                          <Video className="w-6 h-6 text-white" />
-                        </div>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex-1">
-                            <h3 className={`font-semibold text-gray-900 mb-1 ${
-                              hasPassed ? 'line-through' : ''
-                            }`}>
-                              {classItem.title}
-                            </h3>
-                            <div className="flex items-center gap-4 text-sm text-gray-600">
-                              <div className="flex items-center gap-1">
-                                <Clock className="w-4 h-4" />
-                                <span>
-                                  {classItem.allDay 
-                                    ? 'All Day'
-                                    : `${format(classItem.start, 'EEE, MMM d, h:mm a')}${classItem.end ? ` - ${format(classItem.end, 'h:mm a')}` : ''}`}
-                                </span>
-                              </div>
-                            </div>
-                            {classItem.description && !hasPassed && (
-                              <p className="text-sm text-gray-500 mt-2">{classItem.description}</p>
-                            )}
-                          </div>
-                          {hasPassed && (
-                            <span className="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded">
-                              Past
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="flex items-center justify-center py-12">
-                <p className="text-gray-500">No upcoming classes scheduled.</p>
-              </div>
-            )}
-          </div>
         </div>
 
         {/* Sidebar */}
@@ -327,6 +251,71 @@ export default function Calendar() {
               <Plus className="w-4 h-4" />
               Add Event
             </button>
+          </div>
+
+          {/* Upcoming Classes - Schedule View */}
+          <div className="card">
+            <h3 className="font-semibold text-gray-900 mb-4">Upcoming Classes</h3>
+            {calendarLoading ? (
+              <p className="text-gray-500 text-sm">Loading classes...</p>
+            ) : googleCalendarEvents.length > 0 ? (
+              <div className="space-y-3">
+                {googleCalendarEvents.map((classItem) => {
+                  const now = new Date();
+                  const hasPassed = isBefore(classItem.end || classItem.start, now);
+                  const classColor = '#7986cb';
+                  
+                  return (
+                    <div
+                      key={classItem.id}
+                      className={`flex items-start gap-3 p-3 rounded-xl border-l-4 transition-all ${
+                        hasPassed 
+                          ? 'opacity-60 bg-gray-50 border-gray-300' 
+                          : 'bg-blue-50 border-blue-500 hover:bg-blue-100'
+                      }`}
+                    >
+                      <div className="flex-shrink-0">
+                        <div
+                          className="w-8 h-8 rounded-lg flex items-center justify-center"
+                          style={{ backgroundColor: hasPassed ? '#9ca3af' : classColor }}
+                        >
+                          <Video className="w-4 h-4 text-white" />
+                        </div>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1">
+                            <p className={`font-medium text-gray-900 mb-1 ${
+                              hasPassed ? 'line-through' : ''
+                            }`}>
+                              {classItem.title}
+                            </p>
+                            <div className="flex items-center gap-1 text-sm text-gray-600">
+                              <Clock className="w-3 h-3" />
+                              <span>
+                                {classItem.allDay 
+                                  ? 'All Day'
+                                  : `${format(classItem.start, 'EEE, MMM d, h:mm a')}${classItem.end ? ` - ${format(classItem.end, 'h:mm a')}` : ''}`}
+                              </span>
+                            </div>
+                            {classItem.description && !hasPassed && (
+                              <p className="text-sm text-gray-500 mt-1">{classItem.description}</p>
+                            )}
+                          </div>
+                          {hasPassed && (
+                            <span className="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded flex-shrink-0">
+                              Past
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-gray-500 text-sm">No upcoming classes scheduled.</p>
+            )}
           </div>
 
           {/* Today's Classes */}

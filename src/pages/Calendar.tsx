@@ -12,6 +12,7 @@ import {
   Globe
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
+import { useGoogleCalendar } from '../hooks/useGoogleCalendar';
 import {
   format,
   startOfMonth,
@@ -23,7 +24,9 @@ import {
   subMonths,
   isSameMonth,
   isSameDay,
-  parseISO
+  parseISO,
+  isSameDay as isSameDayCheck,
+  startOfDay
 } from 'date-fns';
 
 const eventTypes = [
@@ -51,7 +54,7 @@ const timezones = [
 ];
 
 export default function Calendar() {
-  const { calendarEvents, addCalendarEvent, deleteCalendarEvent, liveClasses } = useStore();
+  const { calendarEvents, addCalendarEvent, deleteCalendarEvent } = useStore();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showAddModal, setShowAddModal] = useState(false);
@@ -102,10 +105,36 @@ export default function Calendar() {
   const selectedDateEvents = getEventsForDate(selectedDate);
   const selectedDateString = format(selectedDate, 'yyyy-MM-dd');
 
-  // Get upcoming live classes
-  const upcomingClasses = liveClasses
-    .filter((c) => new Date(c.scheduledAt) >= new Date())
-    .slice(0, 3);
+  // Fetch Google Calendar events
+  const { events: googleCalendarEvents, loading: calendarLoading, getEventsForDate: getGoogleEventsForDate, getUpcomingEvents } = useGoogleCalendar();
+
+  // Get Google Calendar events for selected date
+  const googleEventsForSelectedDate = getGoogleEventsForDate(selectedDate);
+  
+  // Combine user calendar events with Google Calendar events for selected date
+  const allSelectedDateEvents = [
+    ...selectedDateEvents.map(event => ({
+      id: event.id,
+      title: event.title,
+      time: event.time,
+      description: event.description,
+      type: event.type,
+      color: event.color,
+      isGoogleCalendar: false,
+    })),
+    ...googleEventsForSelectedDate.map(event => ({
+      id: `google-${event.id}`,
+      title: event.title,
+      time: event.allDay ? undefined : format(event.start, 'HH:mm'),
+      description: event.description,
+      type: 'class' as const,
+      color: '#7986cb',
+      isGoogleCalendar: true,
+    }))
+  ];
+
+  // Get upcoming classes from Google Calendar
+  const upcomingGoogleClasses = getUpcomingEvents(3);
 
   const handleAddEvent = () => {
     if (newEvent.title.trim()) {
@@ -349,27 +378,33 @@ export default function Calendar() {
           {/* Upcoming Classes */}
           <div className="card">
             <h3 className="font-semibold text-gray-900 mb-4">Upcoming Classes</h3>
-            <div className="space-y-3">
-              {upcomingClasses.map((classItem) => (
-                <div
-                  key={classItem.id}
-                  className="flex items-center gap-3 p-3 bg-navy-50 rounded-xl"
-                >
-                  <div className="w-10 h-10 rounded-lg bg-navy-800 flex items-center justify-center flex-shrink-0">
-                    <Video className="w-5 h-5 text-white" />
+            {calendarLoading ? (
+              <p className="text-gray-500 text-sm">Loading calendar events...</p>
+            ) : (
+              <div className="space-y-3">
+                {upcomingGoogleClasses.map((classItem) => (
+                  <div
+                    key={classItem.id}
+                    className="flex items-center gap-3 p-3 bg-navy-50 rounded-xl"
+                  >
+                    <div className="w-10 h-10 rounded-lg bg-navy-800 flex items-center justify-center flex-shrink-0">
+                      <Video className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-gray-900 truncate">{classItem.title}</p>
+                      <p className="text-sm text-gray-500">
+                        {classItem.allDay 
+                          ? format(classItem.start, 'MMM d, yyyy')
+                          : format(classItem.start, 'MMM d, h:mm a')}
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-gray-900 truncate">{classItem.title}</p>
-                    <p className="text-sm text-gray-500">
-                      {format(parseISO(classItem.scheduledAt), 'MMM d, h:mm a')}
-                    </p>
-                  </div>
-                </div>
-              ))}
-              {upcomingClasses.length === 0 && (
-                <p className="text-gray-500 text-sm">No upcoming classes</p>
-              )}
-            </div>
+                ))}
+                {upcomingGoogleClasses.length === 0 && (
+                  <p className="text-gray-500 text-sm">No upcoming classes</p>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Event Type Legend */}

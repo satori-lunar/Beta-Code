@@ -103,7 +103,7 @@ export default function Calendar() {
   const selectedDateEvents = getEventsForDate(selectedDate);
   const selectedDateString = format(selectedDate, 'yyyy-MM-dd');
 
-  // Fetch Google Calendar events
+  // Fetch Google Calendar events - get ALL events, not just today's
   const { loading: calendarLoading, events: googleCalendarEvents, getEventsForDate: getGoogleEventsForDate, getTodaysEvents } = useGoogleCalendar();
 
   // Get Google Calendar events for selected date

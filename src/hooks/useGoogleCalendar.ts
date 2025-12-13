@@ -174,43 +174,33 @@ export function useGoogleCalendar(calendarEmail: string = 'emilybrowerlifecoach@
         console.log('Tomorrow start:', tomorrow.toISOString(), tomorrow.toString());
         console.log('Total parsed events:', parsedEvents.length);
         
-        // Filter for ALL events that occur today (regardless of time)
-        const todaysEvents = parsedEvents.filter(event => {
-          const eventStart = new Date(event.start);
-          const eventEnd = new Date(event.end || event.start);
-          const eventStartDay = startOfDay(eventStart);
-          const eventEndDay = startOfDay(eventEnd);
-          
-          // Check if event starts today
-          const startsToday = eventStartDay.getTime() >= today.getTime() && eventStartDay.getTime() < tomorrow.getTime();
-          
-          // Check if event ends today
-          const endsToday = eventEndDay.getTime() >= today.getTime() && eventEndDay.getTime() < tomorrow.getTime();
-          
-          // Check if event spans today (multi-day event)
-          const spansToday = eventStart.getTime() < tomorrow.getTime() && eventEnd.getTime() > today.getTime();
-          
-          const isToday = startsToday || endsToday || spansToday;
-          
-          console.log(`Event: "${event.title}"`);
-          console.log(`  Start: ${eventStart.toISOString()} (${eventStart.toString()})`);
-          console.log(`  End: ${eventEnd.toISOString()} (${eventEnd.toString()})`);
-          console.log(`  Start day: ${eventStartDay.toISOString()}`);
-          console.log(`  Starts today: ${startsToday}, Ends today: ${endsToday}, Spans today: ${spansToday}`);
-          console.log(`  Result: ${isToday ? '? INCLUDED' : '? EXCLUDED'}`);
-          
-          return isToday;
-        });
+        // Keep ALL upcoming events (not just today) for the calendar view
+        const now = new Date();
+        const allUpcomingEvents = parsedEvents
+          .filter(event => {
+            // Include events that are today or in the future
+            const eventStart = new Date(event.start);
+            const eventEnd = new Date(event.end || event.start);
+            
+            // Include if event hasn't ended yet, or if it's today
+            const eventStartDay = startOfDay(eventStart);
+            const today = startOfDay(now);
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            
+            const isToday = eventStartDay.getTime() >= today.getTime() && eventStartDay.getTime() < tomorrow.getTime();
+            const isUpcoming = eventEnd.getTime() > now.getTime();
+            
+            return isToday || isUpcoming;
+          })
+          .sort((a, b) => a.start.getTime() - b.start.getTime());
         
-        // Sort by start time
-        todaysEvents.sort((a, b) => a.start.getTime() - b.start.getTime());
-        
-        console.log(`=== TODAY'S EVENTS COUNT: ${todaysEvents.length} ===`);
-        todaysEvents.forEach((event, idx) => {
+        console.log(`=== ALL UPCOMING EVENTS COUNT: ${allUpcomingEvents.length} ===`);
+        allUpcomingEvents.forEach((event, idx) => {
           console.log(`${idx + 1}. "${event.title}" at ${event.start.toString()}`);
         });
         
-        setEvents(todaysEvents);
+        setEvents(allUpcomingEvents);
       } catch (err) {
         console.error('Error fetching Google Calendar:', err);
         setError(err as Error);

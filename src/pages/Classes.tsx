@@ -57,12 +57,16 @@ const classImages: Record<string, string> = {
 const courseStyles: Record<string, { gradient: string; icon: any }> = {
   'Wisdom Rising': { gradient: 'from-purple-500 to-indigo-600', icon: Sparkles },
   'Hatha Yoga with Meghan': { gradient: 'from-pink-400 to-rose-500', icon: Flower2 },
+  'Hatha Yoga': { gradient: 'from-pink-400 to-rose-500', icon: Flower2 },
   'Time Management Replay': { gradient: 'from-blue-500 to-cyan-600', icon: Timer },
   'Foundations in Motion': { gradient: 'from-green-500 to-emerald-600', icon: Activity },
   'Nighttime Nurturing': { gradient: 'from-indigo-500 to-purple-600', icon: Moon },
   '2-Bite Tuesdays': { gradient: 'from-orange-400 to-amber-500', icon: UtensilsCrossed },
+  'Refreshed & Ready': { gradient: 'from-yellow-400 to-orange-500', icon: Sunrise },
   'Refreshed and Ready': { gradient: 'from-yellow-400 to-orange-500', icon: Sunrise },
   'Evenings with Emily B': { gradient: 'from-pink-500 to-rose-600', icon: Sunset },
+  'Evenings with Emily B.': { gradient: 'from-pink-500 to-rose-600', icon: Sunset },
+  'The Habit Lab': { gradient: 'from-teal-500 to-cyan-600', icon: Target },
   'Habit Lab': { gradient: 'from-teal-500 to-cyan-600', icon: Target },
   'Energy in Motion': { gradient: 'from-red-500 to-orange-600', icon: Flame },
   'Strength in Motion': { gradient: 'from-slate-600 to-gray-700', icon: Dumbbell },
@@ -339,41 +343,23 @@ export default function Classes() {
             </div>
           )}
 
-          {/* Upcoming */}
-          {filteredLiveClasses.some((c) => isClassUpcoming(c.scheduledAt)) && (
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Upcoming Classes</h2>
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredLiveClasses
-                  .filter((c) => isClassUpcoming(c.scheduledAt))
-                  .map((classItem) => (
-                    <LiveClassCard key={classItem.id} classItem={classItem} />
-                  ))}
+          {/* All Classes (recurring weekly, so show all) */}
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">All Classes</h2>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredLiveClasses
+                .filter((c) => !isClassLive(c.scheduledAt, c.duration)) // Exclude live ones (shown in Live Now section)
+                .map((classItem) => (
+                  <LiveClassCard key={classItem.id} classItem={classItem} />
+                ))}
+            </div>
+            {filteredLiveClasses.filter((c) => !isClassLive(c.scheduledAt, c.duration)).length === 0 && (
+              <div className="card text-center py-12">
+                <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                <p className="text-gray-500">No classes found</p>
               </div>
-            </div>
-          )}
-
-          {/* Past Classes */}
-          {filteredLiveClasses.some((c) => isClassPast(c.scheduledAt, c.duration)) && (
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Past Classes</h2>
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredLiveClasses
-                  .filter((c) => isClassPast(c.scheduledAt, c.duration))
-                  .map((classItem) => (
-                    <LiveClassCard key={classItem.id} classItem={classItem} />
-                  ))}
-              </div>
-            </div>
-          )}
-
-          {/* No classes message */}
-          {filteredLiveClasses.length === 0 && (
-            <div className="card text-center py-12">
-              <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500">No classes found</p>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       )}
 
@@ -594,18 +580,32 @@ interface LiveClassCardProps {
 }
 
 function LiveClassCard({ classItem, isLive }: LiveClassCardProps) {
-  const gradientClass = classImages[classItem.category] || 'from-coral-400 to-coral-600';
+  const classStyle = courseStyles[classItem.title] || {
+    gradient: classImages[classItem.category] || 'from-coral-400 to-coral-600',
+    icon: Video
+  };
+  const IconComponent = classStyle.icon;
 
   return (
-    <div className="card overflow-hidden hover:shadow-elevated transition-shadow">
-      <div className={`h-32 bg-gradient-to-br ${gradientClass} -mx-6 -mt-6 mb-4 relative flex items-center justify-center`}>
+    <div className="card overflow-hidden hover:shadow-elevated transition-shadow group">
+      <div className={`h-32 bg-gradient-to-br ${classStyle.gradient} -mx-6 -mt-6 mb-4 relative overflow-hidden`}>
         {isLive && (
-          <div className="absolute top-3 left-3 px-3 py-1 bg-red-500 text-white text-xs font-medium rounded-full flex items-center gap-1">
+          <div className="absolute top-3 left-3 px-3 py-1 bg-red-500 text-white text-xs font-medium rounded-full flex items-center gap-1 z-10">
             <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
             LIVE
           </div>
         )}
-        <Video className="w-12 h-12 text-white/80" />
+        {/* Icon - always visible, glows on hover */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <IconComponent className="w-12 h-12 text-white/90 group-hover:text-white transition-all duration-300 group-hover:scale-110 group-hover:drop-shadow-[0_0_20px_rgba(255,255,255,0.8)] group-hover:filter group-hover:brightness-110" />
+        </div>
+        {/* Decorative pattern overlay */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.3),transparent_50%)]"></div>
+          <div className="absolute bottom-0 right-0 w-full h-full bg-[radial-gradient(circle_at_70%_70%,rgba(255,255,255,0.2),transparent_50%)]"></div>
+        </div>
+        {/* Subtle overlay on hover for extra depth */}
+        <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
       </div>
 
       <h3 className="font-semibold text-gray-900 mb-2">{classItem.title}</h3>

@@ -71,7 +71,7 @@ export default function Calendar() {
   const selectedDateString = format(selectedDate, 'yyyy-MM-dd');
 
   // Fetch Google Calendar events - get ALL events, not just today's
-  const { loading: calendarLoading, getEventsForDate: getGoogleEventsForDate, getTodaysEvents } = useGoogleCalendar();
+  const { loading: calendarLoading, getEventsForDate: getGoogleEventsForDate } = useGoogleCalendar();
 
   // Helper function to get current date in the selected timezone
   const getDateInTimezone = (timezone: string): Date => {

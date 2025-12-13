@@ -61,24 +61,6 @@ export default function Calendar() {
     localStorage.setItem('calendar_timezone', timezone);
   }, [timezone]);
 
-  const monthStart = startOfMonth(currentMonth);
-  const monthEnd = endOfMonth(monthStart);
-  const startDate = startOfWeek(monthStart, { weekStartsOn: 1 });
-  const endDate = endOfWeek(monthEnd, { weekStartsOn: 1 });
-
-  const rows: Date[][] = [];
-  let days: Date[] = [];
-  let day = startDate;
-
-  while (day <= endDate) {
-    for (let i = 0; i < 7; i++) {
-      days.push(day);
-      day = addDays(day, 1);
-    }
-    rows.push(days);
-    days = [];
-  }
-
   const getEventsForDate = (date: Date) => {
     const dateString = format(date, 'yyyy-MM-dd');
     return calendarEvents.filter((event) => event.date === dateString);

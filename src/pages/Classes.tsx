@@ -115,15 +115,6 @@ export default function Classes() {
     return isAfter(now, startTime) && isBefore(now, endTime);
   };
 
-  const isClassUpcoming = (scheduledAt: string) => {
-    return isAfter(parseISO(scheduledAt), now);
-  };
-
-  const isClassPast = (scheduledAt: string, duration: number) => {
-    const endTime = addHours(parseISO(scheduledAt), duration / 60);
-    return isBefore(endTime, now);
-  };
-
   // Map Supabase data to component format
   const mappedRecordedSessions = useMemo(() => {
     return (recordedSessions || []).map(session => ({

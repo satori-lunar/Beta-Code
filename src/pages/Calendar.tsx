@@ -141,7 +141,13 @@ export default function Calendar() {
   ];
 
   // Get upcoming classes from Google Calendar
-  const upcomingGoogleClasses = getUpcomingEvents(3);
+  const upcomingGoogleClasses = getUpcomingEvents(10);
+  
+  // Debug logging
+  useEffect(() => {
+    console.log('Upcoming Google Classes:', upcomingGoogleClasses);
+    console.log('Calendar loading:', calendarLoading);
+  }, [upcomingGoogleClasses, calendarLoading]);
 
   const handleAddEvent = () => {
     if (newEvent.title.trim()) {

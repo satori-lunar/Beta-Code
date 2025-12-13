@@ -122,28 +122,43 @@ export function useGoogleCalendar(calendarEmail: string = 'emilybrowerlifecoach@
         setError(null);
         
         // Google Calendar public iCal feed URL
+        // Try both the email format and the calendar ID format
         const encodedEmail = encodeURIComponent(calendarEmail);
         const icalUrl = `https://calendar.google.com/calendar/ical/${encodedEmail}/public/basic.ics`;
         
+        console.log('Fetching Google Calendar from:', icalUrl);
         const response = await fetch(icalUrl);
         
         if (!response.ok) {
-          throw new Error(`Failed to fetch calendar: ${response.statusText}`);
+          console.error('Calendar fetch failed:', response.status, response.statusText);
+          throw new Error(`Failed to fetch calendar: ${response.status} ${response.statusText}`);
         }
         
         const icalData = await response.text();
+        console.log('iCal data received, length:', icalData.length);
+        console.log('iCal data preview:', icalData.substring(0, 500));
+        
         const parsedEvents = parseICal(icalData);
+        console.log('Parsed events count:', parsedEvents.length);
+        console.log('Parsed events:', parsedEvents);
         
         // Filter out past events and sort by start time
         const now = new Date();
+        console.log('Current time:', now);
         const upcomingEvents = parsedEvents
-          .filter(event => isAfter(event.start, now) || isAfter(event.end, now))
+          .filter(event => {
+            const isUpcoming = isAfter(event.start, now) || isAfter(event.end, now);
+            console.log(`Event "${event.title}" at ${event.start}: ${isUpcoming ? 'upcoming' : 'past'}`);
+            return isUpcoming;
+          })
           .sort((a, b) => a.start.getTime() - b.start.getTime());
         
+        console.log('Upcoming events count:', upcomingEvents.length);
         setEvents(upcomingEvents);
       } catch (err) {
         console.error('Error fetching Google Calendar:', err);
         setError(err as Error);
+        // Don't set loading to false on error so we can show error state
       } finally {
         setLoading(false);
       }

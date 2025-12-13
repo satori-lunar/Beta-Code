@@ -104,13 +104,22 @@ export default function Calendar() {
   const selectedDateString = format(selectedDate, 'yyyy-MM-dd');
 
   // Fetch Google Calendar events
-  const { loading: calendarLoading, getEventsForDate: getGoogleEventsForDate, getTodaysEvents } = useGoogleCalendar();
+  const { loading: calendarLoading, events: googleCalendarEvents, getEventsForDate: getGoogleEventsForDate, getTodaysEvents } = useGoogleCalendar();
 
   // Get Google Calendar events for selected date
   const googleEventsForSelectedDate = getGoogleEventsForDate(selectedDate);
   
   // Get today's classes from Google Calendar
   const todaysGoogleClasses = getTodaysEvents();
+  
+  // Get Google Calendar events for any date (for the upcoming classes calendar)
+  const getGoogleEventsForCalendarDate = (date: Date) => {
+    const dateString = format(date, 'yyyy-MM-dd');
+    return googleCalendarEvents.filter((event) => {
+      const eventDate = format(event.start, 'yyyy-MM-dd');
+      return eventDate === dateString;
+    });
+  };
   
   // Combine user calendar events with Google Calendar events for selected date
   type CombinedCalendarEvent = {
@@ -296,93 +305,184 @@ export default function Calendar() {
           )}
         </div>
 
-        {/* Legacy Calendar Grid View (hidden by default) */}
-        {showCalendarView === 'grid' && (
-          <div className="lg:col-span-2 card hidden">
-            <>
-              {/* Calendar Header */}
-              <div className="flex items-center justify-between mb-6">
-                <button
-                  onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <ChevronLeft className="w-5 h-5 text-gray-600" />
-                </button>
-                <h2 className="text-xl font-display font-semibold text-gray-900">
-                  {format(currentMonth, 'MMMM yyyy')}
-                </h2>
-                <button
-                  onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <ChevronRight className="w-5 h-5 text-gray-600" />
-                </button>
-              </div>
+            {/* Calendar Header */}
+            <div className="flex items-center justify-between mb-6">
+              <button
+                onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <ChevronLeft className="w-5 h-5 text-gray-600" />
+              </button>
+              <h2 className="text-xl font-display font-semibold text-gray-900">
+                {format(currentMonth, 'MMMM yyyy')}
+              </h2>
+              <button
+                onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <ChevronRight className="w-5 h-5 text-gray-600" />
+              </button>
+            </div>
 
-              {/* Days of Week */}
-              <div className="grid grid-cols-7 mb-2">
-                {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
-                  <div key={day} className="text-center text-sm font-medium text-gray-500 py-2">
-                    {day}
-                  </div>
-                ))}
-              </div>
+            {/* Days of Week */}
+            <div className="grid grid-cols-7 mb-2">
+              {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
+                <div key={day} className="text-center text-sm font-medium text-gray-500 py-2">
+                  {day}
+                </div>
+              ))}
+            </div>
 
-              {/* Calendar Grid */}
-              <div className="border border-gray-100 rounded-xl overflow-hidden">
-                {rows.map((week, weekIndex) => (
-                  <div key={weekIndex} className="grid grid-cols-7">
-                    {week.map((day, dayIndex) => {
-                      const dayEvents = getEventsForDate(day);
-                      const isCurrentMonth = isSameMonth(day, currentMonth);
-                      const isSelected = isSameDay(day, selectedDate);
-                      const isToday = isSameDay(day, new Date());
+            {/* Calendar Grid */}
+            <div className="border border-gray-100 rounded-xl overflow-hidden">
+              {rows.map((week, weekIndex) => (
+                <div key={weekIndex} className="grid grid-cols-7">
+                  {week.map((day, dayIndex) => {
+                    const dayEvents = getEventsForDate(day);
+                    const isCurrentMonth = isSameMonth(day, currentMonth);
+                    const isSelected = isSameDay(day, selectedDate);
+                    const isToday = isSameDay(day, new Date());
 
-                      return (
-                        <button
-                          key={dayIndex}
-                          onClick={() => setSelectedDate(day)}
-                          className={`min-h-[80px] p-2 border-b border-r border-gray-100 text-left transition-colors ${
-                            !isCurrentMonth ? 'bg-gray-50 text-gray-400' : 'hover:bg-gray-50'
-                          } ${isSelected ? 'bg-coral-50' : ''}`}
-                        >
-                          <div className="flex items-center justify-between mb-1">
-                            <span
-                              className={`text-sm font-medium ${
-                                isToday
-                                  ? 'w-7 h-7 bg-coral-500 text-white rounded-full flex items-center justify-center'
-                                  : isSelected
-                                  ? 'text-coral-600'
-                                  : ''
-                              }`}
+                    return (
+                      <button
+                        key={dayIndex}
+                        onClick={() => setSelectedDate(day)}
+                        className={`min-h-[80px] p-2 border-b border-r border-gray-100 text-left transition-colors ${
+                          !isCurrentMonth ? 'bg-gray-50 text-gray-400' : 'hover:bg-gray-50'
+                        } ${isSelected ? 'bg-coral-50' : ''}`}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <span
+                            className={`text-sm font-medium ${
+                              isToday
+                                ? 'w-7 h-7 bg-coral-500 text-white rounded-full flex items-center justify-center'
+                                : isSelected
+                                ? 'text-coral-600'
+                                : ''
+                            }`}
+                          >
+                            {format(day, 'd')}
+                          </span>
+                        </div>
+                        <div className="space-y-1">
+                          {dayEvents.slice(0, 2).map((event) => (
+                            <div
+                              key={event.id}
+                              className="text-xs px-1.5 py-0.5 rounded truncate"
+                              style={{ backgroundColor: event.color }}
                             >
-                              {format(day, 'd')}
-                            </span>
-                          </div>
-                          <div className="space-y-1">
-                            {dayEvents.slice(0, 2).map((event) => (
-                              <div
-                                key={event.id}
-                                className="text-xs px-1.5 py-0.5 rounded truncate"
-                                style={{ backgroundColor: event.color }}
-                              >
-                                {event.title}
-                              </div>
-                            ))}
-                            {dayEvents.length > 2 && (
-                              <div className="text-xs text-gray-500">
-                                +{dayEvents.length - 2} more
-                              </div>
-                            )}
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                ))}
+                              {event.title}
+                            </div>
+                          ))}
+                          {dayEvents.length > 2 && (
+                            <div className="text-xs text-gray-500">
+                              +{dayEvents.length - 2} more
+                            </div>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Upcoming Classes Calendar */}
+          <div className="card">
+            <div className="mb-6">
+              <h2 className="text-xl font-display font-semibold text-gray-900 mb-2">
+                Upcoming Classes
+              </h2>
+              <p className="text-sm text-gray-500">Classes from Google Calendar</p>
+            </div>
+
+            {calendarLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <p className="text-gray-500">Loading classes...</p>
               </div>
-            </>
-          )}
+            ) : (
+              <>
+                {/* Calendar Header */}
+                <div className="flex items-center justify-between mb-6">
+                  <button
+                    onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <ChevronLeft className="w-5 h-5 text-gray-600" />
+                  </button>
+                  <h3 className="text-lg font-display font-semibold text-gray-900">
+                    {format(currentMonth, 'MMMM yyyy')}
+                  </h3>
+                  <button
+                    onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <ChevronRight className="w-5 h-5 text-gray-600" />
+                  </button>
+                </div>
+
+                {/* Days of Week */}
+                <div className="grid grid-cols-7 mb-2">
+                  {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
+                    <div key={day} className="text-center text-sm font-medium text-gray-500 py-2">
+                      {day}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Calendar Grid for Google Calendar Events */}
+                <div className="border border-gray-100 rounded-xl overflow-hidden">
+                  {rows.map((week, weekIndex) => (
+                    <div key={weekIndex} className="grid grid-cols-7">
+                      {week.map((day, dayIndex) => {
+                        const dayGoogleEvents = getGoogleEventsForCalendarDate(day);
+                        const isCurrentMonth = isSameMonth(day, currentMonth);
+                        const isToday = isSameDay(day, new Date());
+
+                        return (
+                          <div
+                            key={dayIndex}
+                            className={`min-h-[80px] p-2 border-b border-r border-gray-100 text-left ${
+                              !isCurrentMonth ? 'bg-gray-50 text-gray-400' : ''
+                            }`}
+                          >
+                            <div className="flex items-center justify-between mb-1">
+                              <span
+                                className={`text-sm font-medium ${
+                                  isToday
+                                    ? 'w-7 h-7 bg-blue-500 text-white rounded-full flex items-center justify-center'
+                                    : ''
+                                }`}
+                              >
+                                {format(day, 'd')}
+                              </span>
+                            </div>
+                            <div className="space-y-1">
+                              {dayGoogleEvents.slice(0, 2).map((event) => (
+                                <div
+                                  key={event.id}
+                                  className="text-xs px-1.5 py-0.5 rounded truncate"
+                                  style={{ backgroundColor: '#7986cb' }}
+                                >
+                                  {event.title}
+                                </div>
+                              ))}
+                              {dayGoogleEvents.length > 2 && (
+                                <div className="text-xs text-gray-500">
+                                  +{dayGoogleEvents.length - 2} more
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
         </div>
 
         {/* Sidebar */}

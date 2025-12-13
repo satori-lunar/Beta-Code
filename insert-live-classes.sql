@@ -22,7 +22,7 @@ INSERT INTO public.live_classes (
     'Plan Your Week',
     'Create a calendar/meal/exercise/work plan for your week that you feel confident in following. This is essentially a study hall session to plan your week with a coach available for questions and coaching on calendar follow through.',
     'Coach Emily B',
-    '2024-12-15 07:30:00-05'::timestamptz, -- Sunday, 7:30 AM ET
+    '2024-12-15 07:30:00-05'::timestamptz, -- Sunday, December 15, 7:30 AM ET
     45,
     NULL,
     'Planning'
@@ -42,7 +42,7 @@ INSERT INTO public.live_classes (
     'The Heart of Nourishment',
     'Nourishment is more than food — it''s what feeds your body, mind, heart, and spirit. In this reflective and creative workshop, you''ll be guided through visualization and self-discovery to explore what true nourishment means to you. You''ll create your own "nourishment menu" and reconnect with intention and compassion for your well-being.',
     'Coach Emily M',
-    '2024-12-16 09:00:00-05'::timestamptz, -- Monday, December 16, 9:00 AM ET
+    '2024-12-16 09:00:00-05'::timestamptz, -- Monday, 9:00 AM ET
     45,
     NULL,
     'Nourishment'
@@ -60,7 +60,7 @@ INSERT INTO public.live_classes (
     'Hatha Yoga',
     'Move at your own pace from your own space, with classes encompassing strengthening postures, revitalizing flows, nourishing stretches and soothing relaxation. We''ll alleviate common discomforts, work on balance in the body and in life, and cultivate a calm, clear mind. Recommended props: yoga mat, 2 yoga blocks, yoga strap, blanket.',
     'Meghan',
-    '2024-12-16 16:00:00-05'::timestamptz, -- Monday, 4:00 PM ET
+    '2024-12-16 16:00:00-05'::timestamptz, -- Monday, December 16, 4:00 PM ET
     60,
     NULL,
     'Yoga'
@@ -80,7 +80,7 @@ INSERT INTO public.live_classes (
     'Inner Chords',
     'A unique space where music and poetry meet reflection. This class helps you access feelings you may not otherwise know how to reach. Come ready to journal, listen, and let the notes guide you into deeper awareness. Ride into your day with company as you tune in — this hour offers a mix of calm, uplift, and transformative energy. Because this class meets at the start of your morning, we''ll steer toward emotions that energize and ground you: peace, clarity, connection, and lightness. Think of it as a reset for your inner world — helping you feel better on purpose before the day begins.',
     'Coach Emily M',
-    '2024-12-17 08:00:00-05'::timestamptz, -- Tuesday, December 17, 8:00 AM ET
+    '2024-12-17 08:00:00-05'::timestamptz, -- Tuesday, 8:00 AM ET
     45,
     NULL,
     'Meditation'
@@ -127,7 +127,7 @@ INSERT INTO public.live_classes (
     'Refreshed & Ready',
     'Give yourself a midweek moment to breathe, reset, and get clear. In this workshop, we''ll slow down long enough to notice what''s weighing on your mind, sort through the mental clutter, and choose one simple next step that brings you back into focus. You''ll leave feeling lighter, steady, and ready to move through the rest of your week with clarity and confidence.',
     'Birch & Stone Coaching',
-    '2024-12-18 06:30:00-05'::timestamptz, -- Wednesday, December 18, 6:30 AM ET
+    '2024-12-18 06:30:00-05'::timestamptz, -- Wednesday, 6:30 AM ET
     45,
     NULL,
     'Wellness'
@@ -165,25 +165,16 @@ INSERT INTO public.live_classes (
     'Tangled: Challenging Relationships',
     'Tangled is a space for exploring the complexity of human relationships—whether with partners, parents, children, friends, or colleagues. Many of us find ourselves caught in dynamics that leave us questioning our worth, doubting our voice, or losing sight of who we are. This class helps you gently untangle those knots.',
     'Coach Emily B',
-    '2024-12-19 13:30:00-05'::timestamptz, -- Thursday, December 19, 1:30 PM ET
+    '2024-12-19 13:30:00-05'::timestamptz, -- Thursday, 1:30 PM ET
     45,
     NULL,
     'Relationships'
   ),
   (
-    'Hatha Yoga',
-    'Move at your own pace from your own space, with classes encompassing strengthening postures, revitalizing flows, nourishing stretches and soothing relaxation. We''ll alleviate common discomforts, work on balance in the body and in life, and cultivate a calm, clear mind. Recommended props: yoga mat, 2 yoga blocks, yoga strap, blanket.',
-    'Meghan',
-    '2024-12-19 16:00:00-05'::timestamptz, -- Thursday, 4:00 PM ET
-    60,
-    NULL,
-    'Yoga'
-  ),
-  (
     'Evenings with Emily B',
     'Settle in for a calm, end-of-day hour with Emily. This class is a soft landing after a long week — a place to exhale, sort through what''s been heavy, and reconnect with yourself before the day is done. Each session offers gentle coaching, simple grounding practices, and one small shift to carry into tomorrow. Come as you are. Leave a little lighter, clearer, and more supported.',
     'Coach Emily B',
-    '2024-12-19 19:30:00-05'::timestamptz, -- Thursday, December 19, 7:30 PM ET
+    '2024-12-19 19:30:00-05'::timestamptz, -- Thursday, 7:30 PM ET
     45,
     NULL,
     'Wellness'
@@ -203,7 +194,7 @@ INSERT INTO public.live_classes (
     'Energy in Motion',
     'Ignite your energy with aerobic interval training that keeps your heart pumping and your body moving. Using styles like Tabata and other high-energy intervals, this class blends bursts of effort with moments of recovery to boost endurance, burn calories, and elevate your mood. Expect a fun, sweat-filled session that leaves you recharged and ready for the day.',
     'Coach Rebecca',
-    '2024-12-20 09:00:00-05'::timestamptz, -- Friday, December 20, 9:00 AM ET
+    '2024-12-20 09:00:00-05'::timestamptz, -- Friday, 9:00 AM ET
     45,
     NULL,
     'Exercise'

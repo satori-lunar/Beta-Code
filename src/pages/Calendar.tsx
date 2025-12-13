@@ -193,29 +193,6 @@ export default function Calendar() {
               ))}
             </select>
           </div>
-          {/* View Toggle */}
-          <div className="flex bg-gray-100 rounded-lg p-1">
-            <button
-              onClick={() => setShowCalendarView('iframe')}
-              className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
-                showCalendarView === 'iframe'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Google Calendar
-            </button>
-            <button
-              onClick={() => setShowCalendarView('grid')}
-              className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
-                showCalendarView === 'grid'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Event Grid
-            </button>
-          </div>
           <button
             onClick={() => setShowAddModal(true)}
             className="btn-primary flex items-center gap-2"
@@ -227,21 +204,101 @@ export default function Calendar() {
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6">
-        {/* Calendar - Google Calendar Iframe or Grid View */}
+        {/* Schedule View - Today's Classes */}
         <div className="lg:col-span-2 card">
-          {showCalendarView === 'iframe' ? (
-            <div className="w-full">
-              <iframe
-                src={calendarUrl}
-                style={{ border: 'solid 1px #777' }}
-                width="100%"
-                height="600"
-                frameBorder="0"
-                scrolling="no"
-                className="rounded-lg"
-              />
+          <div className="mb-6">
+            <h2 className="text-xl font-display font-semibold text-gray-900 mb-2">
+              Today&apos;s Schedule
+            </h2>
+            <p className="text-sm text-gray-500">
+              {format(new Date(), 'EEEE, MMMM d, yyyy')}
+            </p>
+          </div>
+
+          {calendarLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <p className="text-gray-500">Loading schedule...</p>
+            </div>
+          ) : todaysGoogleClasses.length > 0 ? (
+            <div className="space-y-4">
+              {todaysGoogleClasses.map((classItem) => {
+                const now = new Date();
+                const hasPassed = isBefore(classItem.end || classItem.start, now);
+                const isUpcoming = isAfter(classItem.start, now);
+                const classColor = '#7986cb';
+                
+                return (
+                  <div
+                    key={classItem.id}
+                    className={`border-l-4 rounded-r-lg p-4 transition-all ${
+                      hasPassed 
+                        ? 'bg-gray-50 border-gray-300 opacity-60' 
+                        : isUpcoming
+                        ? 'bg-blue-50 border-blue-500'
+                        : 'bg-purple-50 border-purple-500'
+                    }`}
+                    style={{ borderLeftColor: hasPassed ? '#d1d5db' : classColor }}
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <div
+                            className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
+                            style={{ backgroundColor: hasPassed ? '#9ca3af' : classColor }}
+                          >
+                            <Video className="w-5 h-5 text-white" />
+                          </div>
+                          <div>
+                            <h3 className={`font-semibold text-gray-900 ${
+                              hasPassed ? 'line-through' : ''
+                            }`}>
+                              {classItem.title}
+                            </h3>
+                            <div className="flex items-center gap-2 mt-1">
+                              <Clock className="w-4 h-4 text-gray-500" />
+                              <span className="text-sm text-gray-600">
+                                {classItem.allDay 
+                                  ? 'All Day'
+                                  : `${format(classItem.start, 'h:mm a')}${classItem.end ? ` - ${format(classItem.end, 'h:mm a')}` : ''}`}
+                              </span>
+                              {!hasPassed && isUpcoming && (
+                                <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-medium">
+                                  Upcoming
+                                </span>
+                              )}
+                              {!isUpcoming && !hasPassed && (
+                                <span className="text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 font-medium">
+                                  Now
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        {classItem.description && !hasPassed && (
+                          <p className="text-sm text-gray-600 ml-13 mt-2">
+                            {classItem.description}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           ) : (
+            <div className="text-center py-12">
+              <Video className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+              <p className="text-gray-500 font-medium">No classes scheduled for today</p>
+              <p className="text-sm text-gray-400 mt-1">
+                Your schedule will appear here when classes are added to your Google Calendar
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Legacy Calendar Grid View (hidden by default) */}
+        {showCalendarView === 'grid' && (
+          <div className="lg:col-span-2 card hidden">
             <>
               {/* Calendar Header */}
               <div className="flex items-center justify-between mb-6">

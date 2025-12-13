@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { isAfter, startOfDay, isBefore, isToday, format } from 'date-fns';
+import { isAfter, startOfDay } from 'date-fns';
 
 export interface GoogleCalendarEvent {
   id: string;
@@ -248,5 +248,6 @@ export function useGoogleCalendar(calendarEmail: string = 'emilybrowerlifecoach@
     error,
     getEventsForDate,
     getUpcomingEvents,
+    getTodaysEvents,
   };
 }

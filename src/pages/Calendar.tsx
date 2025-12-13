@@ -391,40 +391,60 @@ export default function Calendar() {
             </button>
           </div>
 
-          {/* Upcoming Classes */}
+          {/* Today's Classes */}
           <div className="card">
-            <h3 className="font-semibold text-gray-900 mb-4">Upcoming Classes</h3>
+            <h3 className="font-semibold text-gray-900 mb-4">Today&apos;s Classes</h3>
             {calendarLoading ? (
               <p className="text-gray-500 text-sm">Loading calendar events...</p>
             ) : (
               <div className="space-y-3">
-                {upcomingGoogleClasses.length > 0 ? (
-                  upcomingGoogleClasses.slice(0, 5).map((classItem) => (
-                    <div
-                      key={classItem.id}
-                      className="flex items-center gap-3 p-3 bg-navy-50 rounded-xl"
-                    >
-                      <div className="w-10 h-10 rounded-lg bg-navy-800 flex items-center justify-center flex-shrink-0">
-                        <Video className="w-5 h-5 text-white" />
+                {todaysGoogleClasses.length > 0 ? (
+                  todaysGoogleClasses.map((classItem) => {
+                    const now = new Date();
+                    const hasPassed = isBefore(classItem.end || classItem.start, now);
+                    
+                    return (
+                      <div
+                        key={classItem.id}
+                        className={`flex items-center gap-3 p-3 rounded-xl ${
+                          hasPassed ? 'bg-gray-100 opacity-60' : 'bg-navy-50'
+                        }`}
+                      >
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                          hasPassed ? 'bg-gray-400' : 'bg-navy-800'
+                        }`}>
+                          <Video className="w-5 h-5 text-white" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className={`font-medium truncate ${
+                            hasPassed 
+                              ? 'text-gray-500 line-through' 
+                              : 'text-gray-900'
+                          }`}>
+                            {classItem.title}
+                          </p>
+                          <p className={`text-sm ${
+                            hasPassed ? 'text-gray-400' : 'text-gray-500'
+                          }`}>
+                            {classItem.allDay 
+                              ? format(classItem.start, 'MMM d, yyyy')
+                              : format(classItem.start, 'h:mm a')}
+                            {!classItem.allDay && classItem.end && (
+                              <> - {format(classItem.end, 'h:mm a')}</>
+                            )}
+                          </p>
+                          {classItem.description && !hasPassed && (
+                            <p className="text-xs text-gray-400 mt-1 truncate">{classItem.description}</p>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-gray-900 truncate">{classItem.title}</p>
-                        <p className="text-sm text-gray-500">
-                          {classItem.allDay 
-                            ? format(classItem.start, 'MMM d, yyyy')
-                            : format(classItem.start, 'MMM d, h:mm a')}
-                        </p>
-                        {classItem.description && (
-                          <p className="text-xs text-gray-400 mt-1 truncate">{classItem.description}</p>
-                        )}
-                      </div>
-                    </div>
-                  ))
+                    );
+                  })
                 ) : (
                   <div>
-                    <p className="text-gray-500 text-sm mb-2">No upcoming classes found.</p>
+                    <p className="text-gray-500 text-sm mb-2">No classes scheduled for today.</p>
                     <p className="text-xs text-gray-400">
-                      Make sure your Google Calendar is set to &quot;Public&quot; in sharing settings.
+                      Classes from your Google Calendar will appear here.
                     </p>
                   </div>
                 )}

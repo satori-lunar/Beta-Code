@@ -10,7 +10,7 @@ import {
   Globe
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
-import { useGoogleCalendar, type GoogleCalendarEvent } from '../hooks/useGoogleCalendar';
+import { useGoogleCalendar } from '../hooks/useGoogleCalendar';
 import {
   format,
   isBefore,
@@ -71,7 +71,7 @@ export default function Calendar() {
   const selectedDateString = format(selectedDate, 'yyyy-MM-dd');
 
   // Fetch Google Calendar events - get ALL events, not just today's
-  const { loading: calendarLoading, events: googleCalendarEvents, getEventsForDate: getGoogleEventsForDate, getTodaysEvents } = useGoogleCalendar();
+  const { loading: calendarLoading, getEventsForDate: getGoogleEventsForDate, getTodaysEvents } = useGoogleCalendar();
 
   // Get Google Calendar events for selected date
   const googleEventsForSelectedDate = getGoogleEventsForDate(selectedDate);

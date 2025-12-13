@@ -402,51 +402,43 @@ export default function Calendar() {
                   todaysGoogleClasses.map((classItem) => {
                     const now = new Date();
                     const hasPassed = isBefore(classItem.end || classItem.start, now);
+                    const classColor = '#7986cb'; // Google Calendar blue color
                     
                     return (
                       <div
                         key={classItem.id}
-                        className={`flex items-center gap-3 p-3 rounded-xl ${
-                          hasPassed ? 'bg-gray-100 opacity-60' : 'bg-navy-50'
+                        className={`flex items-start gap-3 p-3 rounded-xl transition-opacity ${
+                          hasPassed ? 'opacity-60' : ''
                         }`}
+                        style={{ backgroundColor: hasPassed ? '#f3f4f6' : classColor + '30' }}
                       >
-                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                          hasPassed ? 'bg-gray-400' : 'bg-navy-800'
-                        }`}>
-                          <Video className="w-5 h-5 text-white" />
+                        <div
+                          className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                          style={{ backgroundColor: hasPassed ? '#9ca3af' : classColor }}
+                        >
+                          <Video className="w-4 h-4 text-white" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className={`font-medium truncate ${
-                            hasPassed 
-                              ? 'text-gray-500 line-through' 
-                              : 'text-gray-900'
+                          <p className={`font-medium text-gray-900 ${
+                            hasPassed ? 'line-through' : ''
                           }`}>
                             {classItem.title}
                           </p>
-                          <p className={`text-sm ${
-                            hasPassed ? 'text-gray-400' : 'text-gray-500'
-                          }`}>
+                          <p className="text-sm text-gray-500 flex items-center gap-1 mt-1">
+                            <Clock className="w-3 h-3" />
                             {classItem.allDay 
-                              ? format(classItem.start, 'MMM d, yyyy')
-                              : format(classItem.start, 'h:mm a')}
-                            {!classItem.allDay && classItem.end && (
-                              <> - {format(classItem.end, 'h:mm a')}</>
-                            )}
+                              ? 'All Day'
+                              : `${format(classItem.start, 'h:mm a')}${classItem.end ? ` - ${format(classItem.end, 'h:mm a')}` : ''}`}
                           </p>
                           {classItem.description && !hasPassed && (
-                            <p className="text-xs text-gray-400 mt-1 truncate">{classItem.description}</p>
+                            <p className="text-sm text-gray-500 mt-1">{classItem.description}</p>
                           )}
                         </div>
                       </div>
                     );
                   })
                 ) : (
-                  <div>
-                    <p className="text-gray-500 text-sm mb-2">No classes scheduled for today.</p>
-                    <p className="text-xs text-gray-400">
-                      Classes from your Google Calendar will appear here.
-                    </p>
-                  </div>
+                  <p className="text-gray-500 text-sm">No classes scheduled for today.</p>
                 )}
               </div>
             )}

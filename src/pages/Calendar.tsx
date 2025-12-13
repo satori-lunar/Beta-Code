@@ -10,7 +10,7 @@ import {
   Globe
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
-import { useGoogleCalendar } from '../hooks/useGoogleCalendar';
+import { useGoogleCalendar, type GoogleCalendarEvent } from '../hooks/useGoogleCalendar';
 import {
   format,
   isBefore
@@ -79,7 +79,7 @@ export default function Calendar() {
   const todaysGoogleClasses = getTodaysEvents();
   
   // Get upcoming classes (future only, excluding today to avoid duplication with "Today's Classes")
-  const upcomingGoogleClasses = googleCalendarEvents.filter(event => {
+  const upcomingGoogleClasses: GoogleCalendarEvent[] = googleCalendarEvents.filter(event => {
     const now = new Date();
     const eventStart = new Date(event.start);
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -268,9 +268,9 @@ export default function Calendar() {
             <h3 className="font-semibold text-gray-900 mb-4">Upcoming Classes</h3>
             {calendarLoading ? (
               <p className="text-gray-500 text-sm">Loading classes...</p>
-            ) : googleCalendarEvents.length > 0 ? (
+            ) : upcomingGoogleClasses.length > 0 ? (
               <div className="space-y-3">
-                {googleCalendarEvents.map((classItem) => {
+                {upcomingGoogleClasses.map((classItem) => {
                   const now = new Date();
                   const hasPassed = isBefore(classItem.end || classItem.start, now);
                   const classColor = '#7986cb';

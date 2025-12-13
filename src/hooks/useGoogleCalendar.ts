@@ -86,26 +86,40 @@ function parseICal(icalData: string): GoogleCalendarEvent[] {
 
 // Parse iCal date format: YYYYMMDDTHHMMSS[Z] or YYYYMMDD
 function parseICalDate(dateStr: string, isDate = false): Date {
+  if (!dateStr || dateStr.length < 8) {
+    console.warn('Invalid date string:', dateStr);
+    return new Date();
+  }
+  
   if (isDate) {
-    // YYYYMMDD format
-    const year = parseInt(dateStr.substring(0, 4));
-    const month = parseInt(dateStr.substring(4, 6)) - 1;
-    const day = parseInt(dateStr.substring(6, 8));
-    return new Date(Date.UTC(year, month, day));
+    // YYYYMMDD format (all-day events)
+    const year = parseInt(dateStr.substring(0, 4), 10);
+    const month = parseInt(dateStr.substring(4, 6), 10) - 1;
+    const day = parseInt(dateStr.substring(6, 8), 10);
+    // Create date in local timezone for all-day events
+    return new Date(year, month, day);
   } else {
     // YYYYMMDDTHHMMSS[Z] format
-    const year = parseInt(dateStr.substring(0, 4));
-    const month = parseInt(dateStr.substring(4, 6)) - 1;
-    const day = parseInt(dateStr.substring(6, 8));
-    const hour = dateStr.length > 9 ? parseInt(dateStr.substring(9, 11)) : 0;
-    const minute = dateStr.length > 11 ? parseInt(dateStr.substring(11, 13)) : 0;
-    const second = dateStr.length > 13 ? parseInt(dateStr.substring(13, 15)) : 0;
+    const year = parseInt(dateStr.substring(0, 4), 10);
+    const month = parseInt(dateStr.substring(4, 6), 10) - 1;
+    const day = parseInt(dateStr.substring(6, 8), 10);
     
-    // If it ends with Z, it's UTC, otherwise assume local time
-    if (dateStr.endsWith('Z')) {
-      return new Date(Date.UTC(year, month, day, hour, minute, second));
+    // Check if it has time component
+    if (dateStr.length >= 15 && dateStr[8] === 'T') {
+      const hour = parseInt(dateStr.substring(9, 11), 10) || 0;
+      const minute = parseInt(dateStr.substring(11, 13), 10) || 0;
+      const second = parseInt(dateStr.substring(13, 15), 10) || 0;
+      
+      // If it ends with Z, it's UTC, otherwise assume local time
+      if (dateStr.endsWith('Z')) {
+        return new Date(Date.UTC(year, month, day, hour, minute, second));
+      } else {
+        // Local timezone
+        return new Date(year, month, day, hour, minute, second);
+      }
     } else {
-      return new Date(year, month, day, hour, minute, second);
+      // Just date, no time
+      return new Date(year, month, day);
     }
   }
 }
@@ -222,16 +236,9 @@ export function useGoogleCalendar(calendarEmail: string = 'emilybrowerlifecoach@
     });
   };
 
-  // Get today's events (events happening today, whether past or future)
+  // Get today's events (already filtered in useEffect, just return all events)
   const getTodaysEvents = (): GoogleCalendarEvent[] => {
-    const today = startOfDay(new Date());
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    
-    return events.filter(event => {
-      const eventStart = startOfDay(event.start);
-      return eventStart >= today && eventStart < tomorrow;
-    }).sort((a, b) => a.start.getTime() - b.start.getTime());
+    return events; // Events are already filtered to today's events
   };
   
   // Get upcoming events (next N events)

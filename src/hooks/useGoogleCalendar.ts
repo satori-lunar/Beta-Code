@@ -121,21 +121,52 @@ export function useGoogleCalendar(calendarEmail: string = 'emilybrowerlifecoach@
         setLoading(true);
         setError(null);
         
-        // Google Calendar public iCal feed URL
-        // Try both the email format and the calendar ID format
-        const encodedEmail = encodeURIComponent(calendarEmail);
-        const icalUrl = `https://calendar.google.com/calendar/ical/${encodedEmail}/public/basic.ics`;
+        // Try to fetch via Supabase Edge Function first (avoids CORS)
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        let icalData: string | null = null;
         
-        console.log('Fetching Google Calendar from:', icalUrl);
-        const response = await fetch(icalUrl);
-        
-        if (!response.ok) {
-          console.error('Calendar fetch failed:', response.status, response.statusText);
-          throw new Error(`Failed to fetch calendar: ${response.status} ${response.statusText}`);
+        if (supabaseUrl) {
+          try {
+            console.log('Attempting to fetch via Supabase Edge Function...');
+            const functionUrl = `${supabaseUrl}/functions/v1/fetch-google-calendar`;
+            const functionResponse = await fetch(functionUrl, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+              },
+              body: JSON.stringify({ calendarEmail }),
+            });
+            
+            if (functionResponse.ok) {
+              const result = await functionResponse.json();
+              icalData = result.data;
+              console.log('Fetched via Edge Function, iCal length:', icalData?.length);
+            } else {
+              console.log('Edge Function failed, trying direct fetch...');
+            }
+          } catch (edgeFunctionError) {
+            console.log('Edge Function error, trying direct fetch:', edgeFunctionError);
+          }
         }
         
-        const icalData = await response.text();
-        console.log('iCal data received, length:', icalData.length);
+        // Fallback to direct fetch if Edge Function doesn't work
+        if (!icalData) {
+          const encodedEmail = encodeURIComponent(calendarEmail);
+          const icalUrl = `https://calendar.google.com/calendar/ical/${encodedEmail}/public/basic.ics`;
+          
+          console.log('Fetching Google Calendar directly from:', icalUrl);
+          const response = await fetch(icalUrl);
+          
+          if (!response.ok) {
+            console.error('Calendar fetch failed:', response.status, response.statusText);
+            throw new Error(`Failed to fetch calendar: ${response.status} ${response.statusText}. Make sure the calendar is set to "Public" in Google Calendar sharing settings.`);
+          }
+          
+          icalData = await response.text();
+          console.log('Fetched directly, iCal length:', icalData.length);
+        }
+        
         console.log('iCal data preview:', icalData.substring(0, 500));
         
         const parsedEvents = parseICal(icalData);
@@ -158,7 +189,6 @@ export function useGoogleCalendar(calendarEmail: string = 'emilybrowerlifecoach@
       } catch (err) {
         console.error('Error fetching Google Calendar:', err);
         setError(err as Error);
-        // Don't set loading to false on error so we can show error state
       } finally {
         setLoading(false);
       }

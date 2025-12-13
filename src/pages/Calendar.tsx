@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react';
 import {
-  ChevronLeft,
-  ChevronRight,
   Plus,
   X,
   Clock,
@@ -15,15 +13,6 @@ import { useStore } from '../store/useStore';
 import { useGoogleCalendar } from '../hooks/useGoogleCalendar';
 import {
   format,
-  startOfMonth,
-  endOfMonth,
-  startOfWeek,
-  endOfWeek,
-  addDays,
-  addMonths,
-  subMonths,
-  isSameMonth,
-  isSameDay,
   isBefore
 } from 'date-fns';
 
@@ -53,8 +42,7 @@ const timezones = [
 
 export default function Calendar() {
   const { calendarEvents, addCalendarEvent, deleteCalendarEvent } = useStore();
-  const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedDate] = useState(new Date());
   const [showAddModal, setShowAddModal] = useState(false);
   const [timezone, setTimezone] = useState<string>(() => {
     // Get timezone from localStorage or default to Eastern Time

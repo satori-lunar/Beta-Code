@@ -231,9 +231,9 @@ export function useGoogleCalendar(calendarEmail: string = 'emilybrowerlifecoach@
     });
   };
 
-  // Get today's events (already filtered in useEffect, just return all events)
+  // Get today's events only
   const getTodaysEvents = (): GoogleCalendarEvent[] => {
-    return events; // Events are already filtered to today's events
+    return getEventsForDate(new Date());
   };
   
   // Get upcoming events (next N events)

@@ -109,7 +109,17 @@ export default function Calendar() {
   const googleEventsForSelectedDate = getGoogleEventsForDate(selectedDate);
   
   // Combine user calendar events with Google Calendar events for selected date
-  const allSelectedDateEvents = [
+  type CombinedCalendarEvent = {
+    id: string;
+    title: string;
+    time?: string;
+    description?: string;
+    type: 'class' | 'habit' | 'reminder' | 'goal';
+    color: string;
+    isGoogleCalendar: boolean;
+  };
+  
+  const allSelectedDateEvents: CombinedCalendarEvent[] = [
     ...selectedDateEvents.map(event => ({
       id: event.id,
       title: event.title,
@@ -319,9 +329,9 @@ export default function Calendar() {
               {format(selectedDate, 'EEEE, MMMM d')}
             </h3>
 
-            {selectedDateEvents.length > 0 ? (
+            {allSelectedDateEvents.length > 0 ? (
               <div className="space-y-3">
-                {selectedDateEvents.map((event) => {
+                {allSelectedDateEvents.map((event) => {
                   const eventType = eventTypes.find((t) => t.id === event.type);
                   const IconComponent = eventType?.icon || Bell;
 

@@ -22,11 +22,13 @@ import {
   Trash2,
   User,
   Clock,
-  Activity
+  Activity,
+  Shield
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useHabits, useJournalEntries, useNotifications } from '../hooks/useSupabaseData';
+import { useIsAdmin } from '../hooks/useAdmin';
 import { formatDistanceToNow } from 'date-fns';
 import HelpDesk from './HelpDesk';
 

@@ -29,7 +29,7 @@ export default function ReminderModal({
   const handleConfirm = async () => {
     setIsSubmitting(true);
     try {
-      await onConfirm(notificationType, reminderMinutes);
+      await onConfirm(reminderMinutes);
       onClose();
     } catch (error) {
       console.error('Error setting reminder:', error);

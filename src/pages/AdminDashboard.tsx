@@ -6,12 +6,10 @@ import {
   Bell,
   Scale,
   TrendingUp,
-  Calendar,
   BarChart3,
   Mail,
   Clock,
-  Eye,
-  Star
+  Eye
 } from 'lucide-react';
 import { useIsAdmin, useAllUsers, useAdminAnalytics } from '../hooks/useAdmin';
 import { format, parseISO } from 'date-fns';

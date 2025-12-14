@@ -33,6 +33,7 @@ import {
 import { useRecordedSessions, useLiveClasses, useFavoriteSessions, useSessionCompletions, useClassReminders } from '../hooks/useSupabaseData';
 import { useCourses } from '../hooks/useCourses';
 import { useReminderChecker } from '../hooks/useReminderChecker';
+import { useTrackVideoView, useTrackFavorite, useTrackReminder } from '../hooks/useActivityTracking';
 import { format, parseISO, isAfter, isBefore, addHours } from 'date-fns';
 import ReminderModal from '../components/ReminderModal';
 
@@ -92,6 +93,8 @@ export default function Classes() {
   const { completedIds, toggleCompletion } = useSessionCompletions();
   const { courses, loading: coursesLoading } = useCourses();
   const { trackView } = useTrackVideoView();
+  const { trackFavorite } = useTrackFavorite();
+  const { trackReminder } = useTrackReminder();
   
   // Check for due reminders
   useReminderChecker();
@@ -534,7 +537,7 @@ export default function Classes() {
                       onToggleFavorite={async () => {
                         const wasFavorite = favoriteIds.has(session.id);
                         toggleFavorite(session.id);
-                        trackFavorite(session.id, wasFavorite ? 'favorite_removed' : 'favorite_added');
+                        await trackFavorite(session.id, wasFavorite ? 'favorite_removed' : 'favorite_added');
                       }}
                       onToggleComplete={() => handleToggleComplete(session.id, session.title)}
                       onClick={() => {
@@ -741,7 +744,7 @@ function LiveClassCard({ classItem, isLive }: LiveClassCardProps) {
         classItem.scheduledAt
       );
       // Track reminder activity
-      trackReminder(classItem.id, 'reminder_set', reminderMinutes);
+      await trackReminder(classItem.id, 'reminder_set', reminderMinutes);
       setToastMessage(`Reminder set! You'll receive an email ${reminderMinutes} minutes before the class.`);
       setTimeout(() => setToastMessage(null), 3000);
     } catch (error) {

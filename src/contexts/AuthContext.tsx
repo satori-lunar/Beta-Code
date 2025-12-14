@@ -44,16 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
         
-        // Track login
-        if (session?.user) {
-          try {
-            const { trackLogin } = await import('../hooks/useActivityTracking');
-            const { useTrackLogin } = await import('../hooks/useActivityTracking');
-            // We'll call this in a component
-          } catch (error) {
-            // Ignore tracking errors
-          }
-        }
+        // Track login is handled in onAuthStateChange below
         
         setLoading(false);
       })

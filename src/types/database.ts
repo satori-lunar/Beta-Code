@@ -655,7 +655,7 @@ export type Database = {
           id: string
           user_id: string
           live_class_id: string
-          notification_type: 'email'
+          notification_type: 'email' | 'push'
           reminder_minutes_before: number
           scheduled_reminder_time: string
           sent: boolean
@@ -666,7 +666,7 @@ export type Database = {
           id?: string
           user_id: string
           live_class_id: string
-          notification_type: 'email'
+          notification_type: 'email' | 'push'
           reminder_minutes_before: number
           scheduled_reminder_time: string
           sent?: boolean
@@ -677,7 +677,7 @@ export type Database = {
           id?: string
           user_id?: string
           live_class_id?: string
-          notification_type?: 'email'
+          notification_type?: 'email' | 'push'
           reminder_minutes_before?: number
           scheduled_reminder_time?: string
           sent?: boolean

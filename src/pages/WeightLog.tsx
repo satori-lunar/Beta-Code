@@ -21,12 +21,14 @@ import {
 } from 'recharts';
 import { useAuth } from '../contexts/AuthContext';
 import { useWeightEntries, checkFirstTimeBadges } from '../hooks/useSupabaseData';
+import { useTrackWeightLog } from '../hooks/useActivityTracking';
 import { supabase } from '../lib/supabase';
 import { format, parseISO } from 'date-fns';
 
 export default function WeightLog() {
   const { user } = useAuth();
   const { data: weightEntries = [], refetch } = useWeightEntries();
+  const { trackWeightLog } = useTrackWeightLog();
   const [showAddModal, setShowAddModal] = useState(false);
   const [newEntry, setNewEntry] = useState({
     weight: '',
@@ -63,14 +65,20 @@ export default function WeightLog() {
     if (!user || !newEntry.weight) return;
 
     const isFirstEntry = weightEntries.length === 0;
+    const weightValue = parseFloat(newEntry.weight);
 
-    await supabase.from('weight_entries').insert({
+    const { data: newWeightEntry } = await supabase.from('weight_entries').insert({
       user_id: user.id,
       date: newEntry.date,
-      weight: parseFloat(newEntry.weight),
+      weight: weightValue,
       unit: 'kg',
       notes: newEntry.notes || null,
-    });
+    }).select().single();
+
+    // Track weight log activity
+    if (newWeightEntry) {
+      await trackWeightLog(newWeightEntry.id, weightValue, 'kg');
+    }
 
     // Check for first weight log badge
     if (isFirstEntry) {

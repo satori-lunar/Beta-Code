@@ -5,7 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 export function useTrackVideoView() {
   const { user } = useAuth();
 
-  const trackView = async (sessionId: string) => {
+  const trackView = async (sessionId: string, sessionTitle?: string) => {
     if (!user) return;
 
     try {
@@ -26,6 +26,10 @@ export function useTrackVideoView() {
           activity_type: 'video_view',
           entity_type: 'recorded_session',
           entity_id: sessionId,
+          entity_title: sessionTitle || 'Recorded Session',
+          activity_description: sessionTitle 
+            ? `Viewed video: "${sessionTitle}"`
+            : 'Viewed recorded session',
           metadata: { viewed_at: new Date().toISOString() }
         });
     } catch (error) {
@@ -40,10 +44,14 @@ export function useTrackVideoView() {
 export function useTrackFavorite() {
   const { user } = useAuth();
 
-  const trackFavorite = async (sessionId: string, action: 'favorite_added' | 'favorite_removed') => {
+  const trackFavorite = async (sessionId: string, action: 'favorite_added' | 'favorite_removed', sessionTitle?: string) => {
     if (!user) return;
 
     try {
+      const description = action === 'favorite_added'
+        ? sessionTitle ? `Added favorite: "${sessionTitle}"` : 'Added session to favorites'
+        : sessionTitle ? `Removed favorite: "${sessionTitle}"` : 'Removed session from favorites';
+      
       await supabase
         .from('user_activity')
         .insert({
@@ -51,6 +59,8 @@ export function useTrackFavorite() {
           activity_type: action,
           entity_type: 'recorded_session',
           entity_id: sessionId,
+          entity_title: sessionTitle || 'Recorded Session',
+          activity_description: description,
           metadata: { timestamp: new Date().toISOString() }
         });
     } catch (error) {
@@ -65,10 +75,18 @@ export function useTrackFavorite() {
 export function useTrackReminder() {
   const { user } = useAuth();
 
-  const trackReminder = async (classId: string, action: 'reminder_set' | 'reminder_cancelled', minutes: number) => {
+  const trackReminder = async (classId: string, action: 'reminder_set' | 'reminder_cancelled', minutes: number, className?: string) => {
     if (!user) return;
 
     try {
+      const description = action === 'reminder_set'
+        ? className 
+          ? `Set reminder for "${className}" (${minutes} min before)`
+          : `Set reminder for class (${minutes} min before)`
+        : className
+          ? `Cancelled reminder for "${className}"`
+          : 'Cancelled class reminder';
+      
       await supabase
         .from('user_activity')
         .insert({
@@ -76,6 +94,8 @@ export function useTrackReminder() {
           activity_type: action,
           entity_type: 'live_class',
           entity_id: classId,
+          entity_title: className || 'Live Class',
+          activity_description: description,
           metadata: { reminder_minutes: minutes, timestamp: new Date().toISOString() }
         });
     } catch (error) {
@@ -112,6 +132,7 @@ export function useTrackLogin() {
         .insert({
           user_id: user.id,
           activity_type: 'login',
+          activity_description: 'User logged in',
           metadata: { timestamp: new Date().toISOString() }
         });
     } catch (error) {
@@ -120,4 +141,68 @@ export function useTrackLogin() {
   };
 
   return { trackLogin };
+}
+
+// Track journal entry
+export function useTrackJournal() {
+  const { user } = useAuth();
+
+  const trackJournalEntry = async (entryId: string, title: string, action: 'journal_entry_created' | 'journal_entry_updated') => {
+    if (!user) return;
+
+    try {
+      await supabase
+        .from('user_activity')
+        .insert({
+          user_id: user.id,
+          activity_type: action,
+          entity_type: 'journal_entry',
+          entity_id: entryId,
+          entity_title: title,
+          activity_description: action === 'journal_entry_created' 
+            ? `Created journal entry: "${title}"`
+            : `Updated journal entry: "${title}"`,
+          metadata: { 
+            timestamp: new Date().toISOString(),
+            action: action
+          }
+        });
+    } catch (error) {
+      console.error('Error tracking journal entry:', error);
+    }
+  };
+
+  return { trackJournalEntry };
+}
+
+// Track weight log
+export function useTrackWeightLog() {
+  const { user } = useAuth();
+
+  const trackWeightLog = async (entryId: string, weight: number, unit: string) => {
+    if (!user) return;
+
+    try {
+      const weightText = `${weight} ${unit}`;
+      await supabase
+        .from('user_activity')
+        .insert({
+          user_id: user.id,
+          activity_type: 'weight_logged',
+          entity_type: 'weight_entry',
+          entity_id: entryId,
+          entity_title: `Weight: ${weightText}`,
+          activity_description: `Logged weight: ${weightText}`,
+          metadata: { 
+            weight: weight,
+            unit: unit,
+            timestamp: new Date().toISOString()
+          }
+        });
+    } catch (error) {
+      console.error('Error tracking weight log:', error);
+    }
+  };
+
+  return { trackWeightLog };
 }

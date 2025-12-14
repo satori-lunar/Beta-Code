@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useJournalEntries, checkFirstTimeBadges } from '../hooks/useSupabaseData';
+import { useTrackJournal } from '../hooks/useActivityTracking';
 import { supabase } from '../lib/supabase';
 import { format, parseISO } from 'date-fns';
 
@@ -66,8 +67,14 @@ export default function Journal() {
 
     if (editingEntry) {
       await supabase.from('journal_entries').update(entryData).eq('id', editingEntry);
+      // Track journal update
+      await trackJournalEntry(editingEntry, entryData.title, 'journal_entry_updated');
     } else {
-      await supabase.from('journal_entries').insert(entryData);
+      const { data: newEntry } = await supabase.from('journal_entries').insert(entryData).select().single();
+      // Track journal creation
+      if (newEntry) {
+        await trackJournalEntry(newEntry.id, entryData.title, 'journal_entry_created');
+      }
     }
 
     // Check for first journal entry badge (only for new entries)

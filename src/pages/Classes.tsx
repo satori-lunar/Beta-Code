@@ -536,12 +536,12 @@ export default function Classes() {
                       onToggleFavorite={async () => {
                         const wasFavorite = favoriteIds.has(session.id);
                         toggleFavorite(session.id);
-                        await trackFavorite(session.id, wasFavorite ? 'favorite_removed' : 'favorite_added');
+                        await trackFavorite(session.id, wasFavorite ? 'favorite_removed' : 'favorite_added', session.title);
                       }}
                       onToggleComplete={() => handleToggleComplete(session.id, session.title)}
                       onClick={() => {
                         if (session.videoUrl) {
-                          trackView(session.id);
+                          trackView(session.id, session.title);
                           window.open(session.videoUrl, '_blank', 'noopener,noreferrer');
                         } else {
                           console.error('No video URL for session:', session.id);
@@ -646,10 +646,15 @@ export default function Classes() {
               <RecordedSessionCard
                 key={session.id}
                 session={session}
-                onToggleFavorite={() => toggleFavorite(session.id)}
+                onToggleFavorite={async () => {
+                  const wasFavorite = favoriteIds.has(session.id);
+                  toggleFavorite(session.id);
+                  await trackFavorite(session.id, wasFavorite ? 'favorite_removed' : 'favorite_added', session.title);
+                }}
                 onToggleComplete={() => handleToggleComplete(session.id, session.title)}
                 onClick={() => {
                   if (session.videoUrl) {
+                    trackView(session.id, session.title);
                     window.open(session.videoUrl, '_blank', 'noopener,noreferrer');
                   } else {
                     console.error('No video URL for session:', session.id);
@@ -681,10 +686,15 @@ export default function Classes() {
               <RecordedSessionCard
                 key={session.id}
                 session={session}
-                onToggleFavorite={() => toggleFavorite(session.id)}
+                onToggleFavorite={async () => {
+                  const wasFavorite = favoriteIds.has(session.id);
+                  toggleFavorite(session.id);
+                  await trackFavorite(session.id, wasFavorite ? 'favorite_removed' : 'favorite_added', session.title);
+                }}
                 onToggleComplete={() => handleToggleComplete(session.id, session.title)}
                 onClick={() => {
                   if (session.videoUrl) {
+                    trackView(session.id, session.title);
                     window.open(session.videoUrl, '_blank', 'noopener,noreferrer');
                   } else {
                     console.error('No video URL for session:', session.id);
@@ -744,7 +754,7 @@ function LiveClassCard({ classItem, isLive }: LiveClassCardProps) {
         classItem.scheduledAt
       );
       // Track reminder activity
-      await trackReminder(classItem.id, 'reminder_set', reminderMinutes);
+      await trackReminder(classItem.id, 'reminder_set', reminderMinutes, classItem.title);
       setToastMessage(`Reminder set! You'll receive an email ${reminderMinutes} minutes before the class.`);
       setTimeout(() => setToastMessage(null), 3000);
     } catch (error) {

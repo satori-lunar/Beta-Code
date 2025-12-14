@@ -15,41 +15,59 @@ CREATE TABLE IF NOT EXISTS public.user_activity (
 -- Drop existing constraint if it exists, then add new one with all activity types
 DO $$
 BEGIN
-  -- Drop constraint if it exists
+  -- Only proceed if table exists
   IF EXISTS (
-    SELECT 1 FROM pg_constraint 
-    WHERE conname = 'user_activity_activity_type_check'
-    AND conrelid = 'public.user_activity'::regclass
+    SELECT 1 FROM information_schema.tables 
+    WHERE table_schema = 'public' 
+    AND table_name = 'user_activity'
   ) THEN
-    ALTER TABLE public.user_activity DROP CONSTRAINT user_activity_activity_type_check;
+    -- Drop constraint if it exists
+    IF EXISTS (
+      SELECT 1 FROM pg_constraint 
+      WHERE conname = 'user_activity_activity_type_check'
+      AND conrelid = 'public.user_activity'::regclass
+    ) THEN
+      ALTER TABLE public.user_activity DROP CONSTRAINT user_activity_activity_type_check;
+    END IF;
+    
+    -- Add new constraint with all activity types
+    BEGIN
+      ALTER TABLE public.user_activity 
+      ADD CONSTRAINT user_activity_activity_type_check 
+      CHECK (activity_type IN (
+        'video_view',
+        'favorite_added',
+        'favorite_removed',
+        'reminder_set',
+        'reminder_cancelled',
+        'login',
+        'weight_logged',
+        'journal_entry_created',
+        'journal_entry_updated',
+        'habit_completed',
+        'session_completed'
+      ));
+    EXCEPTION
+      WHEN duplicate_object THEN
+        -- Constraint already exists, that's fine
+        NULL;
+    END;
   END IF;
-  
-  -- Add new constraint with all activity types
-  ALTER TABLE public.user_activity 
-  ADD CONSTRAINT user_activity_activity_type_check 
-  CHECK (activity_type IN (
-    'video_view',
-    'favorite_added',
-    'favorite_removed',
-    'reminder_set',
-    'reminder_cancelled',
-    'login',
-    'weight_logged',
-    'journal_entry_created',
-    'journal_entry_updated',
-    'habit_completed',
-    'session_completed'
-  ));
-EXCEPTION
-  WHEN OTHERS THEN
-    -- If constraint already exists or other error, just continue
-    NULL;
 END $$;
 
--- Add helpful columns for better organization
-ALTER TABLE public.user_activity 
-ADD COLUMN IF NOT EXISTS activity_description TEXT,
-ADD COLUMN IF NOT EXISTS entity_title TEXT; -- Human-readable title (e.g., "Yoga Class", "Weight: 70kg")
+-- Add helpful columns for better organization (only if table exists)
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables 
+    WHERE table_schema = 'public' 
+    AND table_name = 'user_activity'
+  ) THEN
+    ALTER TABLE public.user_activity 
+    ADD COLUMN IF NOT EXISTS activity_description TEXT,
+    ADD COLUMN IF NOT EXISTS entity_title TEXT;
+  END IF;
+END $$;
 
 -- Create a view for organized activity display in Supabase (only if table exists)
 DO $$
@@ -95,19 +113,29 @@ BEGIN
   END IF;
 END $$;
 
--- Create index on entity_title for better search
-CREATE INDEX IF NOT EXISTS idx_user_activity_entity_title ON public.user_activity(entity_title);
-
--- Create index on activity_description
-CREATE INDEX IF NOT EXISTS idx_user_activity_description ON public.user_activity(activity_description);
-
--- Enable RLS if not already enabled
-ALTER TABLE public.user_activity ENABLE ROW LEVEL SECURITY;
-
--- Create indexes if they don't exist (from migration 010)
-CREATE INDEX IF NOT EXISTS idx_user_activity_user_id ON public.user_activity(user_id);
-CREATE INDEX IF NOT EXISTS idx_user_activity_type ON public.user_activity(activity_type);
-CREATE INDEX IF NOT EXISTS idx_user_activity_created ON public.user_activity(created_at DESC);
+-- Create indexes and enable RLS (only if table exists)
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables 
+    WHERE table_schema = 'public' 
+    AND table_name = 'user_activity'
+  ) THEN
+    -- Create index on entity_title for better search
+    CREATE INDEX IF NOT EXISTS idx_user_activity_entity_title ON public.user_activity(entity_title);
+    
+    -- Create index on activity_description
+    CREATE INDEX IF NOT EXISTS idx_user_activity_description ON public.user_activity(activity_description);
+    
+    -- Enable RLS if not already enabled
+    ALTER TABLE public.user_activity ENABLE ROW LEVEL SECURITY;
+    
+    -- Create indexes if they don't exist (from migration 010)
+    CREATE INDEX IF NOT EXISTS idx_user_activity_user_id ON public.user_activity(user_id);
+    CREATE INDEX IF NOT EXISTS idx_user_activity_type ON public.user_activity(activity_type);
+    CREATE INDEX IF NOT EXISTS idx_user_activity_created ON public.user_activity(created_at DESC);
+  END IF;
+END $$;
 
 -- Create RLS policies if they don't exist
 DO $$

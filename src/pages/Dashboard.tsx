@@ -224,6 +224,9 @@ export default function Dashboard() {
   }, [user, habitsLoading, weightLoading, journalLoading, badgesLoading, metricsLoading, classesLoading, isLoading, habits.length, weightEntries.length, journalEntries.length, userBadges.length, liveClasses.length, habitsError, weightError, journalError, badgesError, classesError, showInitialLoader]);
   
   useEffect(() => {
+    // Only run if we're still showing the loader
+    if (!showInitialLoader) return;
+
     // CRITICAL: Force hide loader after 300ms - dashboard MUST show
     // This ensures the dashboard ALWAYS appears, even if hooks are stuck loading
     const timer = setTimeout(() => {
@@ -237,9 +240,10 @@ export default function Dashboard() {
         setShowInitialLoader(false);
       }
     }, 300);
-    
+
     // If we have any data, hide loader immediately
-    if (user && (habits.length > 0 || weightEntries.length > 0 || journalEntries.length > 0 || userBadges.length > 0 || liveClasses.length > 0)) {
+    const hasData = habits.length > 0 || weightEntries.length > 0 || journalEntries.length > 0 || userBadges.length > 0 || liveClasses.length > 0;
+    if (user && hasData) {
       try {
         if (typeof window !== 'undefined' && window.innerWidth > 768) {
           console.log('✅ Hiding loader - data available');
@@ -251,7 +255,7 @@ export default function Dashboard() {
         clearTimeout(timer);
       }
     }
-    
+
     // Also hide loader if user exists and we're not loading anymore (even if no data)
     if (user && !isLoading) {
       try {
@@ -265,20 +269,20 @@ export default function Dashboard() {
         clearTimeout(timer);
       }
     }
-    
+
     return () => clearTimeout(timer);
-  }, [user, isLoading, habits.length, weightEntries.length, journalEntries.length, userBadges.length, liveClasses.length]);
+  }, [user, isLoading, habits.length, weightEntries.length, journalEntries.length, userBadges.length, liveClasses.length, showInitialLoader]);
   
   // CRITICAL: Force show dashboard if loader has been showing for too long
   // This is a safety net in case the timeout doesn't fire
   useEffect(() => {
+    if (!showInitialLoader || !user) return;
+
     const safetyTimer = setTimeout(() => {
-      if (showInitialLoader && user) {
-        console.warn('⚠️ Safety timer: Force showing dashboard after 1 second');
-        setShowInitialLoader(false);
-      }
+      console.warn('⚠️ Safety timer: Force showing dashboard after 1 second');
+      setShowInitialLoader(false);
     }, 1000);
-    
+
     return () => clearTimeout(safetyTimer);
   }, [showInitialLoader, user]);
 

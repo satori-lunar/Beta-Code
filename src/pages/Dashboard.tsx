@@ -78,11 +78,6 @@ const availableWidgets = [
 
 export default function Dashboard() {
   const { user } = useAuth();
-  // #region agent log
-  useEffect(() => {
-    fetch('http://127.0.0.1:7242/ingest/1de0ee3c-dda9-4eeb-9faf-c2d8ef7facb1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Dashboard.tsx:80',message:'Dashboard render - user state',data:{hasUser:!!user,userId:user?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-  }, [user?.id]);
-  // #endregion
   const { data: habits = [], error: habitsError } = useHabits();
   const { data: weightEntries = [], error: weightError } = useWeightEntries();
   const { data: journalEntries = [], error: journalError } = useJournalEntries();
@@ -101,9 +96,6 @@ export default function Dashboard() {
   
   // Debug: Log user and data state
   useEffect(() => {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/1de0ee3c-dda9-4eeb-9faf-c2d8ef7facb1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Dashboard.tsx:99',message:'Dashboard data state',data:{userId:user?.id,habitsCount:habits.length,weightCount:weightEntries.length,journalCount:journalEntries.length,badgesCount:userBadges.length,liveClassesCount:liveClasses.length,hasHabitsError:!!habitsError,hasWeightError:!!weightError,hasJournalError:!!journalError,hasBadgesError:!!badgesError,hasClassesError:!!classesError},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
-    // #endregion
     console.log('Dashboard state:', {
       user: user?.id,
       habitsCount: habits.length,

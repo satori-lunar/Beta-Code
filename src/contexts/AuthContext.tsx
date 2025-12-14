@@ -39,14 +39,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     // Get initial session
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/1de0ee3c-dda9-4eeb-9faf-c2d8ef7facb1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AuthContext.tsx:42',message:'Getting initial session',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-    // #endregion
     supabase.auth.getSession()
       .then(async ({ data: { session } }) => {
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/1de0ee3c-dda9-4eeb-9faf-c2d8ef7facb1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AuthContext.tsx:45',message:'Session received',data:{hasSession:!!session,userId:session?.user?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-        // #endregion
         setSession(session);
         setUser(session?.user ?? null);
         
@@ -54,10 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         setLoading(false);
       })
-      .catch((err) => {
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/1de0ee3c-dda9-4eeb-9faf-c2d8ef7facb1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AuthContext.tsx:54',message:'Session error',data:{errorMessage:err?.message},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-        // #endregion
+      .catch(() => {
         // Supabase unavailable - continue without auth
         setLoading(false);
       });

@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import {
   Search,
   PlayCircle,
@@ -277,18 +277,27 @@ export default function Classes() {
 
   const weekdayOrder = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const currentlyLiveClasses = filteredLiveClasses.filter((c) => isClassLive(c.scheduledAt, c.duration));
+  
+  // Track if we've initialized the selected weekday for the live tab
+  const hasInitializedWeekday = useRef(false);
 
   // Set initial selected weekday to first weekday that has classes
+  // Only when switching to live tab for the first time
   useEffect(() => {
-    if (activeTab === 'live') {
+    if (activeTab === 'live' && !hasInitializedWeekday.current) {
       const firstWeekdayWithClasses = weekdayOrder.find(
         (weekday) => (classesByWeekday[weekday] || []).length > 0
       );
-      if (firstWeekdayWithClasses && selectedWeekday !== firstWeekdayWithClasses) {
+      if (firstWeekdayWithClasses) {
         setSelectedWeekday(firstWeekdayWithClasses);
+        hasInitializedWeekday.current = true;
       }
     }
-  }, [activeTab, classesByWeekday, selectedWeekday]);
+    // Reset the flag when switching away from live tab
+    if (activeTab !== 'live') {
+      hasInitializedWeekday.current = false;
+    }
+  }, [activeTab, classesByWeekday]);
 
   const favoriteSessions = mappedRecordedSessions.filter((s) => s.isFavorite);
   const completedSessions = mappedRecordedSessions.filter((s) => s.isCompleted);

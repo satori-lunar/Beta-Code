@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import { useRecordedSessions, useLiveClasses, useFavoriteSessions, useSessionCompletions, useClassReminders } from '../hooks/useSupabaseData';
 import { useCourses } from '../hooks/useCourses';
+import { useReminderChecker } from '../hooks/useReminderChecker';
 import { format, parseISO, isAfter, isBefore, addHours } from 'date-fns';
 import ReminderModal from '../components/ReminderModal';
 
@@ -394,21 +395,21 @@ export default function Classes() {
           </div>
 
           {/* Category filter - Only show for courses */}
-          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-            {categories.map((category) => (
-              <button
-                key={category}
-                onClick={() => setSelectedCategory(category)}
-                className={`px-4 py-2 rounded-xl whitespace-nowrap transition-colors ${
-                  selectedCategory === category
-                    ? 'bg-coral-500 text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                {category}
-              </button>
-            ))}
-          </div>
+            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+              {categories.map((category) => (
+                <button
+                  key={category}
+                  onClick={() => setSelectedCategory(category)}
+                  className={`px-4 py-2 rounded-xl whitespace-nowrap transition-colors ${
+                    selectedCategory === category
+                      ? 'bg-coral-500 text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  {category}
+                </button>
+              ))}
+            </div>
         </>
       )}
 
@@ -440,8 +441,8 @@ export default function Classes() {
               </h2>
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {currentlyLiveClasses.map((classItem) => (
-                  <LiveClassCard key={classItem.id} classItem={classItem} isLive />
-                ))}
+                    <LiveClassCard key={classItem.id} classItem={classItem} isLive />
+                  ))}
               </div>
             </div>
           )}
@@ -469,17 +470,17 @@ export default function Classes() {
                 </button>
               );
             })}
-          </div>
+            </div>
 
           {/* Classes for selected weekday */}
           {(() => {
             const classesForDay = classesByWeekday[selectedWeekday] || [];
             if (classesForDay.length === 0) {
               return (
-                <div className="card text-center py-12">
-                  <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+              <div className="card text-center py-12">
+                <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-4" />
                   <p className="text-gray-500">No classes found for {selectedWeekday}</p>
-                </div>
+              </div>
               );
             }
 
@@ -492,7 +493,7 @@ export default function Classes() {
                     isLive={isClassLive(classItem.scheduledAt, classItem.duration)}
                   />
                 ))}
-              </div>
+          </div>
             );
           })()}
         </div>
@@ -758,12 +759,12 @@ function LiveClassCard({ classItem, isLive }: LiveClassCardProps) {
     <>
       <div className="card overflow-hidden hover:shadow-elevated transition-shadow group">
         <div className={`h-32 bg-gradient-to-br ${classStyle.gradient} -mx-6 -mt-6 mb-4 relative overflow-hidden`}>
-          {isLive && (
+        {isLive && (
             <div className="absolute top-3 left-3 px-3 py-1 bg-red-500 text-white text-xs font-medium rounded-full flex items-center gap-1 z-10">
-              <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
-              LIVE
-            </div>
-          )}
+            <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
+            LIVE
+          </div>
+        )}
           {/* Icon - always visible, glows on hover */}
           <div className="absolute inset-0 flex items-center justify-center">
             <IconComponent className="w-12 h-12 text-white/90 group-hover:text-white transition-all duration-300 group-hover:scale-110 group-hover:drop-shadow-[0_0_20px_rgba(255,255,255,0.8)] group-hover:filter group-hover:brightness-110" />
@@ -775,41 +776,41 @@ function LiveClassCard({ classItem, isLive }: LiveClassCardProps) {
           </div>
           {/* Subtle overlay on hover for extra depth */}
           <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-        </div>
+      </div>
 
-        <h3 className="font-semibold text-gray-900 mb-2">{classItem.title}</h3>
-        <p className="text-sm text-gray-500 mb-4 line-clamp-2">{classItem.description}</p>
+      <h3 className="font-semibold text-gray-900 mb-2">{classItem.title}</h3>
+      <p className="text-sm text-gray-500 mb-4 line-clamp-2">{classItem.description}</p>
 
-        <div className="flex items-center gap-4 text-sm text-gray-500 mb-4">
-          <span className="flex items-center gap-1">
-            <User className="w-4 h-4" />
-            {classItem.instructor}
-          </span>
-          <span className="flex items-center gap-1">
-            <Clock className="w-4 h-4" />
-            {classItem.duration} min
-          </span>
-        </div>
+      <div className="flex items-center gap-4 text-sm text-gray-500 mb-4">
+        <span className="flex items-center gap-1">
+          <User className="w-4 h-4" />
+          {classItem.instructor}
+        </span>
+        <span className="flex items-center gap-1">
+          <Clock className="w-4 h-4" />
+          {classItem.duration} min
+        </span>
+      </div>
 
-        <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-          <div className="text-sm">
-            <span className="text-gray-500">
+      <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+        <div className="text-sm">
+          <span className="text-gray-500">
               {format(parseISO(classItem.scheduledAt), 'EEEE')}, {format(parseISO(classItem.scheduledAt), 'h:mm a')}
-            </span>
-          </div>
+          </span>
+        </div>
           <button
             onClick={handleButtonClick}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-colors ${
-              isLive
-                ? 'bg-red-500 hover:bg-red-600 text-white'
-                : 'bg-coral-100 hover:bg-coral-200 text-coral-600'
-            }`}
-          >
-            {isLive ? 'Join Now' : 'Set Reminder'}
-            <ExternalLink className="w-4 h-4" />
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-colors ${
+            isLive
+              ? 'bg-red-500 hover:bg-red-600 text-white'
+              : 'bg-coral-100 hover:bg-coral-200 text-coral-600'
+          }`}
+        >
+          {isLive ? 'Join Now' : 'Set Reminder'}
+          <ExternalLink className="w-4 h-4" />
           </button>
-        </div>
       </div>
+    </div>
 
       {/* Toast Notification */}
       {toastMessage && (

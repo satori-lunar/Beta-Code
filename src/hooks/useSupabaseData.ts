@@ -1106,12 +1106,9 @@ export function useClassReminders() {
         if (insertError) throw insertError
       }
 
-      // Request push notification permission and register service worker if needed
-      if (notificationType === 'push' && 'Notification' in window && 'serviceWorker' in navigator) {
+      // Request push notification permission if needed
+      if (notificationType === 'push' && 'Notification' in window) {
         try {
-          // Register service worker
-          const registration = await navigator.serviceWorker.register('/sw.js')
-          
           // Request notification permission
           if (Notification.permission === 'default') {
             await Notification.requestPermission()

@@ -37,7 +37,8 @@ export function useUserData<T>(
   const [error, setError] = useState<Error | null>(null)
   const [refetchTrigger, setRefetchTrigger] = useState(0)
 
-  // Memoize options to prevent unnecessary re-renders
+  // Memoize user ID and options to prevent unnecessary re-renders
+  const userId = user?.id
   const orderByColumn = options?.orderBy?.column
   const orderByAscending = options?.orderBy?.ascending
   const limit = options?.limit
@@ -70,14 +71,14 @@ export function useUserData<T>(
           .select('*')
           .eq('user_id', user.id) as any
 
-        if (options?.orderBy) {
-          query = query.order(options.orderBy.column, {
-            ascending: options.orderBy.ascending ?? false,
+        if (orderByColumn) {
+          query = query.order(orderByColumn, {
+            ascending: orderByAscending ?? false,
           })
         }
 
-        if (options?.limit) {
-          query = query.limit(options.limit)
+        if (limit) {
+          query = query.limit(limit)
         }
 
         const { data: result, error } = await query
@@ -134,7 +135,7 @@ export function useUserData<T>(
         supabase.removeChannel(channel)
       }
     }
-  }, [user?.id, table, orderByColumn, orderByAscending, limit, refetchTrigger])
+  }, [userId, table, orderByColumn, orderByAscending, limit, refetchTrigger])
 
   const refetch = () => {
     setRefetchTrigger(prev => prev + 1)
@@ -180,6 +181,9 @@ export function useUserBadges() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
   const [refetchTrigger, setRefetchTrigger] = useState(0)
+
+  // Use stable user ID for dependency array
+  const userId = user?.id
 
   useEffect(() => {
     if (!user) {
@@ -241,7 +245,7 @@ export function useUserBadges() {
       isMounted = false
       supabase.removeChannel(channel)
     }
-  }, [user?.id, refetchTrigger])
+  }, [userId, refetchTrigger])
 
   const refetch = () => setRefetchTrigger(prev => prev + 1)
 
@@ -253,6 +257,9 @@ export function useUserProfile() {
   const { user } = useAuth()
   const [profile, setProfile] = useState<Tables['user_profiles']['Row'] | null>(null)
   const [loading, setLoading] = useState(true)
+  
+  // Use stable user ID for dependency array
+  const userId = user?.id ?? null
 
   useEffect(() => {
     if (!user) {
@@ -273,7 +280,7 @@ export function useUserProfile() {
     }
 
     fetchProfile()
-  }, [user?.id])
+  }, [userId])
 
   return { profile, loading }
 }
@@ -283,6 +290,9 @@ export function useHealthMetrics() {
   const { user } = useAuth()
   const [metrics, setMetrics] = useState<Tables['health_metrics']['Row'] | null>(null)
   const [loading, setLoading] = useState(true)
+  
+  // Use stable user ID for dependency array
+  const userId = user?.id ?? null
 
   useEffect(() => {
     if (!user) {
@@ -332,7 +342,7 @@ export function useHealthMetrics() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [user?.id])
+  }, [userId])
 
   return { metrics, loading }
 }
@@ -344,6 +354,9 @@ export function useRecordedSessions() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
   const [refetchTrigger, setRefetchTrigger] = useState(0)
+  
+  // Use stable user ID for dependency array
+  const userId = user?.id ?? null
 
   useEffect(() => {
     if (!user) {
@@ -388,7 +401,7 @@ export function useRecordedSessions() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [user?.id, refetchTrigger])
+  }, [userId, refetchTrigger])
 
   const refetch = () => setRefetchTrigger(prev => prev + 1)
 
@@ -402,6 +415,9 @@ export function useLiveClasses() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
   const [refetchTrigger, setRefetchTrigger] = useState(0)
+  
+  // Use stable user ID for dependency array
+  const userId = user?.id ?? null
 
   useEffect(() => {
     if (!user) {
@@ -446,7 +462,7 @@ export function useLiveClasses() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [user?.id, refetchTrigger])
+  }, [userId, refetchTrigger])
 
   const refetch = () => setRefetchTrigger(prev => prev + 1)
 
@@ -559,6 +575,9 @@ export function useFavoriteSessions() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
   const [refetchTrigger, setRefetchTrigger] = useState(0)
+  
+  // Use stable user ID for dependency array
+  const userId = user?.id ?? null
 
   useEffect(() => {
     if (!user) {
@@ -605,7 +624,7 @@ export function useFavoriteSessions() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [user?.id, refetchTrigger])
+  }, [userId, refetchTrigger])
 
   const toggleFavorite = async (sessionId: string) => {
     if (!user) {
@@ -708,6 +727,9 @@ export function useSessionCompletions() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
   const [refetchTrigger, setRefetchTrigger] = useState(0)
+  
+  // Use stable user ID for dependency array
+  const userId = user?.id ?? null
 
   useEffect(() => {
     if (!user) {
@@ -754,7 +776,7 @@ export function useSessionCompletions() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [user?.id, refetchTrigger])
+  }, [userId, refetchTrigger])
 
   const toggleCompletion = async (sessionId: string) => {
     if (!user) {
@@ -825,6 +847,9 @@ export function useWorkoutPresets() {
   const [presets, setPresets] = useState<Tables['workout_presets']['Row'][]>([])
   const [loading, setLoading] = useState(true)
   const [refetchTrigger, setRefetchTrigger] = useState(0)
+  
+  // Use stable user ID for dependency array
+  const userId = user?.id ?? null
 
   useEffect(() => {
     if (!user) {
@@ -865,7 +890,7 @@ export function useWorkoutPresets() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [user?.id, refetchTrigger])
+  }, [userId, refetchTrigger])
 
   const savePreset = async (preset: {
     name: string
@@ -922,6 +947,9 @@ export function useWorkoutHistory(limit = 10) {
   const [history, setHistory] = useState<Tables['workout_history']['Row'][]>([])
   const [loading, setLoading] = useState(true)
   const [refetchTrigger, setRefetchTrigger] = useState(0)
+  
+  // Use stable user ID for dependency array
+  const userId = user?.id ?? null
 
   useEffect(() => {
     if (!user) {
@@ -963,7 +991,7 @@ export function useWorkoutHistory(limit = 10) {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [user?.id, limit, refetchTrigger])
+  }, [userId, limit, refetchTrigger])
 
   const saveWorkout = async (workout: {
     activityType: string
@@ -1010,6 +1038,9 @@ export function useNotifications(limit = 50) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
   const [refetchTrigger, setRefetchTrigger] = useState(0)
+  
+  // Use stable user ID for dependency array
+  const userId = user?.id ?? null
 
   useEffect(() => {
     if (!user) {
@@ -1071,7 +1102,7 @@ export function useNotifications(limit = 50) {
       isMounted = false
       supabase.removeChannel(channel)
     }
-  }, [user?.id, limit, refetchTrigger])
+  }, [userId, limit, refetchTrigger])
 
   const markRead = async (id: string) => {
     if (!user) return

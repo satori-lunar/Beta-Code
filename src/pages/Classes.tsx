@@ -186,7 +186,46 @@ export default function Classes() {
   // Filtered data - no filters for live classes, just use all classes
   const filteredLiveClasses = mappedLiveClasses;
 
-  // Deduplicate classes by title + scheduled time, then group by weekday
+  // Define class structure matching the SQL file exactly
+  // This ensures the same order and grouping as defined in insert-live-classes.sql
+  const classStructureByWeekday: Record<string, string[]> = {
+    'Sunday': [
+      'Plan Your Week',
+      'Rooted Weight Health'
+    ],
+    'Monday': [
+      'The Heart of Nourishment',
+      'Foundations in Motion',
+      'Hatha Yoga',
+      'Seedlings'
+    ],
+    'Tuesday': [
+      'Inner Chords',
+      'Strength in Motion',
+      'The Reflecting Pool',
+      'Wisdom Rising',
+      '2-Bite Tuesdays'
+    ],
+    'Wednesday': [
+      'Refreshed & Ready',
+      'Grief & Growth',
+      'Instinctive Meditation'
+    ],
+    'Thursday': [
+      'Rooted Weight Health',
+      'Tangled: Challenging Relationships',
+      'Hatha Yoga',
+      'Evenings with Emily B'
+    ],
+    'Friday': [
+      'The Habit Lab',
+      'Energy in Motion',
+      'Nighttime Nurturing'
+    ],
+    'Saturday': []
+  };
+
+  // Group classes by weekday using the SQL structure, maintaining order
   const classesByWeekday = useMemo(() => {
     // First, deduplicate classes by title + scheduled time
     const seen = new Set<string>();
@@ -199,7 +238,16 @@ export default function Classes() {
       return true;
     });
 
-    // Then group by weekday
+    // Create a map of classes by title for quick lookup
+    const classesByTitle = new Map<string, typeof uniqueClasses>();
+    uniqueClasses.forEach((classItem) => {
+      if (!classesByTitle.has(classItem.title)) {
+        classesByTitle.set(classItem.title, []);
+      }
+      classesByTitle.get(classItem.title)!.push(classItem);
+    });
+
+    // Group by weekday using the SQL structure, maintaining order
     const grouped: Record<string, typeof uniqueClasses> = {
       'Sunday': [],
       'Monday': [],
@@ -210,11 +258,18 @@ export default function Classes() {
       'Saturday': [],
     };
 
-    uniqueClasses.forEach((classItem) => {
-      const weekday = format(parseISO(classItem.scheduledAt), 'EEEE');
-      if (grouped[weekday]) {
-        grouped[weekday].push(classItem);
-      }
+    Object.entries(classStructureByWeekday).forEach(([weekday, classTitles]) => {
+      classTitles.forEach((title) => {
+        const classesForTitle = classesByTitle.get(title) || [];
+        // For classes that appear on multiple days (like Rooted Weight Health, Hatha Yoga),
+        // match by weekday from the scheduled date
+        classesForTitle.forEach((classItem) => {
+          const classWeekday = format(parseISO(classItem.scheduledAt), 'EEEE');
+          if (classWeekday === weekday) {
+            grouped[weekday].push(classItem);
+          }
+        });
+      });
     });
 
     return grouped;

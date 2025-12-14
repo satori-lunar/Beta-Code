@@ -93,7 +93,7 @@ export default function Dashboard() {
     if (journalError) console.error('Error loading journal entries:', journalError);
     if (badgesError) console.error('Error loading badges:', badgesError);
     if (classesError) console.error('Error loading live classes:', classesError);
-  }, [habitsError, weightError, journalError, badgesError, classesError]);
+  }, [habitsError?.message, weightError?.message, journalError?.message, badgesError?.message, classesError?.message]);
   
   // Test Supabase connection on mount (with error handling for mobile)
   useEffect(() => {

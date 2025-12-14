@@ -54,37 +54,50 @@ export default function Journal() {
   const handleSaveEntry = async () => {
     if (!user || !newEntry.title.trim() || !newEntry.content.trim()) return;
 
-    const entryData = {
-      title: newEntry.title,
-      content: newEntry.content,
-      mood: newEntry.mood,
-      tags: newEntry.tags.split(',').map((t) => t.trim()).filter(Boolean),
-      gratitude: newEntry.gratitude.filter(Boolean),
-      date: format(new Date(), 'yyyy-MM-dd'),
-      user_id: user.id,
-    };
+    try {
+      const entryData = {
+        title: newEntry.title,
+        content: newEntry.content,
+        mood: newEntry.mood,
+        tags: newEntry.tags.split(',').map((t) => t.trim()).filter(Boolean),
+        gratitude: newEntry.gratitude.filter(Boolean),
+        date: format(new Date(), 'yyyy-MM-dd'),
+        user_id: user.id,
+      };
 
-    const isNewEntry = !editingEntry;
+      const isNewEntry = !editingEntry;
 
-    if (editingEntry) {
-      await supabase.from('journal_entries').update(entryData).eq('id', editingEntry);
-      // Track journal update
-      await trackJournalEntry(editingEntry, entryData.title, 'journal_entry_updated');
-    } else {
-      const { data: newEntry } = await supabase.from('journal_entries').insert(entryData).select().single();
-      // Track journal creation
-      if (newEntry) {
-        await trackJournalEntry(newEntry.id, entryData.title, 'journal_entry_created');
+      if (editingEntry) {
+        const { error } = await supabase.from('journal_entries').update(entryData).eq('id', editingEntry);
+        if (error) throw error;
+        // Track journal update (fire and forget - don't block on tracking)
+        trackJournalEntry(editingEntry, entryData.title, 'journal_entry_updated').catch(err => {
+          console.error('Failed to track journal update:', err);
+        });
+      } else {
+        const { data: newEntryData, error } = await supabase.from('journal_entries').insert(entryData).select().single();
+        if (error) throw error;
+        // Track journal creation (fire and forget - don't block on tracking)
+        if (newEntryData) {
+          trackJournalEntry(newEntryData.id, entryData.title, 'journal_entry_created').catch(err => {
+            console.error('Failed to track journal creation:', err);
+          });
+        }
       }
-    }
 
-    // Check for first journal entry badge (only for new entries)
-    if (isNewEntry && journalEntries.length === 0) {
-      await checkFirstTimeBadges(user.id, 'journal_entry');
-    }
+      // Check for first journal entry badge (only for new entries)
+      if (isNewEntry && journalEntries.length === 0) {
+        checkFirstTimeBadges(user.id, 'journal_entry').catch(err => {
+          console.error('Failed to check badges:', err);
+        });
+      }
 
-    refetch();
-    resetForm();
+      refetch();
+      resetForm();
+    } catch (error) {
+      console.error('Error saving journal entry:', error);
+      alert('Failed to save journal entry. Please try again.');
+    }
   };
 
   const resetForm = () => {

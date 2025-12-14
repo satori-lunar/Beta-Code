@@ -64,34 +64,45 @@ export default function WeightLog() {
   const handleAddEntry = async () => {
     if (!user || !newEntry.weight) return;
 
-    const isFirstEntry = weightEntries.length === 0;
-    const weightValue = parseFloat(newEntry.weight);
+    try {
+      const isFirstEntry = weightEntries.length === 0;
+      const weightValue = parseFloat(newEntry.weight);
 
-    const { data: newWeightEntry } = await supabase.from('weight_entries').insert({
-      user_id: user.id,
-      date: newEntry.date,
-      weight: weightValue,
-      unit: 'kg',
-      notes: newEntry.notes || null,
-    }).select().single();
+      const { data: newWeightEntry, error } = await supabase.from('weight_entries').insert({
+        user_id: user.id,
+        date: newEntry.date,
+        weight: weightValue,
+        unit: 'kg',
+        notes: newEntry.notes || null,
+      }).select().single();
 
-    // Track weight log activity
-    if (newWeightEntry) {
-      await trackWeightLog(newWeightEntry.id, weightValue, 'kg');
+      if (error) throw error;
+
+      // Track weight log activity (fire and forget - don't block on tracking)
+      if (newWeightEntry) {
+        trackWeightLog(newWeightEntry.id, weightValue, 'kg').catch(err => {
+          console.error('Failed to track weight log:', err);
+        });
+      }
+
+      // Check for first weight log badge (fire and forget)
+      if (isFirstEntry) {
+        checkFirstTimeBadges(user.id, 'weight_log').catch(err => {
+          console.error('Failed to check badges:', err);
+        });
+      }
+
+      refetch();
+      setNewEntry({
+        weight: '',
+        date: format(new Date(), 'yyyy-MM-dd'),
+        notes: '',
+      });
+      setShowAddModal(false);
+    } catch (error) {
+      console.error('Error saving weight entry:', error);
+      alert('Failed to save weight entry. Please try again.');
     }
-
-    // Check for first weight log badge
-    if (isFirstEntry) {
-      await checkFirstTimeBadges(user.id, 'weight_log');
-    }
-
-    refetch();
-    setNewEntry({
-      weight: '',
-      date: format(new Date(), 'yyyy-MM-dd'),
-      notes: '',
-    });
-    setShowAddModal(false);
   };
 
   return (

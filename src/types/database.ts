@@ -753,27 +753,33 @@ export type Database = {
         Row: {
           id: string
           user_id: string
-          activity_type: 'video_view' | 'favorite_added' | 'favorite_removed' | 'reminder_set' | 'reminder_cancelled' | 'login' | 'weight_logged' | 'habit_completed' | 'session_completed'
+          activity_type: 'video_view' | 'favorite_added' | 'favorite_removed' | 'reminder_set' | 'reminder_cancelled' | 'login' | 'weight_logged' | 'journal_entry_created' | 'journal_entry_updated' | 'habit_completed' | 'session_completed'
           entity_type: string | null
           entity_id: string | null
+          activity_description: string | null
+          entity_title: string | null
           metadata: Json
           created_at: string | null
         }
         Insert: {
           id?: string
           user_id: string
-          activity_type: 'video_view' | 'favorite_added' | 'favorite_removed' | 'reminder_set' | 'reminder_cancelled' | 'login' | 'weight_logged' | 'habit_completed' | 'session_completed'
+          activity_type: 'video_view' | 'favorite_added' | 'favorite_removed' | 'reminder_set' | 'reminder_cancelled' | 'login' | 'weight_logged' | 'journal_entry_created' | 'journal_entry_updated' | 'habit_completed' | 'session_completed'
           entity_type?: string | null
           entity_id?: string | null
+          activity_description?: string | null
+          entity_title?: string | null
           metadata?: Json
           created_at?: string | null
         }
         Update: {
           id?: string
           user_id?: string
-          activity_type?: 'video_view' | 'favorite_added' | 'favorite_removed' | 'reminder_set' | 'reminder_cancelled' | 'login' | 'weight_logged' | 'habit_completed' | 'session_completed'
+          activity_type?: 'video_view' | 'favorite_added' | 'favorite_removed' | 'reminder_set' | 'reminder_cancelled' | 'login' | 'weight_logged' | 'journal_entry_created' | 'journal_entry_updated' | 'habit_completed' | 'session_completed'
           entity_type?: string | null
           entity_id?: string | null
+          activity_description?: string | null
+          entity_title?: string | null
           metadata?: Json
           created_at?: string | null
         }

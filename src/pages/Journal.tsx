@@ -29,6 +29,7 @@ type Mood = 'great' | 'good' | 'neutral' | 'low' | 'bad';
 export default function Journal() {
   const { user } = useAuth();
   const { data: journalEntries = [], refetch } = useJournalEntries();
+  const { trackJournalEntry } = useTrackJournal();
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingEntry, setEditingEntry] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');

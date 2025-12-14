@@ -94,8 +94,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     });
     
-    // Check if email confirmation is required
+    // If email confirmation is disabled in Supabase, a session will be returned immediately
+    // If enabled, no session will be returned and user needs to confirm email
     const needsConfirmation = data?.user && !data?.session ? true : undefined;
+    
+    // If session exists, user is automatically signed in (email confirmation disabled)
+    if (data?.session) {
+      setSession(data.session);
+      setUser(data.session.user);
+    }
     
     return { error, needsConfirmation };
   };

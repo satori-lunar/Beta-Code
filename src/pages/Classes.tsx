@@ -94,7 +94,6 @@ export default function Classes() {
   const { courses, loading: coursesLoading } = useCourses();
   const { trackView } = useTrackVideoView();
   const { trackFavorite } = useTrackFavorite();
-  const { trackReminder } = useTrackReminder();
   
   // Check for due reminders
   useReminderChecker();
@@ -727,6 +726,7 @@ interface LiveClassCardProps {
 function LiveClassCard({ classItem, isLive }: LiveClassCardProps) {
   const [showReminderModal, setShowReminderModal] = useState(false);
   const { setReminder } = useClassReminders();
+  const { trackReminder } = useTrackReminder();
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const classStyle = courseStyles[classItem.title] || {

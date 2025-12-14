@@ -51,40 +51,49 @@ ALTER TABLE public.user_activity
 ADD COLUMN IF NOT EXISTS activity_description TEXT,
 ADD COLUMN IF NOT EXISTS entity_title TEXT; -- Human-readable title (e.g., "Yoga Class", "Weight: 70kg")
 
--- Create a view for organized activity display in Supabase
-CREATE OR REPLACE VIEW public.user_activity_detailed AS
-SELECT 
-  ua.id,
-  ua.user_id,
-  u.email as user_email,
-  u.name as user_name,
-  ua.activity_type,
-  ua.activity_description,
-  ua.entity_type,
-  ua.entity_id,
-  ua.entity_title,
-  ua.metadata,
-  ua.created_at,
-  -- Add helpful computed fields
-  CASE 
-    WHEN ua.activity_type = 'video_view' THEN 'Video View'
-    WHEN ua.activity_type = 'favorite_added' THEN 'Favorite Added'
-    WHEN ua.activity_type = 'favorite_removed' THEN 'Favorite Removed'
-    WHEN ua.activity_type = 'reminder_set' THEN 'Reminder Set'
-    WHEN ua.activity_type = 'reminder_cancelled' THEN 'Reminder Cancelled'
-    WHEN ua.activity_type = 'login' THEN 'Login'
-    WHEN ua.activity_type = 'weight_logged' THEN 'Weight Logged'
-    WHEN ua.activity_type = 'journal_entry_created' THEN 'Journal Entry Created'
-    WHEN ua.activity_type = 'journal_entry_updated' THEN 'Journal Entry Updated'
-    WHEN ua.activity_type = 'habit_completed' THEN 'Habit Completed'
-    WHEN ua.activity_type = 'session_completed' THEN 'Session Completed'
-    ELSE ua.activity_type
-  END as activity_label,
-  -- Format timestamp nicely
-  TO_CHAR(ua.created_at, 'YYYY-MM-DD HH24:MI:SS') as formatted_time
-FROM public.user_activity ua
-LEFT JOIN public.users u ON ua.user_id = u.id
-ORDER BY ua.created_at DESC;
+-- Create a view for organized activity display in Supabase (only if table exists)
+DO $$
+BEGIN
+  -- Only create view if the table exists
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables 
+    WHERE table_schema = 'public' 
+    AND table_name = 'user_activity'
+  ) THEN
+    EXECUTE '
+    CREATE OR REPLACE VIEW public.user_activity_detailed AS
+    SELECT 
+      ua.id,
+      ua.user_id,
+      u.email as user_email,
+      u.name as user_name,
+      ua.activity_type,
+      ua.activity_description,
+      ua.entity_type,
+      ua.entity_id,
+      ua.entity_title,
+      ua.metadata,
+      ua.created_at,
+      CASE 
+        WHEN ua.activity_type = ''video_view'' THEN ''Video View''
+        WHEN ua.activity_type = ''favorite_added'' THEN ''Favorite Added''
+        WHEN ua.activity_type = ''favorite_removed'' THEN ''Favorite Removed''
+        WHEN ua.activity_type = ''reminder_set'' THEN ''Reminder Set''
+        WHEN ua.activity_type = ''reminder_cancelled'' THEN ''Reminder Cancelled''
+        WHEN ua.activity_type = ''login'' THEN ''Login''
+        WHEN ua.activity_type = ''weight_logged'' THEN ''Weight Logged''
+        WHEN ua.activity_type = ''journal_entry_created'' THEN ''Journal Entry Created''
+        WHEN ua.activity_type = ''journal_entry_updated'' THEN ''Journal Entry Updated''
+        WHEN ua.activity_type = ''habit_completed'' THEN ''Habit Completed''
+        WHEN ua.activity_type = ''session_completed'' THEN ''Session Completed''
+        ELSE ua.activity_type
+      END as activity_label,
+      TO_CHAR(ua.created_at, ''YYYY-MM-DD HH24:MI:SS'') as formatted_time
+    FROM public.user_activity ua
+    LEFT JOIN public.users u ON ua.user_id = u.id
+    ORDER BY ua.created_at DESC';
+  END IF;
+END $$;
 
 -- Create index on entity_title for better search
 CREATE INDEX IF NOT EXISTS idx_user_activity_entity_title ON public.user_activity(entity_title);

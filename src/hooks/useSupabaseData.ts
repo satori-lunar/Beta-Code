@@ -54,12 +54,13 @@ export function useUserData<T>(
       try {
         setLoading(true)
         // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/1de0ee3c-dda9-4eeb-9faf-c2d8ef7facb1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useSupabaseData.ts:52',message:'Starting fetch',data:{table,userId:user.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+        fetch('http://127.0.0.1:7242/ingest/1de0ee3c-dda9-4eeb-9faf-c2d8ef7facb1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useSupabaseData.ts:52',message:'Starting fetch',data:{table,userId:user?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
         // #endregion
+        if (!user) return; // Guard clause - user should exist here but TypeScript needs it
         let query = supabase
           .from(table as any)
           .select('*')
-          .eq('user_id', user!.id) as any
+          .eq('user_id', user.id) as any
 
         if (options?.orderBy) {
           query = query.order(options.orderBy.column, {

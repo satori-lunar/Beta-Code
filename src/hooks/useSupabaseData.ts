@@ -38,7 +38,13 @@ export function useUserData<T>(
   const [refetchTrigger, setRefetchTrigger] = useState(0)
 
   useEffect(() => {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/1de0ee3c-dda9-4eeb-9faf-c2d8ef7facb1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useSupabaseData.ts:40',message:'useUserData effect triggered',data:{table,hasUser:!!user,userId:user?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
     if (!user) {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/1de0ee3c-dda9-4eeb-9faf-c2d8ef7facb1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useSupabaseData.ts:43',message:'No user - returning empty',data:{table},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
       setData([])
       setLoading(false)
       return
@@ -47,6 +53,9 @@ export function useUserData<T>(
     async function fetchData() {
       try {
         setLoading(true)
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/1de0ee3c-dda9-4eeb-9faf-c2d8ef7facb1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useSupabaseData.ts:52',message:'Starting fetch',data:{table,userId:user.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+        // #endregion
         let query = supabase
           .from(table as any)
           .select('*')
@@ -64,16 +73,29 @@ export function useUserData<T>(
 
         const { data: result, error } = await query
 
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/1de0ee3c-dda9-4eeb-9faf-c2d8ef7facb1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useSupabaseData.ts:70',message:'Query completed',data:{table,hasError:!!error,resultCount:result?.length||0,errorMessage:error?.message},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+        // #endregion
+
         if (error) {
           console.error(`Error fetching ${table}:`, error);
           throw error;
         }
         setData((result as T[]) || [])
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/1de0ee3c-dda9-4eeb-9faf-c2d8ef7facb1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useSupabaseData.ts:77',message:'Data set successfully',data:{table,dataCount:result?.length||0},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+        // #endregion
       } catch (err) {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/1de0ee3c-dda9-4eeb-9faf-c2d8ef7facb1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useSupabaseData.ts:80',message:'Error caught',data:{table,errorMessage:err instanceof Error?err.message:String(err)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+        // #endregion
         console.error(`Error in useUserData for ${table}:`, err);
         setError(err as Error)
       } finally {
         setLoading(false)
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/1de0ee3c-dda9-4eeb-9faf-c2d8ef7facb1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useSupabaseData.ts:85',message:'Loading set to false',data:{table},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+        // #endregion
       }
     }
 

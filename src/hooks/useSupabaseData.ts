@@ -1069,14 +1069,19 @@ export function useClassReminders() {
       const reminderTime = new Date(classTime.getTime() - reminderMinutesBefore * 60 * 1000)
 
       // Check if reminder already exists
-      const { data: existing } = await supabase
+      const { data: existing, error: checkError } = await supabase
         .from('class_reminders')
         .select('id')
         .eq('user_id', user.id)
         .eq('live_class_id', liveClassId)
         .eq('notification_type', notificationType)
         .eq('reminder_minutes_before', reminderMinutesBefore)
-        .single()
+        .maybeSingle()
+
+      // If there's an error checking (not just "not found"), throw it
+      if (checkError && checkError.code !== 'PGRST116') {
+        throw checkError
+      }
 
       if (existing) {
         // Update existing reminder
@@ -1125,8 +1130,22 @@ export function useClassReminders() {
 
       return true
     } catch (err) {
+      console.error('Error in setReminder:', err)
       const error = err instanceof Error ? err : new Error('Failed to set reminder')
       setError(error)
+      
+      // Provide more helpful error messages
+      if (err && typeof err === 'object' && 'message' in err) {
+        const errorMessage = String(err.message)
+        if (errorMessage.includes('permission') || errorMessage.includes('policy')) {
+          throw new Error('Permission denied. Please make sure you are logged in and have access to set reminders.')
+        } else if (errorMessage.includes('relation') || errorMessage.includes('does not exist')) {
+          throw new Error('Database table not found. Please contact support.')
+        } else if (errorMessage.includes('foreign key') || errorMessage.includes('constraint')) {
+          throw new Error('Invalid class or user. Please refresh the page and try again.')
+        }
+      }
+      
       throw error
     } finally {
       setLoading(false)

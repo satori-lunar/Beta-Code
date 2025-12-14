@@ -34,7 +34,8 @@ export default function ReminderModal({
       onClose();
     } catch (error) {
       console.error('Error setting reminder:', error);
-      alert('Failed to set reminder. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to set reminder. Please try again.';
+      alert(errorMessage);
     } finally {
       setIsSubmitting(false);
     }

@@ -222,7 +222,6 @@ export default function Classes() {
 
   const weekdayOrder = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const currentlyLiveClasses = filteredLiveClasses.filter((c) => isClassLive(c.scheduledAt, c.duration));
-  const nonLiveClasses = filteredLiveClasses.filter((c) => !isClassLive(c.scheduledAt, c.duration));
 
   // Set initial selected weekday to first weekday that has classes
   useEffect(() => {

@@ -12,25 +12,39 @@ CREATE TABLE IF NOT EXISTS public.user_activity (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Add new activity types to user_activity table
-ALTER TABLE public.user_activity 
-DROP CONSTRAINT IF EXISTS user_activity_activity_type_check;
-
-ALTER TABLE public.user_activity 
-ADD CONSTRAINT user_activity_activity_type_check 
-CHECK (activity_type IN (
-  'video_view',
-  'favorite_added',
-  'favorite_removed',
-  'reminder_set',
-  'reminder_cancelled',
-  'login',
-  'weight_logged',
-  'journal_entry_created',
-  'journal_entry_updated',
-  'habit_completed',
-  'session_completed'
-));
+-- Drop existing constraint if it exists, then add new one with all activity types
+DO $$
+BEGIN
+  -- Drop constraint if it exists
+  IF EXISTS (
+    SELECT 1 FROM pg_constraint 
+    WHERE conname = 'user_activity_activity_type_check'
+    AND conrelid = 'public.user_activity'::regclass
+  ) THEN
+    ALTER TABLE public.user_activity DROP CONSTRAINT user_activity_activity_type_check;
+  END IF;
+  
+  -- Add new constraint with all activity types
+  ALTER TABLE public.user_activity 
+  ADD CONSTRAINT user_activity_activity_type_check 
+  CHECK (activity_type IN (
+    'video_view',
+    'favorite_added',
+    'favorite_removed',
+    'reminder_set',
+    'reminder_cancelled',
+    'login',
+    'weight_logged',
+    'journal_entry_created',
+    'journal_entry_updated',
+    'habit_completed',
+    'session_completed'
+  ));
+EXCEPTION
+  WHEN OTHERS THEN
+    -- If constraint already exists or other error, just continue
+    NULL;
+END $$;
 
 -- Add helpful columns for better organization
 ALTER TABLE public.user_activity 

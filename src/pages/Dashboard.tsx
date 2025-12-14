@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Flame,
@@ -32,7 +32,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { useHabits, useWeightEntries, useJournalEntries, useUserBadges, useHealthMetrics } from '../hooks/useSupabaseData';
+import { useHabits, useWeightEntries, useJournalEntries, useUserBadges, useHealthMetrics, useLiveClasses } from '../hooks/useSupabaseData';
 import { format, isToday, parseISO } from 'date-fns';
 
 const badgeIcons: Record<string, React.ElementType> = {
@@ -78,11 +78,12 @@ const availableWidgets = [
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const { data: habits = [] } = useHabits();
-  const { data: weightEntries = [] } = useWeightEntries();
-  const { data: journalEntries = [] } = useJournalEntries();
-  const { data: userBadges = [] } = useUserBadges();
-  const { metrics: healthMetrics } = useHealthMetrics();
+  const { data: habits = [], loading: habitsLoading } = useHabits();
+  const { data: weightEntries = [], loading: weightLoading } = useWeightEntries();
+  const { data: journalEntries = [], loading: journalLoading } = useJournalEntries();
+  const { data: userBadges = [], loading: badgesLoading } = useUserBadges();
+  const { metrics: healthMetrics, loading: metricsLoading } = useHealthMetrics();
+  const { classes: liveClasses = [], loading: classesLoading } = useLiveClasses();
   const { colorPreset, setColorPreset, colorPresets, primaryColor } = useTheme();
   const [widgets, setWidgets] = useState<WidgetConfig[]>(() => {
     const saved = localStorage.getItem('dashboardWidgets');
@@ -97,19 +98,52 @@ export default function Dashboard() {
 
   // For now, use empty arrays for data not yet in Supabase
   const courses: any[] = [];
-  const liveClasses: any[] = [];
+  
+  // Check if any data is still loading
+  const isLoading = habitsLoading || weightLoading || journalLoading || badgesLoading || metricsLoading || classesLoading;
+
+  // Show loading state if data is still loading
+  if (isLoading && habits.length === 0 && weightEntries.length === 0 && journalEntries.length === 0) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-coral-200 border-t-coral-500 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-500">Loading your dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   const completedHabitsToday = habits.filter(h => {
     const completedDates = h.completed_dates as any;
     return Array.isArray(completedDates) && completedDates.includes(today);
   }).length;
 
-  const upcomingClass = liveClasses.find(c => new Date(c.scheduledAt) > new Date());
+  // Map live classes to expected format (use useMemo to prevent recalculation)
+  const mappedLiveClasses = useMemo(() => {
+    return (liveClasses || []).map(cls => ({
+      id: cls.id,
+      title: cls.title,
+      description: cls.description || '',
+      instructor: cls.instructor,
+      scheduledAt: cls.scheduled_at,
+      duration: cls.duration,
+      zoomLink: cls.zoom_link || '#',
+      thumbnail: cls.thumbnail_url || '',
+      category: cls.category,
+    }));
+  }, [liveClasses]);
 
-  const todaysClasses = liveClasses.filter(c => {
-    const classDate = parseISO(c.scheduledAt);
-    return isToday(classDate);
-  }).sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime());
+  const upcomingClass = useMemo(() => {
+    return mappedLiveClasses.find(c => new Date(c.scheduledAt) > new Date());
+  }, [mappedLiveClasses]);
+
+  const todaysClasses = useMemo(() => {
+    return mappedLiveClasses.filter(c => {
+      const classDate = parseISO(c.scheduledAt);
+      return isToday(classDate);
+    }).sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime());
+  }, [mappedLiveClasses]);
 
   const latestWeight = weightEntries[0]; // Already sorted descending by date
   const previousWeight = weightEntries[1];

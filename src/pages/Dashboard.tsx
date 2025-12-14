@@ -221,7 +221,7 @@ export default function Dashboard() {
       // Silently fail - don't crash the app
       console.warn('Diagnostic logging failed (non-critical):', err);
     }
-  }, [user, habitsLoading, weightLoading, journalLoading, badgesLoading, metricsLoading, classesLoading, isLoading, habits.length, weightEntries.length, journalEntries.length, userBadges.length, liveClasses.length, habitsError, weightError, journalError, badgesError, classesError, showInitialLoader]);
+  }, [user?.id, habitsLoading, weightLoading, journalLoading, badgesLoading, metricsLoading, classesLoading, isLoading, habits.length, weightEntries.length, journalEntries.length, userBadges.length, liveClasses.length, habitsError, weightError, journalError, badgesError, classesError, showInitialLoader]);
   
   useEffect(() => {
     // Only run if we're still showing the loader

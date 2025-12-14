@@ -37,6 +37,11 @@ export function useUserData<T>(
   const [error, setError] = useState<Error | null>(null)
   const [refetchTrigger, setRefetchTrigger] = useState(0)
 
+  // Memoize options to prevent unnecessary re-renders
+  const orderByColumn = options?.orderBy?.column
+  const orderByAscending = options?.orderBy?.ascending
+  const limit = options?.limit
+
   useEffect(() => {
     if (!user) {
       setData([])
@@ -129,7 +134,7 @@ export function useUserData<T>(
         supabase.removeChannel(channel)
       }
     }
-  }, [user, table, options?.orderBy?.column, options?.orderBy?.ascending, options?.limit, refetchTrigger])
+  }, [user?.id, table, orderByColumn, orderByAscending, limit, refetchTrigger])
 
   const refetch = () => {
     setRefetchTrigger(prev => prev + 1)
@@ -236,7 +241,7 @@ export function useUserBadges() {
       isMounted = false
       supabase.removeChannel(channel)
     }
-  }, [user, refetchTrigger])
+  }, [user?.id, refetchTrigger])
 
   const refetch = () => setRefetchTrigger(prev => prev + 1)
 
@@ -268,7 +273,7 @@ export function useUserProfile() {
     }
 
     fetchProfile()
-  }, [user])
+  }, [user?.id])
 
   return { profile, loading }
 }
@@ -327,7 +332,7 @@ export function useHealthMetrics() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [user])
+  }, [user?.id])
 
   return { metrics, loading }
 }
@@ -383,7 +388,7 @@ export function useRecordedSessions() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [user, refetchTrigger])
+  }, [user?.id, refetchTrigger])
 
   const refetch = () => setRefetchTrigger(prev => prev + 1)
 
@@ -441,7 +446,7 @@ export function useLiveClasses() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [user, refetchTrigger])
+  }, [user?.id, refetchTrigger])
 
   const refetch = () => setRefetchTrigger(prev => prev + 1)
 
@@ -600,7 +605,7 @@ export function useFavoriteSessions() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [user, refetchTrigger])
+  }, [user?.id, refetchTrigger])
 
   const toggleFavorite = async (sessionId: string) => {
     if (!user) {
@@ -749,7 +754,7 @@ export function useSessionCompletions() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [user, refetchTrigger])
+  }, [user?.id, refetchTrigger])
 
   const toggleCompletion = async (sessionId: string) => {
     if (!user) {
@@ -860,7 +865,7 @@ export function useWorkoutPresets() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [user, refetchTrigger])
+  }, [user?.id, refetchTrigger])
 
   const savePreset = async (preset: {
     name: string
@@ -958,7 +963,7 @@ export function useWorkoutHistory(limit = 10) {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [user, limit, refetchTrigger])
+  }, [user?.id, limit, refetchTrigger])
 
   const saveWorkout = async (workout: {
     activityType: string
@@ -1066,7 +1071,7 @@ export function useNotifications(limit = 50) {
       isMounted = false
       supabase.removeChannel(channel)
     }
-  }, [user, limit, refetchTrigger])
+  }, [user?.id, limit, refetchTrigger])
 
   const markRead = async (id: string) => {
     if (!user) return

@@ -14,6 +14,7 @@ import Calendar from './pages/Calendar';
 import Classes from './pages/Classes';
 import Settings from './pages/Settings';
 import Badges from './pages/Badges';
+import AdminDashboard from './pages/AdminDashboard';
 import SignIn from './pages/SignIn';
 import SignUp from './pages/SignUp';
 
@@ -47,6 +48,7 @@ function App() {
               <Route path="classes" element={<Classes />} />
               <Route path="settings" element={<Settings />} />
               <Route path="badges" element={<Badges />} />
+              <Route path="admin" element={<AdminDashboard />} />
             </Route>
           </Routes>
         </Router>

@@ -655,7 +655,7 @@ export type Database = {
           id: string
           user_id: string
           live_class_id: string
-          notification_type: 'push' | 'email'
+          notification_type: 'email'
           reminder_minutes_before: number
           scheduled_reminder_time: string
           sent: boolean
@@ -666,7 +666,7 @@ export type Database = {
           id?: string
           user_id: string
           live_class_id: string
-          notification_type: 'push' | 'email'
+          notification_type: 'email'
           reminder_minutes_before: number
           scheduled_reminder_time: string
           sent?: boolean
@@ -677,12 +677,162 @@ export type Database = {
           id?: string
           user_id?: string
           live_class_id?: string
-          notification_type?: 'push' | 'email'
+          notification_type?: 'email'
           reminder_minutes_before?: number
           scheduled_reminder_time?: string
           sent?: boolean
           created_at?: string | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      users: {
+        Row: {
+          id: string
+          email: string
+          name: string
+          avatar_url: string | null
+          join_date: string | null
+          streak: number | null
+          role: 'member' | 'admin'
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id: string
+          email: string
+          name: string
+          avatar_url?: string | null
+          join_date?: string | null
+          streak?: number | null
+          role?: 'member' | 'admin'
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          email?: string
+          name?: string
+          avatar_url?: string | null
+          join_date?: string | null
+          streak?: number | null
+          role?: 'member' | 'admin'
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      admin_users: {
+        Row: {
+          id: string
+          user_id: string
+          email: string
+          assigned_by: string | null
+          assigned_at: string | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          email: string
+          assigned_by?: string | null
+          assigned_at?: string | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          email?: string
+          assigned_by?: string | null
+          assigned_at?: string | null
+          created_at?: string | null
+        }
+        Relationships: []
+      }
+      user_activity: {
+        Row: {
+          id: string
+          user_id: string
+          activity_type: 'video_view' | 'favorite_added' | 'favorite_removed' | 'reminder_set' | 'reminder_cancelled' | 'login' | 'weight_logged' | 'habit_completed' | 'session_completed'
+          entity_type: string | null
+          entity_id: string | null
+          metadata: Json
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          activity_type: 'video_view' | 'favorite_added' | 'favorite_removed' | 'reminder_set' | 'reminder_cancelled' | 'login' | 'weight_logged' | 'habit_completed' | 'session_completed'
+          entity_type?: string | null
+          entity_id?: string | null
+          metadata?: Json
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          activity_type?: 'video_view' | 'favorite_added' | 'favorite_removed' | 'reminder_set' | 'reminder_cancelled' | 'login' | 'weight_logged' | 'habit_completed' | 'session_completed'
+          entity_type?: string | null
+          entity_id?: string | null
+          metadata?: Json
+          created_at?: string | null
+        }
+        Relationships: []
+      }
+      video_views: {
+        Row: {
+          id: string
+          user_id: string
+          session_id: string | null
+          viewed_at: string | null
+          duration_seconds: number | null
+          completed: boolean
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          session_id?: string | null
+          viewed_at?: string | null
+          duration_seconds?: number | null
+          completed?: boolean
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          session_id?: string | null
+          viewed_at?: string | null
+          duration_seconds?: number | null
+          completed?: boolean
+          created_at?: string | null
+        }
+        Relationships: []
+      }
+      user_logins: {
+        Row: {
+          id: string
+          user_id: string
+          login_at: string | null
+          ip_address: string | null
+          user_agent: string | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          login_at?: string | null
+          ip_address?: string | null
+          user_agent?: string | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          login_at?: string | null
+          ip_address?: string | null
+          user_agent?: string | null
+          created_at?: string | null
         }
         Relationships: []
       }

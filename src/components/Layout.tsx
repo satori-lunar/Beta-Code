@@ -79,6 +79,7 @@ export default function Layout() {
   const profileRef = useRef<HTMLDivElement>(null);
 
   const { user } = useAuth();
+  const { isAdmin } = useIsAdmin();
   const { data: habits = [] } = useHabits();
   const { data: journalEntries = [] } = useJournalEntries();
   const {
@@ -286,6 +287,17 @@ export default function Layout() {
 
           {/* Bottom Actions */}
           <div className="p-4 border-t border-gray-100 space-y-1">
+            {isAdmin && (
+              <NavLink
+                to="/admin"
+                className={({ isActive }) =>
+                  `nav-item ${isActive ? 'nav-item-active' : ''}`
+                }
+              >
+                <Shield className="w-5 h-5" />
+                <span>Admin</span>
+              </NavLink>
+            )}
             <NavLink
               to="/settings"
               className={({ isActive }) =>

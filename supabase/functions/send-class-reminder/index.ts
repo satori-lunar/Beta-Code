@@ -19,6 +19,10 @@ async function sendEmailWithResend(
     throw new Error('RESEND_API_KEY environment variable is not set')
   }
 
+  // Log email domain being used
+  const emailDomain = fromEmail.split('@')[1] || 'unknown'
+  console.log(`Sending email from domain: ${emailDomain} to: ${to}`)
+
   const response = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {

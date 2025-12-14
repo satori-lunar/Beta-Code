@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { X, Mail, Clock, Smartphone } from 'lucide-react';
+import { X, Mail, Clock } from 'lucide-react';
 import { format, parseISO, subMinutes } from 'date-fns';
 
 interface ReminderModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (notificationType: 'push' | 'email', reminderMinutes: 5 | 15) => Promise<void>;
+  onConfirm: (reminderMinutes: 5 | 15) => Promise<void>;
   scheduledAt: string;
   title: string;
 }
@@ -17,7 +17,6 @@ export default function ReminderModal({
   scheduledAt,
   title
 }: ReminderModalProps) {
-  const [notificationType, setNotificationType] = useState<'push' | 'email'>('push');
   const [reminderMinutes, setReminderMinutes] = useState<5 | 15>(15);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -74,42 +73,16 @@ export default function ReminderModal({
             </p>
           </div>
 
-          {/* Notification Type Selection */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              Notification Method
-            </label>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={() => setNotificationType('push')}
-                disabled={isSubmitting}
-                className={`p-4 rounded-xl border-2 transition-all ${
-                  notificationType === 'push'
-                    ? 'border-coral-500 bg-coral-50'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-              >
-                <Smartphone className={`w-6 h-6 mx-auto mb-2 ${
-                  notificationType === 'push' ? 'text-coral-600' : 'text-gray-400'
-                }`} />
-                <div className="text-sm font-medium text-gray-900">Push Notification</div>
-                <div className="text-xs text-gray-500 mt-1">Best for mobile</div>
-              </button>
-              <button
-                onClick={() => setNotificationType('email')}
-                disabled={isSubmitting}
-                className={`p-4 rounded-xl border-2 transition-all ${
-                  notificationType === 'email'
-                    ? 'border-coral-500 bg-coral-50'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-              >
-                <Mail className={`w-6 h-6 mx-auto mb-2 ${
-                  notificationType === 'email' ? 'text-coral-600' : 'text-gray-400'
-                }`} />
-                <div className="text-sm font-medium text-gray-900">Email</div>
-                <div className="text-xs text-gray-500 mt-1">Always reliable</div>
-              </button>
+          {/* Email Reminder Info */}
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+            <div className="flex items-start gap-3">
+              <Mail className="w-5 h-5 text-blue-600 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-blue-900">Email Reminder</p>
+                <p className="text-xs text-blue-700 mt-1">
+                  You'll receive an email reminder at the selected time before the class starts.
+                </p>
+              </div>
             </div>
           </div>
 

@@ -40,9 +40,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Get initial session
     supabase.auth.getSession()
-      .then(({ data: { session } }) => {
+      .then(async ({ data: { session } }) => {
         setSession(session);
         setUser(session?.user ?? null);
+        
+        // Track login
+        if (session?.user) {
+          try {
+            const { trackLogin } = await import('../hooks/useActivityTracking');
+            const { useTrackLogin } = await import('../hooks/useActivityTracking');
+            // We'll call this in a component
+          } catch (error) {
+            // Ignore tracking errors
+          }
+        }
+        
         setLoading(false);
       })
       .catch(() => {
@@ -55,6 +67,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       async (_event: any, session: any) => {
         setSession(session);
         setUser(session?.user ?? null);
+        
+        // Track login when session is established
+        if (session?.user && _event === 'SIGNED_IN') {
+          try {
+            await supabase.from('user_logins').insert({
+              user_id: session.user.id,
+              login_at: new Date().toISOString(),
+              user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : null
+            });
+          } catch (error) {
+            // Ignore tracking errors
+            console.error('Error tracking login:', error);
+          }
+        }
+        
         setLoading(false);
       }
     );

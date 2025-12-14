@@ -91,6 +91,7 @@ export default function Classes() {
   const { favoriteIds, toggleFavorite } = useFavoriteSessions();
   const { completedIds, toggleCompletion } = useSessionCompletions();
   const { courses, loading: coursesLoading } = useCourses();
+  const { trackView } = useTrackVideoView();
   
   // Check for due reminders
   useReminderChecker();
@@ -530,10 +531,15 @@ export default function Classes() {
                     <RecordedSessionCard
                       key={session.id}
                       session={session}
-                      onToggleFavorite={() => toggleFavorite(session.id)}
+                      onToggleFavorite={async () => {
+                        const wasFavorite = favoriteIds.has(session.id);
+                        toggleFavorite(session.id);
+                        trackFavorite(session.id, wasFavorite ? 'favorite_removed' : 'favorite_added');
+                      }}
                       onToggleComplete={() => handleToggleComplete(session.id, session.title)}
                       onClick={() => {
                         if (session.videoUrl) {
+                          trackView(session.id);
                           window.open(session.videoUrl, '_blank', 'noopener,noreferrer');
                         } else {
                           console.error('No video URL for session:', session.id);
@@ -726,16 +732,17 @@ function LiveClassCard({ classItem, isLive }: LiveClassCardProps) {
   };
   const IconComponent = classStyle.icon;
 
-  const handleSetReminder = async (notificationType: 'push' | 'email', reminderMinutes: 5 | 15) => {
+  const handleSetReminder = async (reminderMinutes: 5 | 15) => {
     try {
       await setReminder(
         classItem.id,
-        notificationType,
+        'email', // Only email now
         reminderMinutes,
         classItem.scheduledAt
       );
-      const notificationTypeText = notificationType === 'push' ? 'push notification' : 'email';
-      setToastMessage(`Reminder set! You'll receive a ${notificationTypeText} ${reminderMinutes} minutes before the class.`);
+      // Track reminder activity
+      trackReminder(classItem.id, 'reminder_set', reminderMinutes);
+      setToastMessage(`Reminder set! You'll receive an email ${reminderMinutes} minutes before the class.`);
       setTimeout(() => setToastMessage(null), 3000);
     } catch (error) {
       console.error('Error setting reminder:', error);

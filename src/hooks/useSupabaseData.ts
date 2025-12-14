@@ -597,6 +597,19 @@ export function useFavoriteSessions() {
             next.delete(sessionId)
             return next
           })
+          // Track favorite removal
+          try {
+            await supabase.from('user_activity').insert({
+              user_id: user.id,
+              activity_type: 'favorite_removed',
+              entity_type: 'recorded_session',
+              entity_id: sessionId,
+              metadata: { timestamp: new Date().toISOString() }
+            })
+          } catch (err) {
+            // Don't block on tracking errors
+            console.error('Error tracking favorite removal:', err)
+          }
         }
       } else {
         // Add to favorites
@@ -614,6 +627,19 @@ export function useFavoriteSessions() {
         } else {
           console.log('[toggleFavorite] Successfully added favorite')
           setFavoriteIds(prev => new Set(prev).add(sessionId))
+          // Track favorite addition
+          try {
+            await supabase.from('user_activity').insert({
+              user_id: user.id,
+              activity_type: 'favorite_added',
+              entity_type: 'recorded_session',
+              entity_id: sessionId,
+              metadata: { timestamp: new Date().toISOString() }
+            })
+          } catch (err) {
+            // Don't block on tracking errors
+            console.error('Error tracking favorite addition:', err)
+          }
         }
       }
     } catch (err) {
@@ -1052,7 +1078,7 @@ export function useClassReminders() {
 
   const setReminder = async (
     liveClassId: string,
-    notificationType: 'push' | 'email',
+    notificationType: 'email', // Only email supported now
     reminderMinutesBefore: 5 | 15,
     scheduledAt: string
   ) => {
@@ -1119,22 +1145,8 @@ export function useClassReminders() {
         }
       }
 
-      // Request push notification permission if needed (don't block on this)
-      if (notificationType === 'push' && 'Notification' in window) {
-        try {
-          // Request notification permission
-          if (Notification.permission === 'default') {
-            await Notification.requestPermission()
-          }
-          console.log('Push notifications ready')
-        } catch (error) {
-          console.error('Error setting up push notifications:', error)
-          // Don't throw - reminder is saved, notifications will work when due
-        }
-      }
-
       // Log success for debugging
-      console.log('Reminder saved successfully:', {
+      console.log('Email reminder saved successfully:', {
         type: notificationType,
         minutes: reminderMinutesBefore,
         reminderTime: reminderTime.toISOString()

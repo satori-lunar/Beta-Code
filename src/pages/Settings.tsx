@@ -470,8 +470,8 @@ export default function Settings() {
 
       {/* Color Theme Modal */}
       {showColorModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden my-auto">
             <div className="flex items-center justify-between p-4 border-b border-gray-100">
               <h3 className="text-lg font-semibold text-gray-900">Color Theme</h3>
               <button
@@ -519,8 +519,8 @@ export default function Settings() {
 
       {/* Language Modal */}
       {showLanguageModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden my-auto">
             <div className="flex items-center justify-between p-4 border-b border-gray-100">
               <h3 className="text-lg font-semibold text-gray-900">Select Language</h3>
               <button
@@ -555,8 +555,8 @@ export default function Settings() {
 
       {/* Privacy Modal */}
       {showPrivacyModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden my-auto max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-4 border-b border-gray-100">
               <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                 <Shield className="w-5 h-5 text-gray-400" />
@@ -669,8 +669,8 @@ export default function Settings() {
 
       {/* Help & Support Modal */}
       {showHelpModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden my-auto max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-4 border-b border-gray-100">
               <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                 <HelpCircle className="w-5 h-5 text-gray-400" />

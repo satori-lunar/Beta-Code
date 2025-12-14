@@ -51,7 +51,7 @@ export default function HelpDesk({ userName = 'there' }: HelpDeskProps) {
 
       {/* Help Desk Panel */}
       {isOpen && (
-        <div className="fixed bottom-6 right-6 w-96 h-[500px] bg-white rounded-2xl shadow-2xl z-50 flex flex-col overflow-hidden border border-gray-100">
+        <div className="fixed bottom-20 sm:bottom-6 right-3 sm:right-6 w-[calc(100vw-1.5rem)] sm:w-96 max-w-sm h-[500px] max-h-[calc(100vh-8rem)] bg-white rounded-2xl shadow-2xl z-50 flex flex-col overflow-hidden border border-gray-100">
           {/* Header */}
           <div className="bg-gradient-to-r from-coral-500 to-coral-600 text-white p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">

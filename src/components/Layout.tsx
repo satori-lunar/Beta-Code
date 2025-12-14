@@ -331,8 +331,8 @@ export default function Layout() {
               </button>
 
               {/* Search */}
-              <div ref={searchRef} className="relative hidden sm:block">
-                <div className="flex items-center gap-2 bg-gray-50 rounded-xl px-4 py-2.5 w-64 lg:w-80">
+              <div ref={searchRef} className="relative flex-1 sm:flex-initial">
+                <div className="flex items-center gap-2 bg-gray-50 rounded-xl px-3 sm:px-4 py-2.5 w-full sm:w-64 lg:w-80 max-w-full">
                   <Search className="w-5 h-5 text-gray-400" />
                   <input
                     type="text"
@@ -354,7 +354,7 @@ export default function Layout() {
 
                 {/* Search Results Dropdown */}
                 {searchOpen && searchQuery && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-elevated border border-gray-100 overflow-hidden z-50">
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-elevated border border-gray-100 overflow-hidden z-50 max-h-[70vh] overflow-y-auto">
                     {searchResults.length > 0 ? (
                       <div className="max-h-96 overflow-y-auto">
                         {searchResults.map((result) => (
@@ -422,7 +422,7 @@ export default function Layout() {
 
                 {/* Notifications Dropdown */}
                 {notificationsOpen && (
-                  <div className="absolute top-full right-0 mt-2 w-80 sm:w-96 bg-white rounded-xl shadow-elevated border border-gray-100 overflow-hidden z-50">
+                  <div className="absolute top-full right-0 mt-2 w-[calc(100vw-2rem)] sm:w-80 lg:w-96 max-w-sm bg-white rounded-xl shadow-elevated border border-gray-100 overflow-hidden z-50 max-h-[70vh] overflow-y-auto">
                     <div className="flex items-center justify-between p-4 border-b border-gray-100">
                       <h3 className="font-semibold text-gray-900">Notifications</h3>
                       {unreadCount > 0 && (
@@ -527,7 +527,7 @@ export default function Layout() {
 
                 {/* Profile Dropdown */}
                 {profileOpen && (
-                  <div className="absolute top-full right-0 mt-2 w-64 bg-white rounded-xl shadow-elevated border border-gray-100 overflow-hidden z-50">
+                  <div className="absolute top-full right-0 mt-2 w-[calc(100vw-2rem)] sm:w-64 max-w-xs bg-white rounded-xl shadow-elevated border border-gray-100 overflow-hidden z-50">
                     <div className="p-4 border-b border-gray-100">
                       <div className="flex items-center gap-3">
                         <div
@@ -592,13 +592,13 @@ export default function Layout() {
         </header>
 
         {/* Page Content */}
-        <main className="p-4 lg:p-8">
+        <main className="p-3 sm:p-4 lg:p-8 pb-20 lg:pb-8">
           <Outlet />
         </main>
       </div>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 lg:hidden z-40">
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 lg:hidden z-40 safe-area-inset-bottom">
         <div className="flex items-center justify-around py-2">
           {navigation.slice(0, 5).map((item) => (
             <NavLink

@@ -877,7 +877,7 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="space-y-6 pb-20 lg:pb-0">
+    <div className="space-y-4 sm:space-y-6 pb-20 lg:pb-0">
       {/* Edit Mode Controls */}
       <div className="flex items-center justify-end gap-2">
         {/* Theme Picker Button */}
@@ -892,7 +892,7 @@ export default function Dashboard() {
 
           {/* Theme Picker Dropdown */}
           {showThemePicker && (
-            <div className="absolute right-0 top-12 z-50 bg-white rounded-2xl shadow-xl border border-gray-100 p-4 w-64">
+            <div className="absolute right-0 top-12 z-50 bg-white rounded-2xl shadow-xl border border-gray-100 p-4 w-[calc(100vw-2rem)] sm:w-64 max-w-xs">
               <div className="flex items-center justify-between mb-3">
                 <h4 className="font-semibold text-gray-900">Color Theme</h4>
                 <button
@@ -1031,8 +1031,8 @@ export default function Dashboard() {
 
       {/* Add Widget Modal */}
       {showAddWidget && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full overflow-hidden">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full overflow-hidden my-auto">
             <div className="flex items-center justify-between p-4 border-b border-gray-100">
               <h3 className="text-lg font-semibold text-gray-900">Add Widget</h3>
               <button

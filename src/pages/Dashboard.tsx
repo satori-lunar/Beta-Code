@@ -82,7 +82,7 @@ export default function Dashboard() {
   const { data: weightEntries = [], error: weightError } = useWeightEntries();
   const { data: journalEntries = [], error: journalError } = useJournalEntries();
   const { data: userBadges = [], error: badgesError } = useUserBadges();
-  const { metrics: healthMetrics, loading: metricsLoading } = useHealthMetrics();
+  const { metrics: healthMetrics } = useHealthMetrics();
   const { classes: liveClasses = [], error: classesError } = useLiveClasses();
   
   // Log errors for debugging

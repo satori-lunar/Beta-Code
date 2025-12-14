@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Flame,
@@ -99,11 +99,13 @@ export default function Dashboard() {
   // For now, use empty arrays for data not yet in Supabase
   const courses: any[] = [];
   
-  // Check if any data is still loading
-  const isLoading = habitsLoading || weightLoading || journalLoading || badgesLoading || metricsLoading || classesLoading;
+  // Check if critical data is still loading (only show spinner on initial load)
+  const isInitialLoad = habitsLoading && weightLoading && journalLoading && badgesLoading && metricsLoading && classesLoading;
+  const hasAnyData = habits.length > 0 || weightEntries.length > 0 || journalEntries.length > 0 || userBadges.length > 0;
 
-  // Show loading state if data is still loading
-  if (isLoading && habits.length === 0 && weightEntries.length === 0 && journalEntries.length === 0) {
+  // Show loading state only on initial load when user exists but no data yet
+  // Once we have any data, show the dashboard even if some hooks are still loading
+  if (isInitialLoad && user && !hasAnyData) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">

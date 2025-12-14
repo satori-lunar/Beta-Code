@@ -253,14 +253,22 @@ export function useHealthMetrics() {
     }
 
     async function fetchMetrics() {
-      const { data } = await supabase
-        .from('health_metrics')
-        .select('*')
-        .eq('user_id', user!.id)
-        .single()
+      try {
+        setLoading(true)
+        const { data, error } = await supabase
+          .from('health_metrics')
+          .select('*')
+          .eq('user_id', user!.id)
+          .single()
 
-      setMetrics(data)
-      setLoading(false)
+        if (error) throw error
+        setMetrics(data)
+      } catch (err) {
+        console.error('Error fetching health metrics:', err)
+        setMetrics(null)
+      } finally {
+        setLoading(false)
+      }
     }
 
     fetchMetrics()

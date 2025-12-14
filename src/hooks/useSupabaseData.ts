@@ -1097,7 +1097,7 @@ export function useClassReminders() {
         if (updateError) throw updateError
       } else {
         // Insert new reminder
-        const { error: insertError } = await supabase
+        const { data: insertData, error: insertError } = await supabase
           .from('class_reminders')
           .insert({
             user_id: user.id,
@@ -1107,8 +1107,17 @@ export function useClassReminders() {
             scheduled_reminder_time: reminderTime.toISOString(),
             sent: false
           })
+          .select()
 
-        if (insertError) throw insertError
+        if (insertError) {
+          console.error('Insert error details:', {
+            message: insertError.message,
+            details: insertError.details,
+            hint: insertError.hint,
+            code: insertError.code
+          })
+          throw insertError
+        }
       }
 
       // Request push notification permission if needed
@@ -1130,22 +1139,42 @@ export function useClassReminders() {
 
       return true
     } catch (err) {
-      console.error('Error in setReminder:', err)
-      const error = err instanceof Error ? err : new Error('Failed to set reminder')
-      setError(error)
+      console.error('Error in setReminder - Full error object:', err)
       
-      // Provide more helpful error messages
-      if (err && typeof err === 'object' && 'message' in err) {
-        const errorMessage = String(err.message)
-        if (errorMessage.includes('permission') || errorMessage.includes('policy')) {
-          throw new Error('Permission denied. Please make sure you are logged in and have access to set reminders.')
-        } else if (errorMessage.includes('relation') || errorMessage.includes('does not exist')) {
-          throw new Error('Database table not found. Please contact support.')
-        } else if (errorMessage.includes('foreign key') || errorMessage.includes('constraint')) {
-          throw new Error('Invalid class or user. Please refresh the page and try again.')
+      // Extract error details from Supabase error
+      let errorMessage = 'Failed to set reminder. Please try again.'
+      
+      if (err && typeof err === 'object') {
+        // Check if it's a Supabase PostgrestError
+        if ('message' in err) {
+          const msg = String(err.message)
+          const code = 'code' in err ? String(err.code) : ''
+          const details = 'details' in err ? String(err.details) : ''
+          const hint = 'hint' in err ? String(err.hint) : ''
+          
+          console.error('Supabase error details:', { message: msg, code, details, hint })
+          
+          // Provide specific error messages
+          if (code === '42P01' || msg.includes('relation') || msg.includes('does not exist')) {
+            errorMessage = 'Database table not found. The reminders feature may not be set up yet. Please contact support.'
+          } else if (code === '42501' || msg.includes('permission denied') || msg.includes('policy')) {
+            errorMessage = 'Permission denied. Please make sure you are logged in and try again.'
+          } else if (code === '23503' || msg.includes('foreign key') || msg.includes('constraint')) {
+            errorMessage = 'Invalid class or user. Please refresh the page and try again.'
+          } else if (code === '23505' || msg.includes('unique constraint') || msg.includes('duplicate')) {
+            errorMessage = 'This reminder already exists. You can update it from your settings.'
+          } else if (msg) {
+            errorMessage = `Error: ${msg}`
+          }
+        } else if (err instanceof Error) {
+          errorMessage = err.message
         }
+      } else if (err instanceof Error) {
+        errorMessage = err.message
       }
       
+      const error = new Error(errorMessage)
+      setError(error)
       throw error
     } finally {
       setLoading(false)

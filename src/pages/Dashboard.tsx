@@ -125,51 +125,43 @@ export default function Dashboard() {
   const [showInitialLoader, setShowInitialLoader] = useState(true);
   
   useEffect(() => {
-    // Hide initial loader after 2 seconds max, or once we have any data
+    // Hide initial loader after 1 second max, or once we have any data
+    // Always hide after timeout to prevent infinite spinner
+    const timer = setTimeout(() => {
+      setShowInitialLoader(false);
+    }, 1000);
+    
     const hasAnyData = habits.length > 0 || weightEntries.length > 0 || journalEntries.length > 0 || userBadges.length > 0;
     if (hasAnyData) {
       setShowInitialLoader(false);
-    } else {
-      const timer = setTimeout(() => setShowInitialLoader(false), 2000);
-      return () => clearTimeout(timer);
+      clearTimeout(timer);
     }
+    
+    return () => clearTimeout(timer);
   }, [habits.length, weightEntries.length, journalEntries.length, userBadges.length]);
 
-  // Only show spinner if user exists, we're in initial load state, and no data yet
-  if (showInitialLoader && user && habits.length === 0 && weightEntries.length === 0 && journalEntries.length === 0 && userBadges.length === 0) {
+  // Only show spinner briefly on initial load - always show dashboard after timeout
+  if (showInitialLoader && user) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-coral-200 border-t-coral-500 rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-500">Loading your dashboard...</p>
-          {!user && <p className="text-sm text-red-500 mt-2">Not authenticated</p>}
         </div>
       </div>
     );
   }
   
-  // Show error message if there are errors and no data
+  // Show error message if there are critical errors, but still show dashboard
   const hasErrors = habitsError || weightError || journalError || badgesError || classesError;
-  const hasNoData = habits.length === 0 && weightEntries.length === 0 && journalEntries.length === 0 && userBadges.length === 0;
-  
-  if (hasErrors && hasNoData && user) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center max-w-md p-6">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <X className="w-8 h-8 text-red-600" />
-          </div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Error Loading Data</h2>
-          <p className="text-gray-600 mb-4">There was an error loading your dashboard data. Please refresh the page.</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-coral-500 text-white rounded-lg hover:bg-coral-600"
-          >
-            Refresh Page
-          </button>
-        </div>
-      </div>
-    );
+  if (hasErrors) {
+    console.warn('Some data failed to load, but showing dashboard anyway:', {
+      habitsError: !!habitsError,
+      weightError: !!weightError,
+      journalError: !!journalError,
+      badgesError: !!badgesError,
+      classesError: !!classesError
+    });
   }
 
   const completedHabitsToday = habits.filter(h => {

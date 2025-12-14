@@ -110,7 +110,7 @@ export default function Dashboard() {
             .select('count')
             .limit(0);
           
-          const { data, error } = await Promise.race([queryPromise, timeoutPromise]) as any;
+          const { error } = await Promise.race([queryPromise, timeoutPromise]) as any;
           
           if (error) {
             console.error('❌ Supabase connection test failed:', error);

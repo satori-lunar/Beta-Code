@@ -97,11 +97,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Track login when session is established (don't block on this)
         if (session?.user && _event === 'SIGNED_IN') {
           // Fire and forget - don't block UI
-          supabase.from('user_logins').insert({
+          Promise.resolve(supabase.from('user_logins').insert({
             user_id: session.user.id,
             login_at: new Date().toISOString(),
             user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : null
-          }).catch((error) => {
+          })).then(() => {
+            // Success - no action needed
+          }).catch((error: unknown) => {
             // Ignore tracking errors - don't log as error, just warn
             try {
               if (typeof window !== 'undefined' && window.innerWidth > 768) {

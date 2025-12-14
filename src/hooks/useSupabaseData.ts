@@ -41,16 +41,25 @@ export function useUserData<T>(
     if (!user) {
       setData([])
       setLoading(false)
+      setError(null)
       return
     }
 
+    let isMounted = true
+    let channel: any = null
+
     async function fetchData() {
+      if (!isMounted) return
+      
       try {
         setLoading(true)
         if (!user) {
           setLoading(false);
           return; // Guard clause - user should exist here but TypeScript needs it
         }
+        
+        console.log(`[useUserData] Fetching ${table} for user ${user.id}`);
+        
         let query = supabase
           .from(table as any)
           .select('*')
@@ -68,40 +77,57 @@ export function useUserData<T>(
 
         const { data: result, error } = await query
 
+        if (!isMounted) return
+
         if (error) {
-          console.error(`Error fetching ${table}:`, error);
-          throw error;
+          console.error(`[useUserData] Error fetching ${table}:`, error);
+          setError(error as Error)
+          setData([]) // Set empty array on error
+        } else {
+          console.log(`[useUserData] Successfully fetched ${table}:`, result?.length || 0, 'items');
+          setData((result as T[]) || [])
+          setError(null)
         }
-        setData((result as T[]) || [])
       } catch (err) {
-        console.error(`Error in useUserData for ${table}:`, err);
+        if (!isMounted) return
+        console.error(`[useUserData] Exception in useUserData for ${table}:`, err);
         setError(err as Error)
+        setData([]) // Set empty array on error
       } finally {
-        setLoading(false)
+        if (isMounted) {
+          setLoading(false)
+        }
       }
     }
 
     fetchData()
 
     // Subscribe to real-time changes
-    const channel = supabase
-      .channel(`${table as string}_changes`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: table as any,
-          filter: `user_id=eq.${user.id}`,
-        },
-        () => {
-          fetchData()
-        }
-      )
-      .subscribe()
+    if (user) {
+      channel = supabase
+        .channel(`${table as string}_changes`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: table as any,
+            filter: `user_id=eq.${user.id}`,
+          },
+          () => {
+            if (isMounted) {
+              fetchData()
+            }
+          }
+        )
+        .subscribe()
+    }
 
     return () => {
-      supabase.removeChannel(channel)
+      isMounted = false
+      if (channel) {
+        supabase.removeChannel(channel)
+      }
     }
   }, [user, table, options?.orderBy?.column, options?.orderBy?.ascending, options?.limit, refetchTrigger])
 

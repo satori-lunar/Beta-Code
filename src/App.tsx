@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import ErrorBoundary from './components/ErrorBoundary';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import HealthDashboard from './pages/HealthDashboard';
@@ -20,40 +21,44 @@ import SignUp from './pages/SignUp';
 
 function App() {
   return (
-    <AuthProvider>
-      <ThemeProvider>
-        <Router>
-          <Routes>
-            {/* Public routes */}
-            <Route path="/signin" element={<SignIn />} />
-            <Route path="/signup" element={<SignUp />} />
+    <ErrorBoundary>
+      <AuthProvider>
+        <ThemeProvider>
+          <Router>
+            <Routes>
+              {/* Public routes */}
+              <Route path="/signin" element={<SignIn />} />
+              <Route path="/signup" element={<SignUp />} />
 
-            {/* Protected routes */}
-            <Route
-              path="/"
-              element={
-                <ProtectedRoute>
-                  <Layout />
-                </ProtectedRoute>
-              }
-            >
-              <Route index element={<Dashboard />} />
-              <Route path="health" element={<HealthDashboard />} />
-              <Route path="habits" element={<Habits />} />
-              <Route path="nutrition" element={<Nutrition />} />
-              <Route path="weight" element={<WeightLog />} />
-              <Route path="journal" element={<Journal />} />
-              <Route path="courses" element={<Courses />} />
-              <Route path="calendar" element={<Calendar />} />
-              <Route path="classes" element={<Classes />} />
-              <Route path="settings" element={<Settings />} />
-              <Route path="badges" element={<Badges />} />
-              <Route path="admin" element={<AdminDashboard />} />
-            </Route>
-          </Routes>
-        </Router>
-      </ThemeProvider>
-    </AuthProvider>
+              {/* Protected routes */}
+              <Route
+                path="/"
+                element={
+                  <ProtectedRoute>
+                    <ErrorBoundary>
+                      <Layout />
+                    </ErrorBoundary>
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<ErrorBoundary><Dashboard /></ErrorBoundary>} />
+                <Route path="health" element={<ErrorBoundary><HealthDashboard /></ErrorBoundary>} />
+                <Route path="habits" element={<ErrorBoundary><Habits /></ErrorBoundary>} />
+                <Route path="nutrition" element={<ErrorBoundary><Nutrition /></ErrorBoundary>} />
+                <Route path="weight" element={<ErrorBoundary><WeightLog /></ErrorBoundary>} />
+                <Route path="journal" element={<ErrorBoundary><Journal /></ErrorBoundary>} />
+                <Route path="courses" element={<ErrorBoundary><Courses /></ErrorBoundary>} />
+                <Route path="calendar" element={<ErrorBoundary><Calendar /></ErrorBoundary>} />
+                <Route path="classes" element={<ErrorBoundary><Classes /></ErrorBoundary>} />
+                <Route path="settings" element={<ErrorBoundary><Settings /></ErrorBoundary>} />
+                <Route path="badges" element={<ErrorBoundary><Badges /></ErrorBoundary>} />
+                <Route path="admin" element={<ErrorBoundary><AdminDashboard /></ErrorBoundary>} />
+              </Route>
+            </Routes>
+          </Router>
+        </ThemeProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
 

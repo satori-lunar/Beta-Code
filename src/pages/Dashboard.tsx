@@ -33,6 +33,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useHabits, useWeightEntries, useJournalEntries, useUserBadges, useHealthMetrics, useLiveClasses } from '../hooks/useSupabaseData';
+import { supabase } from '../lib/supabase';
 import { format, isToday, parseISO } from 'date-fns';
 
 const badgeIcons: Record<string, React.ElementType> = {
@@ -78,12 +79,12 @@ const availableWidgets = [
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const { data: habits = [], error: habitsError } = useHabits();
-  const { data: weightEntries = [], error: weightError } = useWeightEntries();
-  const { data: journalEntries = [], error: journalError } = useJournalEntries();
-  const { data: userBadges = [], error: badgesError } = useUserBadges();
-  const { metrics: healthMetrics } = useHealthMetrics();
-  const { classes: liveClasses = [], error: classesError } = useLiveClasses();
+  const { data: habits = [], loading: habitsLoading, error: habitsError } = useHabits();
+  const { data: weightEntries = [], loading: weightLoading, error: weightError } = useWeightEntries();
+  const { data: journalEntries = [], loading: journalLoading, error: journalError } = useJournalEntries();
+  const { data: userBadges = [], loading: badgesLoading, error: badgesError } = useUserBadges();
+  const { metrics: healthMetrics, loading: metricsLoading } = useHealthMetrics();
+  const { classes: liveClasses = [], loading: classesLoading, error: classesError } = useLiveClasses();
   
   // Log errors for debugging
   useEffect(() => {
@@ -94,17 +95,68 @@ export default function Dashboard() {
     if (classesError) console.error('Error loading live classes:', classesError);
   }, [habitsError, weightError, journalError, badgesError, classesError]);
   
-  // Debug: Log user and data state
+  // Test Supabase connection on mount (with error handling for mobile)
   useEffect(() => {
-    console.log('Dashboard state:', {
-      user: user?.id,
-      habitsCount: habits.length,
-      weightCount: weightEntries.length,
-      journalCount: journalEntries.length,
-      badgesCount: userBadges.length,
-      liveClassesCount: liveClasses.length
-    });
-  }, [user?.id, habits.length, weightEntries.length, journalEntries.length, userBadges.length, liveClasses.length, habitsError, weightError, journalError, badgesError, classesError]);
+    if (user) {
+      const testConnection = async () => {
+        try {
+          // Use a timeout to prevent hanging on mobile
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Connection test timeout')), 5000)
+          );
+          
+          const queryPromise = supabase
+            .from('habits')
+            .select('count')
+            .limit(0);
+          
+          const { data, error } = await Promise.race([queryPromise, timeoutPromise]) as any;
+          
+          if (error) {
+            console.error('❌ Supabase connection test failed:', error);
+          } else {
+            console.log('✅ Supabase connection test passed');
+          }
+        } catch (err) {
+          // Silently fail on mobile - don't crash the app
+          console.warn('⚠️ Supabase connection test failed (non-critical):', err);
+        }
+      };
+      
+      // Only test on desktop or if explicitly enabled
+      if (typeof window !== 'undefined' && window.innerWidth > 768) {
+        testConnection();
+      }
+    }
+  }, [user]);
+  
+  // Debug: Log user and data state (mobile-safe)
+  useEffect(() => {
+    try {
+      // Only log on desktop to avoid mobile console issues
+      if (typeof window !== 'undefined' && window.innerWidth > 768) {
+        console.log('📊 Dashboard state:', {
+          user: user?.id,
+          habitsCount: habits.length,
+          weightCount: weightEntries.length,
+          journalCount: journalEntries.length,
+          badgesCount: userBadges.length,
+          liveClassesCount: liveClasses.length,
+          loading: {
+            habits: habitsLoading,
+            weight: weightLoading,
+            journal: journalLoading,
+            badges: badgesLoading,
+            metrics: metricsLoading,
+            classes: classesLoading
+          }
+        });
+      }
+    } catch (err) {
+      // Silently fail - don't crash the app
+    }
+  }, [user?.id, habits.length, weightEntries.length, journalEntries.length, userBadges.length, liveClasses.length, habitsLoading, weightLoading, journalLoading, badgesLoading, metricsLoading, classesLoading, habitsError, weightError, journalError, badgesError, classesError]);
+  
   const { colorPreset, setColorPreset, colorPresets, primaryColor } = useTheme();
   const [widgets, setWidgets] = useState<WidgetConfig[]>(() => {
     const saved = localStorage.getItem('dashboardWidgets');
@@ -120,37 +172,155 @@ export default function Dashboard() {
   // For now, use empty arrays for data not yet in Supabase
   const courses: any[] = [];
   
-  // Show loading state only briefly on initial load
-  // Don't block the dashboard - let data populate as it loads
+  // Check if any data is still loading
+  const isLoading = habitsLoading || weightLoading || journalLoading || badgesLoading || metricsLoading || classesLoading;
+  
+  // Show loading state only very briefly on initial load (300ms max)
+  // Always show dashboard after that - data will populate as it loads
   const [showInitialLoader, setShowInitialLoader] = useState(true);
+  const [diagnostics, setDiagnostics] = useState<any>(null);
+  
+  // Comprehensive diagnostic logging (with mobile-safe error handling)
+  useEffect(() => {
+    try {
+      const diag = {
+        timestamp: new Date().toISOString(),
+        user: user ? { id: user.id, email: user.email } : null,
+        loading: {
+          habits: habitsLoading,
+          weight: weightLoading,
+          journal: journalLoading,
+          badges: badgesLoading,
+          metrics: metricsLoading,
+          classes: classesLoading,
+          anyLoading: isLoading
+        },
+        data: {
+          habits: habits.length,
+          weight: weightEntries.length,
+          journal: journalEntries.length,
+          badges: userBadges.length,
+          classes: liveClasses.length
+        },
+        errors: {
+          habits: habitsError?.message,
+          weight: weightError?.message,
+          journal: journalError?.message,
+          badges: badgesError?.message,
+          classes: classesError?.message
+        },
+        showInitialLoader
+      };
+      
+      setDiagnostics(diag);
+      // Only log on desktop to avoid mobile console issues
+      if (typeof window !== 'undefined' && window.innerWidth > 768) {
+        console.log('🔍 Dashboard Diagnostics:', diag);
+      }
+    } catch (err) {
+      // Silently fail - don't crash the app
+      console.warn('Diagnostic logging failed (non-critical):', err);
+    }
+  }, [user, habitsLoading, weightLoading, journalLoading, badgesLoading, metricsLoading, classesLoading, isLoading, habits.length, weightEntries.length, journalEntries.length, userBadges.length, liveClasses.length, habitsError, weightError, journalError, badgesError, classesError, showInitialLoader]);
   
   useEffect(() => {
-    // Hide initial loader after 1 second max, or once we have any data
-    // Always hide after timeout to prevent infinite spinner
+    // CRITICAL: Force hide loader after 300ms - dashboard MUST show
+    // This ensures the dashboard ALWAYS appears, even if hooks are stuck loading
     const timer = setTimeout(() => {
-      setShowInitialLoader(false);
-    }, 1000);
+      try {
+        if (typeof window !== 'undefined' && window.innerWidth > 768) {
+          console.log('⏰ Force hiding initial loader after timeout - dashboard will show');
+        }
+        setShowInitialLoader(false);
+      } catch (err) {
+        // Force hide even if logging fails
+        setShowInitialLoader(false);
+      }
+    }, 300);
     
-    const hasAnyData = habits.length > 0 || weightEntries.length > 0 || journalEntries.length > 0 || userBadges.length > 0;
-    if (hasAnyData) {
-      setShowInitialLoader(false);
-      clearTimeout(timer);
+    // If we have any data, hide loader immediately
+    if (user && (habits.length > 0 || weightEntries.length > 0 || journalEntries.length > 0 || userBadges.length > 0 || liveClasses.length > 0)) {
+      try {
+        if (typeof window !== 'undefined' && window.innerWidth > 768) {
+          console.log('✅ Hiding loader - data available');
+        }
+        setShowInitialLoader(false);
+        clearTimeout(timer);
+      } catch (err) {
+        setShowInitialLoader(false);
+        clearTimeout(timer);
+      }
+    }
+    
+    // Also hide loader if user exists and we're not loading anymore (even if no data)
+    if (user && !isLoading) {
+      try {
+        if (typeof window !== 'undefined' && window.innerWidth > 768) {
+          console.log('✅ Hiding loader - loading complete');
+        }
+        setShowInitialLoader(false);
+        clearTimeout(timer);
+      } catch (err) {
+        setShowInitialLoader(false);
+        clearTimeout(timer);
+      }
     }
     
     return () => clearTimeout(timer);
-  }, [habits.length, weightEntries.length, journalEntries.length, userBadges.length]);
+  }, [user, isLoading, habits.length, weightEntries.length, journalEntries.length, userBadges.length, liveClasses.length]);
+  
+  // CRITICAL: Force show dashboard if loader has been showing for too long
+  // This is a safety net in case the timeout doesn't fire
+  useEffect(() => {
+    const safetyTimer = setTimeout(() => {
+      if (showInitialLoader && user) {
+        console.warn('⚠️ Safety timer: Force showing dashboard after 1 second');
+        setShowInitialLoader(false);
+      }
+    }, 1000);
+    
+    return () => clearTimeout(safetyTimer);
+  }, [showInitialLoader, user]);
 
-  // Only show spinner briefly on initial load - always show dashboard after timeout
+  // CRITICAL FIX: Always show dashboard after timeout, regardless of loading state
+  // Only show spinner if we're still in initial load AND it's been less than 300ms
   if (showInitialLoader && user) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-coral-200 border-t-coral-500 rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-500">Loading your dashboard...</p>
+          {diagnostics && (
+            <div className="mt-4 text-xs text-gray-400 max-w-md mx-auto">
+              <p>User: {diagnostics.user?.id ? '✓' : '✗'}</p>
+              <p>Loading: {diagnostics.loading.anyLoading ? 'Yes' : 'No'}</p>
+              <p className="mt-2 text-red-400">If this doesn't disappear, check console for errors</p>
+            </div>
+          )}
         </div>
       </div>
     );
   }
+  
+  // If no user, don't render (ProtectedRoute should handle this, but just in case)
+  if (!user) {
+    console.warn('⚠️ Dashboard rendered without user - this should not happen');
+    return null;
+  }
+  
+  // CRITICAL: Log when dashboard is about to render
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerWidth > 768) {
+      console.log('✅ Dashboard rendering with data:', {
+        habits: habits.length,
+        weight: weightEntries.length,
+        journal: journalEntries.length,
+        badges: userBadges.length,
+        classes: liveClasses.length,
+        stillLoading: isLoading
+      });
+    }
+  }, [habits.length, weightEntries.length, journalEntries.length, userBadges.length, liveClasses.length, isLoading]);
   
   // Log errors but don't block the dashboard - show it anyway
   const hasErrors = habitsError || weightError || journalError || badgesError || classesError;
@@ -358,45 +528,88 @@ export default function Dashboard() {
     </div>
   );
 
-  const BadgesWidget = () => (
-    <div className="card">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-display font-semibold text-gray-900">Your Badges</h2>
-        <Link
-          to="/badges"
-          className="text-sm font-medium flex items-center gap-1 hover:opacity-80"
-          style={{ color: primaryColor }}
-        >
-          View All <ChevronRight className="w-4 h-4" />
-        </Link>
-      </div>
-      <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
-        {userBadges.map((badge) => {
-          const IconComponent = badgeIcons[badge.icon || ''] || Award;
-          return (
-            <div
-              key={badge.id}
-              className="flex-shrink-0 flex flex-col items-center gap-2 p-4 rounded-2xl border min-w-[120px]"
-              style={{
-                background: `linear-gradient(to bottom right, ${colorPresets[colorPreset]?.light}, ${colorPresets[colorPreset]?.light}dd)`,
-                borderColor: `${primaryColor}30`
-              }}
+  const BadgesWidget = () => {
+    if (badgesLoading) {
+      return (
+        <div className="card">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-display font-semibold text-gray-900">Your Badges</h2>
+          </div>
+          <div className="flex items-center justify-center py-8">
+            <div className="w-8 h-8 border-4 border-gray-200 border-t-gray-400 rounded-full animate-spin"></div>
+          </div>
+        </div>
+      );
+    }
+    
+    if (userBadges.length === 0) {
+      return (
+        <div className="card">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-display font-semibold text-gray-900">Your Badges</h2>
+            <Link
+              to="/badges"
+              className="text-sm font-medium flex items-center gap-1 hover:opacity-80"
+              style={{ color: primaryColor }}
             >
+              View All <ChevronRight className="w-4 h-4" />
+            </Link>
+          </div>
+          <div className="text-center py-8">
+            <Award className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+            <p className="text-gray-500 mb-4">No badges yet. Start completing habits to earn your first badge!</p>
+            <Link
+              to="/habits"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors text-white hover:opacity-90"
+              style={{ backgroundColor: primaryColor }}
+            >
+              View Habits
+            </Link>
+          </div>
+        </div>
+      );
+    }
+    
+    return (
+      <div className="card">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-display font-semibold text-gray-900">Your Badges</h2>
+          <Link
+            to="/badges"
+            className="text-sm font-medium flex items-center gap-1 hover:opacity-80"
+            style={{ color: primaryColor }}
+          >
+            View All <ChevronRight className="w-4 h-4" />
+          </Link>
+        </div>
+        <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+          {userBadges.map((badge) => {
+            const IconComponent = badgeIcons[badge.icon || ''] || Award;
+            return (
               <div
-                className="w-14 h-14 rounded-full flex items-center justify-center shadow-lg"
+                key={badge.id}
+                className="flex-shrink-0 flex flex-col items-center gap-2 p-4 rounded-2xl border min-w-[120px]"
                 style={{
-                  background: `linear-gradient(to bottom right, ${primaryColor}, ${colorPresets[colorPreset]?.colors[1]})`
+                  background: `linear-gradient(to bottom right, ${colorPresets[colorPreset]?.light}, ${colorPresets[colorPreset]?.light}dd)`,
+                  borderColor: `${primaryColor}30`
                 }}
               >
-                <IconComponent className="w-7 h-7 text-white" />
+                <div
+                  className="w-14 h-14 rounded-full flex items-center justify-center shadow-lg"
+                  style={{
+                    background: `linear-gradient(to bottom right, ${primaryColor}, ${colorPresets[colorPreset]?.colors[1]})`
+                  }}
+                >
+                  <IconComponent className="w-7 h-7 text-white" />
+                </div>
+                <span className="text-sm font-medium text-gray-800 text-center">{badge.name}</span>
               </div>
-              <span className="text-sm font-medium text-gray-800 text-center">{badge.name}</span>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const StatsWidget = () => {
     // Get water intake from health metrics
@@ -578,53 +791,97 @@ export default function Dashboard() {
     );
   };
 
-  const HabitsWidget = () => (
-    <div className="card h-full">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-display font-semibold text-gray-900">Today's Habits</h2>
-        <Link
-          to="/habits"
-          className="text-sm font-medium flex items-center gap-1 hover:opacity-80"
-          style={{ color: primaryColor }}
-        >
-          View All <ChevronRight className="w-4 h-4" />
-        </Link>
-      </div>
-      <div className="space-y-3">
-        {habits.slice(0, 5).map((habit) => {
-          const completedDates = (habit.completed_dates as any) || [];
-          const isCompleted = Array.isArray(completedDates) && completedDates.includes(today);
-          return (
-            <div
-              key={habit.id}
-              className={`flex items-center gap-4 p-4 rounded-xl transition-colors ${
-                isCompleted ? 'bg-sage-50' : 'bg-gray-50 hover:bg-gray-100'
-              }`}
+  const HabitsWidget = () => {
+    if (habitsLoading) {
+      return (
+        <div className="card h-full">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-display font-semibold text-gray-900">Today's Habits</h2>
+          </div>
+          <div className="flex items-center justify-center py-8">
+            <div className="w-8 h-8 border-4 border-gray-200 border-t-gray-400 rounded-full animate-spin"></div>
+          </div>
+        </div>
+      );
+    }
+    
+    if (habits.length === 0) {
+      return (
+        <div className="card h-full">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-display font-semibold text-gray-900">Today's Habits</h2>
+            <Link
+              to="/habits"
+              className="text-sm font-medium flex items-center gap-1 hover:opacity-80"
+              style={{ color: primaryColor }}
             >
+              Create Habit <ChevronRight className="w-4 h-4" />
+            </Link>
+          </div>
+          <div className="text-center py-8">
+            <Target className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+            <p className="text-gray-500 mb-4">No habits yet. Create your first habit to get started!</p>
+            <Link
+              to="/habits"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors text-white hover:opacity-90"
+              style={{ backgroundColor: primaryColor }}
+            >
+              <Plus className="w-4 h-4" />
+              Create Habit
+            </Link>
+          </div>
+        </div>
+      );
+    }
+    
+    return (
+      <div className="card h-full">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-display font-semibold text-gray-900">Today's Habits</h2>
+          <Link
+            to="/habits"
+            className="text-sm font-medium flex items-center gap-1 hover:opacity-80"
+            style={{ color: primaryColor }}
+          >
+            View All <ChevronRight className="w-4 h-4" />
+          </Link>
+        </div>
+        <div className="space-y-3">
+          {habits.slice(0, 5).map((habit) => {
+            const completedDates = (habit.completed_dates as any) || [];
+            const isCompleted = Array.isArray(completedDates) && completedDates.includes(today);
+            return (
               <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center"
-                style={{ backgroundColor: (habit.color || '#10b981') + '30' }}
+                key={habit.id}
+                className={`flex items-center gap-4 p-4 rounded-xl transition-colors ${
+                  isCompleted ? 'bg-sage-50' : 'bg-gray-50 hover:bg-gray-100'
+                }`}
               >
-                {isCompleted ? (
-                  <CheckCircle2 className="w-5 h-5 text-sage-600" />
-                ) : (
-                  <Circle className="w-5 h-5" style={{ color: habit.color || '#10b981' }} />
-                )}
+                <div
+                  className="w-10 h-10 rounded-xl flex items-center justify-center"
+                  style={{ backgroundColor: (habit.color || '#10b981') + '30' }}
+                >
+                  {isCompleted ? (
+                    <CheckCircle2 className="w-5 h-5 text-sage-600" />
+                  ) : (
+                    <Circle className="w-5 h-5" style={{ color: habit.color || '#10b981' }} />
+                  )}
+                </div>
+                <div className="flex-1">
+                  <p className={`font-medium ${isCompleted ? 'text-gray-500 line-through' : 'text-gray-900'}`}>
+                    {habit.name}
+                  </p>
+                  <p className="text-xs text-gray-500 flex items-center gap-1">
+                    <Flame className="w-3 h-3" /> {habit.streak} day streak
+                  </p>
+                </div>
               </div>
-              <div className="flex-1">
-                <p className={`font-medium ${isCompleted ? 'text-gray-500 line-through' : 'text-gray-900'}`}>
-                  {habit.name}
-                </p>
-                <p className="text-xs text-gray-500 flex items-center gap-1">
-                  <Flame className="w-3 h-3" /> {habit.streak} day streak
-                </p>
-              </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const UpcomingClassWidget = () => {
     if (!upcomingClass) return null;
@@ -950,8 +1207,107 @@ export default function Dashboard() {
     }
   };
 
+  // Diagnostic panel (can be toggled with a query param ?debug=1)
+  // Safely check for window and URLSearchParams (mobile compatibility)
+  const showDiagnostics = typeof window !== 'undefined' && 
+    typeof URLSearchParams !== 'undefined' &&
+    new URLSearchParams(window.location.search).get('debug') === '1';
+  
+  // Safe JSON stringify for mobile
+  const safeStringify = (obj: any) => {
+    try {
+      return JSON.stringify(obj, null, 2);
+    } catch (err) {
+      return 'Unable to stringify';
+    }
+  };
+
   return (
     <div className="space-y-4 sm:space-y-6 pb-20 lg:pb-0">
+      {/* Diagnostic Panel */}
+      {showDiagnostics && diagnostics && (
+        <div className="card bg-yellow-50 border-2 border-yellow-200">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-yellow-900">🔍 Diagnostic Information</h3>
+            <button
+              onClick={() => {
+                try {
+                  if (typeof window !== 'undefined') {
+                    window.location.search = '';
+                  }
+                } catch (err) {
+                  // Fallback
+                  window.location.href = window.location.pathname;
+                }
+              }}
+              className="text-yellow-700 hover:text-yellow-900"
+            >
+              ✕
+            </button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div>
+              <p className="font-semibold mb-2">User Status:</p>
+              <pre className="bg-white p-2 rounded text-xs overflow-auto">
+                {safeStringify(diagnostics.user)}
+              </pre>
+            </div>
+            <div>
+              <p className="font-semibold mb-2">Loading States:</p>
+              <pre className="bg-white p-2 rounded text-xs overflow-auto">
+                {safeStringify(diagnostics.loading)}
+              </pre>
+            </div>
+            <div>
+              <p className="font-semibold mb-2">Data Counts:</p>
+              <pre className="bg-white p-2 rounded text-xs overflow-auto">
+                {safeStringify(diagnostics.data)}
+              </pre>
+            </div>
+            <div>
+              <p className="font-semibold mb-2">Errors:</p>
+              <pre className="bg-white p-2 rounded text-xs overflow-auto">
+                {safeStringify(diagnostics.errors)}
+              </pre>
+            </div>
+          </div>
+          <div className="mt-4 pt-4 border-t border-yellow-300">
+            <button
+              onClick={() => {
+                try {
+                  if (typeof window !== 'undefined') {
+                    window.location.reload();
+                  }
+                } catch (err) {
+                  // Fallback
+                  window.location.href = window.location.href;
+                }
+              }}
+              className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 mr-2"
+            >
+              Reload Page
+            </button>
+            <button
+              onClick={() => {
+                try {
+                  if (typeof console !== 'undefined' && console.log) {
+                    console.log('Full diagnostics:', diagnostics);
+                    alert('Check console for full diagnostics');
+                  } else {
+                    alert('Console not available');
+                  }
+                } catch (err) {
+                  alert('Unable to log diagnostics');
+                }
+              }}
+              className="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600"
+            >
+              Log to Console
+            </button>
+          </div>
+        </div>
+      )}
+      
       {/* Error Banner - Non-blocking */}
       <ErrorBanner />
       

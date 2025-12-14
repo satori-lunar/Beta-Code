@@ -38,46 +38,89 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    // CRITICAL: Force loading to false after 2 seconds max to prevent infinite spinner
+    const timeout = setTimeout(() => {
+      try {
+        if (typeof window !== 'undefined' && window.innerWidth > 768) {
+          console.warn('⚠️ AuthContext: Force setting loading to false after timeout');
+        }
+        setLoading(false);
+      } catch (err) {
+        setLoading(false);
+      }
+    }, 2000);
+
     // Get initial session
     supabase.auth.getSession()
       .then(async ({ data: { session } }) => {
+        clearTimeout(timeout);
         setSession(session);
         setUser(session?.user ?? null);
         
         // Track login is handled in onAuthStateChange below
         
         setLoading(false);
+        try {
+          if (typeof window !== 'undefined' && window.innerWidth > 768) {
+            console.log('✅ AuthContext: Session loaded', session?.user?.id || 'no user');
+          }
+        } catch (err) {
+          // Ignore logging errors
+        }
       })
-      .catch(() => {
+      .catch((err) => {
+        clearTimeout(timeout);
         // Supabase unavailable - continue without auth
+        try {
+          if (typeof window !== 'undefined' && window.innerWidth > 768) {
+            console.error('❌ AuthContext: Error getting session', err);
+          }
+        } catch (logErr) {
+          // Ignore logging errors
+        }
         setLoading(false);
       });
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event: any, session: any) => {
+        try {
+          if (typeof window !== 'undefined' && window.innerWidth > 768) {
+            console.log('🔄 AuthContext: Auth state changed', _event, session?.user?.id || 'no user');
+          }
+        } catch (err) {
+          // Ignore logging errors
+        }
         setSession(session);
         setUser(session?.user ?? null);
         
-        // Track login when session is established
+        // Track login when session is established (don't block on this)
         if (session?.user && _event === 'SIGNED_IN') {
-          try {
-            await supabase.from('user_logins').insert({
-              user_id: session.user.id,
-              login_at: new Date().toISOString(),
-              user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : null
-            });
-          } catch (error) {
-            // Ignore tracking errors
-            console.error('Error tracking login:', error);
-          }
+          // Fire and forget - don't block UI
+          supabase.from('user_logins').insert({
+            user_id: session.user.id,
+            login_at: new Date().toISOString(),
+            user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : null
+          }).catch((error) => {
+            // Ignore tracking errors - don't log as error, just warn
+            try {
+              if (typeof window !== 'undefined' && window.innerWidth > 768) {
+                console.warn('Could not track login (non-critical):', error);
+              }
+            } catch (logErr) {
+              // Ignore logging errors
+            }
+          });
         }
         
         setLoading(false);
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      clearTimeout(timeout);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signUp = async (email: string, password: string, name: string) => {

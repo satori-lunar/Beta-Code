@@ -11,6 +11,25 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-    <script src="https://sdk.scdn.co/spotify-player.js"></script>
+    <!-- Spotify SDK - only load if needed, with safe error handling -->
+    <script>
+      // Define the callback function before loading the SDK to prevent errors
+      window.onSpotifyWebPlaybackSDKReady = function() {
+        // SDK is ready - this will be used by GuidedCardio component if needed
+        console.log('Spotify Web Playback SDK ready');
+      };
+      
+      // Load Spotify SDK with error handling
+      (function() {
+        var script = document.createElement('script');
+        script.src = 'https://sdk.scdn.co/spotify-player.js';
+        script.async = true;
+        script.onerror = function() {
+          console.warn('Failed to load Spotify SDK (non-critical)');
+          // Don't crash if Spotify SDK fails to load
+        };
+        document.body.appendChild(script);
+      })();
+    </script>
   </body>
 </html>

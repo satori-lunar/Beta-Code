@@ -78,12 +78,12 @@ const availableWidgets = [
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const { data: habits = [], loading: habitsLoading } = useHabits();
-  const { data: weightEntries = [], loading: weightLoading } = useWeightEntries();
-  const { data: journalEntries = [], loading: journalLoading } = useJournalEntries();
-  const { data: userBadges = [], loading: badgesLoading } = useUserBadges();
-  const { metrics: healthMetrics, loading: metricsLoading } = useHealthMetrics();
-  const { classes: liveClasses = [], loading: classesLoading } = useLiveClasses();
+  const { data: habits = [] } = useHabits();
+  const { data: weightEntries = [] } = useWeightEntries();
+  const { data: journalEntries = [] } = useJournalEntries();
+  const { data: userBadges = [] } = useUserBadges();
+  const { metrics: healthMetrics } = useHealthMetrics();
+  const { classes: liveClasses = [] } = useLiveClasses();
   const { colorPreset, setColorPreset, colorPresets, primaryColor } = useTheme();
   const [widgets, setWidgets] = useState<WidgetConfig[]>(() => {
     const saved = localStorage.getItem('dashboardWidgets');

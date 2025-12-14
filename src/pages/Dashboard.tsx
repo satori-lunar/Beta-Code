@@ -128,7 +128,7 @@ export default function Dashboard() {
         testConnection();
       }
     }
-  }, [user]);
+  }, [user?.id]);
   
   // Debug: Log user and data state (mobile-safe)
   useEffect(() => {
@@ -271,7 +271,7 @@ export default function Dashboard() {
     }
 
     return () => clearTimeout(timer);
-  }, [user, isLoading, habits.length, weightEntries.length, journalEntries.length, userBadges.length, liveClasses.length, showInitialLoader]);
+  }, [user?.id, isLoading, habits.length, weightEntries.length, journalEntries.length, userBadges.length, liveClasses.length, showInitialLoader]);
   
   // CRITICAL: Force show dashboard if loader has been showing for too long
   // This is a safety net in case the timeout doesn't fire
@@ -284,7 +284,7 @@ export default function Dashboard() {
     }, 1000);
 
     return () => clearTimeout(safetyTimer);
-  }, [showInitialLoader, user]);
+  }, [showInitialLoader, user?.id]);
 
   // CRITICAL FIX: Always show dashboard after timeout, regardless of loading state
   // Only show spinner if we're still in initial load AND it's been less than 300ms

@@ -1097,7 +1097,7 @@ export function useClassReminders() {
         if (updateError) throw updateError
       } else {
         // Insert new reminder
-        const { data: insertData, error: insertError } = await supabase
+        const { error: insertError } = await supabase
           .from('class_reminders')
           .insert({
             user_id: user.id,
@@ -1107,7 +1107,6 @@ export function useClassReminders() {
             scheduled_reminder_time: reminderTime.toISOString(),
             sent: false
           })
-          .select()
 
         if (insertError) {
           console.error('Insert error details:', {

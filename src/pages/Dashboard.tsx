@@ -99,13 +99,23 @@ export default function Dashboard() {
   // For now, use empty arrays for data not yet in Supabase
   const courses: any[] = [];
   
-  // Check if critical data is still loading (only show spinner on initial load)
-  const isInitialLoad = habitsLoading && weightLoading && journalLoading && badgesLoading && metricsLoading && classesLoading;
-  const hasAnyData = habits.length > 0 || weightEntries.length > 0 || journalEntries.length > 0 || userBadges.length > 0;
+  // Show loading state only briefly on initial load
+  // Don't block the dashboard - let data populate as it loads
+  const [showInitialLoader, setShowInitialLoader] = useState(true);
+  
+  useEffect(() => {
+    // Hide initial loader after 2 seconds max, or once we have any data
+    const hasAnyData = habits.length > 0 || weightEntries.length > 0 || journalEntries.length > 0 || userBadges.length > 0;
+    if (hasAnyData) {
+      setShowInitialLoader(false);
+    } else {
+      const timer = setTimeout(() => setShowInitialLoader(false), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [habits.length, weightEntries.length, journalEntries.length, userBadges.length]);
 
-  // Show loading state only on initial load when user exists but no data yet
-  // Once we have any data, show the dashboard even if some hooks are still loading
-  if (isInitialLoad && user && !hasAnyData) {
+  // Only show spinner if user exists, we're in initial load state, and no data yet
+  if (showInitialLoader && user && habits.length === 0 && weightEntries.length === 0 && journalEntries.length === 0 && userBadges.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">

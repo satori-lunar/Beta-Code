@@ -155,7 +155,7 @@ export default function Dashboard() {
     } catch (err) {
       // Silently fail - don't crash the app
     }
-  }, [user?.id, habits.length, weightEntries.length, journalEntries.length, userBadges.length, liveClasses.length, habitsLoading, weightLoading, journalLoading, badgesLoading, metricsLoading, classesLoading, habitsError, weightError, journalError, badgesError, classesError]);
+  }, [user?.id, habits.length, weightEntries.length, journalEntries.length, userBadges.length, liveClasses.length, habitsLoading, weightLoading, journalLoading, badgesLoading, metricsLoading, classesLoading]);
   
   const { colorPreset, setColorPreset, colorPresets, primaryColor } = useTheme();
   const [widgets, setWidgets] = useState<WidgetConfig[]>(() => {
@@ -211,7 +211,7 @@ export default function Dashboard() {
         },
         showInitialLoader
       };
-      
+
       setDiagnostics(diag);
       // Only log on desktop to avoid mobile console issues
       if (typeof window !== 'undefined' && window.innerWidth > 768) {
@@ -221,7 +221,7 @@ export default function Dashboard() {
       // Silently fail - don't crash the app
       console.warn('Diagnostic logging failed (non-critical):', err);
     }
-  }, [user?.id, habitsLoading, weightLoading, journalLoading, badgesLoading, metricsLoading, classesLoading, isLoading, habits.length, weightEntries.length, journalEntries.length, userBadges.length, liveClasses.length, habitsError, weightError, journalError, badgesError, classesError, showInitialLoader]);
+  }, [user?.id, habitsLoading, weightLoading, journalLoading, badgesLoading, metricsLoading, classesLoading, isLoading, habits.length, weightEntries.length, journalEntries.length, userBadges.length, liveClasses.length, showInitialLoader]);
   
   useEffect(() => {
     // Only run if we're still showing the loader

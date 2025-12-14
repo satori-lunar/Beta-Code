@@ -81,6 +81,11 @@ CREATE INDEX IF NOT EXISTS idx_user_activity_description ON public.user_activity
 -- Enable RLS if not already enabled
 ALTER TABLE public.user_activity ENABLE ROW LEVEL SECURITY;
 
+-- Create indexes if they don't exist (from migration 010)
+CREATE INDEX IF NOT EXISTS idx_user_activity_user_id ON public.user_activity(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_activity_type ON public.user_activity(activity_type);
+CREATE INDEX IF NOT EXISTS idx_user_activity_created ON public.user_activity(created_at DESC);
+
 -- Create RLS policies if they don't exist
 DO $$
 BEGIN

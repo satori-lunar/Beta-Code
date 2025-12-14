@@ -152,17 +152,41 @@ export default function Dashboard() {
     );
   }
   
-  // Show error message if there are critical errors, but still show dashboard
+  // Log errors but don't block the dashboard - show it anyway
   const hasErrors = habitsError || weightError || journalError || badgesError || classesError;
   if (hasErrors) {
     console.warn('Some data failed to load, but showing dashboard anyway:', {
-      habitsError: !!habitsError,
-      weightError: !!weightError,
-      journalError: !!journalError,
-      badgesError: !!badgesError,
-      classesError: !!classesError
+      habitsError: habitsError?.message,
+      weightError: weightError?.message,
+      journalError: journalError?.message,
+      badgesError: badgesError?.message,
+      classesError: classesError?.message
     });
   }
+
+  // Show a non-blocking error banner if there are errors
+  const ErrorBanner = () => {
+    if (!hasErrors) return null;
+    return (
+      <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+        <div className="flex items-start gap-3">
+          <div className="w-5 h-5 text-amber-600 mt-0.5">⚠️</div>
+          <div className="flex-1">
+            <p className="text-sm font-medium text-amber-900">Some data couldn't be loaded</p>
+            <p className="text-xs text-amber-700 mt-1">
+              The dashboard is showing, but some features may be unavailable. Check the browser console for details.
+            </p>
+          </div>
+          <button
+            onClick={() => window.location.reload()}
+            className="text-xs px-3 py-1 bg-amber-100 text-amber-700 rounded-lg hover:bg-amber-200 transition-colors"
+          >
+            Refresh
+          </button>
+        </div>
+      </div>
+    );
+  };
 
   const completedHabitsToday = habits.filter(h => {
     const completedDates = h.completed_dates as any;
@@ -928,6 +952,9 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-4 sm:space-y-6 pb-20 lg:pb-0">
+      {/* Error Banner - Non-blocking */}
+      <ErrorBanner />
+      
       {/* Edit Mode Controls */}
       <div className="flex items-center justify-end gap-2">
         {/* Theme Picker Button */}

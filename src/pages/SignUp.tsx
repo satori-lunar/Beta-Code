@@ -9,8 +9,6 @@ export default function SignUp() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [success, setSuccess] = useState(false)
-  const [needsConfirmation, setNeedsConfirmation] = useState(false)
   const { signUp } = useAuth()
   const navigate = useNavigate()
 
@@ -18,22 +16,15 @@ export default function SignUp() {
     e.preventDefault()
     setLoading(true)
     setError('')
-    setSuccess(false)
-    setNeedsConfirmation(false)
 
-    const { error, needsConfirmation } = await signUp(email, password, fullName)
-    
+    const { error } = await signUp(email, password, fullName)
+
     if (error) {
       setError(error.message)
       setLoading(false)
-    } else if (needsConfirmation) {
-      setNeedsConfirmation(true)
-      setSuccess(true)
-      setLoading(false)
     } else {
-      setSuccess(true)
-      setLoading(false)
-      setTimeout(() => navigate('/'), 2000)
+      // Sign up successful - redirect to dashboard
+      navigate('/')
     }
   }
 
@@ -100,19 +91,6 @@ export default function SignUp() {
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
                 {error}
-              </div>
-            )}
-
-            {success && !needsConfirmation && (
-              <div className="bg-green-50 border border-green-200 text-green-600 px-4 py-3 rounded-lg text-sm">
-                Account created successfully! Redirecting...
-              </div>
-            )}
-
-            {success && needsConfirmation && (
-              <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-lg text-sm">
-                <p className="font-semibold mb-1">Account created! Please check your email.</p>
-                <p className="text-xs">We've sent you a confirmation link. Click it to verify your email, then you can sign in.</p>
               </div>
             )}
 

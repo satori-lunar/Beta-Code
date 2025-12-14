@@ -183,10 +183,28 @@ BEGIN
   END IF;
 END $$;
 
--- Grant access to the view
-GRANT SELECT ON public.user_activity_detailed TO authenticated;
+-- Grant access to the view (if it exists)
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.views 
+    WHERE table_schema = 'public' 
+    AND table_name = 'user_activity_detailed'
+  ) THEN
+    GRANT SELECT ON public.user_activity_detailed TO authenticated;
+  END IF;
+END $$;
 
--- Add comment to table for documentation
-COMMENT ON TABLE public.user_activity IS 'Comprehensive activity tracking for all user actions in the dashboard. Use user_activity_detailed view for organized display.';
-COMMENT ON COLUMN public.user_activity.activity_description IS 'Human-readable description of the activity';
-COMMENT ON COLUMN public.user_activity.entity_title IS 'Title/name of the entity (e.g., class title, journal entry title)';
+-- Add comment to table for documentation (if table exists)
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables 
+    WHERE table_schema = 'public' 
+    AND table_name = 'user_activity'
+  ) THEN
+    COMMENT ON TABLE public.user_activity IS 'Comprehensive activity tracking for all user actions in the dashboard. Use user_activity_detailed view for organized display.';
+    COMMENT ON COLUMN public.user_activity.activity_description IS 'Human-readable description of the activity';
+    COMMENT ON COLUMN public.user_activity.entity_title IS 'Title/name of the entity (e.g., class title, journal entry title)';
+  END IF;
+END $$;

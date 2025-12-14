@@ -29,12 +29,17 @@ export default function SignIn() {
         setLoading(false)
       }
     } else {
-      const { error: signInError } = await signIn(email, password)
-      if (signInError) {
-        setError(signInError.message)
-        setLoading(false)
-      } else {
-        navigate('/')
+    const { error: signInError } = await signIn(email, password)
+    if (signInError) {
+        // Provide more helpful error messages
+        let errorMessage = signInError.message
+        if (signInError.message.includes('Invalid login credentials') || signInError.message.includes('Email not confirmed')) {
+          errorMessage = 'Invalid credentials or email not confirmed. Please check your email for a confirmation link, or use "Email Link" to sign in.'
+        }
+        setError(errorMessage)
+      setLoading(false)
+    } else {
+      navigate('/')
       }
     }
   }
@@ -102,19 +107,19 @@ export default function SignIn() {
             </div>
 
             {signInMethod === 'password' && (
-              <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                  Password
-                </label>
-                <input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-rose-400 focus:border-transparent outline-none transition"
-                  placeholder="••••••••"
-                />
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                Password
+              </label>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-rose-400 focus:border-transparent outline-none transition"
+                placeholder="••••••••"
+              />
                 <p className="mt-1 text-xs text-gray-500">
                   First time? Use default password: <span className="font-mono font-semibold">Welcome2025!</span>
                 </p>
@@ -124,7 +129,7 @@ export default function SignIn() {
             {signInMethod === 'magic-link' && (
               <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-lg text-sm">
                 We'll send you a secure link to sign in. No password needed!
-              </div>
+            </div>
             )}
 
             {error && (

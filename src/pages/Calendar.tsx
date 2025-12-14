@@ -111,18 +111,18 @@ export default function Calendar() {
         </div>
       </div>
 
-      {/* Embedded Google Calendar */}
-      <div className="card">
-        <h2 className="text-xl font-display font-semibold text-gray-900 mb-4">
-          Calendar
-        </h2>
-        <div className="w-full" style={{ height: '600px' }}>
-          <iframe
-            src={`https://calendar.google.com/calendar/embed?height=600&wkst=1&ctz=${encodeURIComponent(timezone)}&showPrint=0&mode=WEEK&src=ZW1pbHlicm93ZXJsaWZlY29hY2hAZ21haWwuY29t&color=%237986cb`}
-            style={{ border: 'solid 1px #777', width: '100%', height: '100%', borderWidth: 0 }}
-            frameBorder="0"
-            scrolling="no"
-          />
+          {/* Embedded Google Calendar */}
+          <div className="card">
+            <h2 className="text-xl font-display font-semibold text-gray-900 mb-4">
+              Calendar
+            </h2>
+            <div className="w-full" style={{ height: '600px' }}>
+              <iframe
+                src={`https://calendar.google.com/calendar/embed?height=600&wkst=1&ctz=${encodeURIComponent(timezone)}&showPrint=0&mode=WEEK&src=ZW1pbHlicm93ZXJsaWZlY29hY2hAZ21haWwuY29t&color=%237986cb`}
+                style={{ border: 'solid 1px #777', width: '100%', height: '100%', borderWidth: 0 }}
+                frameBorder="0"
+                scrolling="no"
+              />
         </div>
       </div>
 

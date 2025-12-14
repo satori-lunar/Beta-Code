@@ -1044,6 +1044,113 @@ export async function createNotification(
   return !error
 }
 
+// Hook for class reminders
+export function useClassReminders() {
+  const { user } = useAuth()
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
+
+  const setReminder = async (
+    liveClassId: string,
+    notificationType: 'push' | 'email',
+    reminderMinutesBefore: 5 | 15,
+    scheduledAt: string
+  ) => {
+    if (!user) {
+      throw new Error('User must be logged in to set reminders')
+    }
+
+    setLoading(true)
+    setError(null)
+
+    try {
+      // Calculate when to send the reminder
+      const classTime = new Date(scheduledAt)
+      const reminderTime = new Date(classTime.getTime() - reminderMinutesBefore * 60 * 1000)
+
+      // Check if reminder already exists
+      const { data: existing } = await supabase
+        .from('class_reminders')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('live_class_id', liveClassId)
+        .eq('notification_type', notificationType)
+        .eq('reminder_minutes_before', reminderMinutesBefore)
+        .single()
+
+      if (existing) {
+        // Update existing reminder
+        const { error: updateError } = await supabase
+          .from('class_reminders')
+          .update({
+            scheduled_reminder_time: reminderTime.toISOString(),
+            sent: false,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existing.id)
+
+        if (updateError) throw updateError
+      } else {
+        // Insert new reminder
+        const { error: insertError } = await supabase
+          .from('class_reminders')
+          .insert({
+            user_id: user.id,
+            live_class_id: liveClassId,
+            notification_type: notificationType,
+            reminder_minutes_before: reminderMinutesBefore,
+            scheduled_reminder_time: reminderTime.toISOString(),
+            sent: false
+          })
+
+        if (insertError) throw insertError
+      }
+
+      // Request push notification permission and register service worker if needed
+      if (notificationType === 'push' && 'Notification' in window && 'serviceWorker' in navigator) {
+        try {
+          // Register service worker
+          const registration = await navigator.serviceWorker.register('/sw.js')
+          
+          // Request notification permission
+          if (Notification.permission === 'default') {
+            await Notification.requestPermission()
+          }
+          
+          // Subscribe to push notifications if permission granted
+          if (Notification.permission === 'granted') {
+            const subscription = await registration.pushManager.subscribe({
+              userVisibleOnly: true,
+              applicationServerKey: urlBase64ToUint8Array(
+                // You'll need to add your VAPID public key here
+                // For now, we'll use a placeholder - replace with actual key from Supabase
+                'YOUR_VAPID_PUBLIC_KEY'
+              )
+            })
+            
+            // Store subscription in database (you may want to create a push_subscriptions table)
+            // For now, we'll just log it
+            console.log('Push subscription:', subscription)
+          }
+        } catch (error) {
+          console.error('Error setting up push notifications:', error)
+          // Don't throw - email fallback will work
+        }
+      }
+
+      return true
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error('Failed to set reminder')
+      setError(error)
+      throw error
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return { setReminder, loading, error }
+}
+
 // Helper function to award a badge to a user
 export async function awardBadge(
   userId: string,

@@ -1,0 +1,10 @@
+-- Note: Supabase doesn't allow direct modification of auth.users.email_confirmed_at
+-- through database triggers. Email confirmation must be disabled in the Supabase Dashboard.
+--
+-- To disable email confirmation:
+-- 1. Go to Supabase Dashboard > Authentication > Settings
+-- 2. Under "Email Auth", find "Confirm email" setting
+-- 3. Toggle it OFF to disable email confirmation requirement
+-- 4. Save changes
+--
+-- This will allow users to sign in immediately after sign-up without email confirmation.

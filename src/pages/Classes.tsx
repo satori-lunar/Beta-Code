@@ -30,9 +30,10 @@ import {
   Flower2,
   Compass
 } from 'lucide-react';
-import { useRecordedSessions, useLiveClasses, useFavoriteSessions, useSessionCompletions } from '../hooks/useSupabaseData';
+import { useRecordedSessions, useLiveClasses, useFavoriteSessions, useSessionCompletions, useClassReminders } from '../hooks/useSupabaseData';
 import { useCourses } from '../hooks/useCourses';
 import { format, parseISO, isAfter, isBefore, addHours } from 'date-fns';
+import ReminderModal from '../components/ReminderModal';
 
 const categories = [
   'All',
@@ -89,6 +90,9 @@ export default function Classes() {
   const { favoriteIds, toggleFavorite } = useFavoriteSessions();
   const { completedIds, toggleCompletion } = useSessionCompletions();
   const { courses, loading: coursesLoading } = useCourses();
+  
+  // Check for due reminders
+  useReminderChecker();
   
   const [activeTab, setActiveTab] = useState<'live' | 'recorded' | 'favorites' | 'completed'>('live');
   const [selectedWeekday, setSelectedWeekday] = useState<string>('Sunday');
@@ -711,69 +715,121 @@ interface LiveClassCardProps {
 }
 
 function LiveClassCard({ classItem, isLive }: LiveClassCardProps) {
+  const [showReminderModal, setShowReminderModal] = useState(false);
+  const { setReminder, loading: reminderLoading } = useClassReminders();
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
   const classStyle = courseStyles[classItem.title] || {
     gradient: classImages[classItem.category] || 'from-coral-400 to-coral-600',
     icon: Video
   };
   const IconComponent = classStyle.icon;
 
+  const handleSetReminder = async (notificationType: 'push' | 'email', reminderMinutes: 5 | 15) => {
+    try {
+      await setReminder(
+        classItem.id,
+        notificationType,
+        reminderMinutes,
+        classItem.scheduledAt
+      );
+      setToastMessage(`Reminder set! You'll be notified ${reminderMinutes} minutes before the class.`);
+      setTimeout(() => setToastMessage(null), 3000);
+    } catch (error) {
+      console.error('Error setting reminder:', error);
+      throw error;
+    }
+  };
+
+  const handleButtonClick = (e: React.MouseEvent) => {
+    if (isLive) {
+      // If live, open zoom link
+      if (classItem.zoomLink) {
+        window.open(classItem.zoomLink, '_blank', 'noopener,noreferrer');
+      }
+    } else {
+      // If not live, show reminder modal
+      e.preventDefault();
+      setShowReminderModal(true);
+    }
+  };
+
   return (
-    <div className="card overflow-hidden hover:shadow-elevated transition-shadow group">
-      <div className={`h-32 bg-gradient-to-br ${classStyle.gradient} -mx-6 -mt-6 mb-4 relative overflow-hidden`}>
-        {isLive && (
-          <div className="absolute top-3 left-3 px-3 py-1 bg-red-500 text-white text-xs font-medium rounded-full flex items-center gap-1 z-10">
-            <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
-            LIVE
+    <>
+      <div className="card overflow-hidden hover:shadow-elevated transition-shadow group">
+        <div className={`h-32 bg-gradient-to-br ${classStyle.gradient} -mx-6 -mt-6 mb-4 relative overflow-hidden`}>
+          {isLive && (
+            <div className="absolute top-3 left-3 px-3 py-1 bg-red-500 text-white text-xs font-medium rounded-full flex items-center gap-1 z-10">
+              <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
+              LIVE
+            </div>
+          )}
+          {/* Icon - always visible, glows on hover */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <IconComponent className="w-12 h-12 text-white/90 group-hover:text-white transition-all duration-300 group-hover:scale-110 group-hover:drop-shadow-[0_0_20px_rgba(255,255,255,0.8)] group-hover:filter group-hover:brightness-110" />
           </div>
-        )}
-        {/* Icon - always visible, glows on hover */}
-        <div className="absolute inset-0 flex items-center justify-center">
-          <IconComponent className="w-12 h-12 text-white/90 group-hover:text-white transition-all duration-300 group-hover:scale-110 group-hover:drop-shadow-[0_0_20px_rgba(255,255,255,0.8)] group-hover:filter group-hover:brightness-110" />
+          {/* Decorative pattern overlay */}
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.3),transparent_50%)]"></div>
+            <div className="absolute bottom-0 right-0 w-full h-full bg-[radial-gradient(circle_at_70%_70%,rgba(255,255,255,0.2),transparent_50%)]"></div>
+          </div>
+          {/* Subtle overlay on hover for extra depth */}
+          <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
         </div>
-        {/* Decorative pattern overlay */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.3),transparent_50%)]"></div>
-          <div className="absolute bottom-0 right-0 w-full h-full bg-[radial-gradient(circle_at_70%_70%,rgba(255,255,255,0.2),transparent_50%)]"></div>
-        </div>
-        {/* Subtle overlay on hover for extra depth */}
-        <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-      </div>
 
-      <h3 className="font-semibold text-gray-900 mb-2">{classItem.title}</h3>
-      <p className="text-sm text-gray-500 mb-4 line-clamp-2">{classItem.description}</p>
+        <h3 className="font-semibold text-gray-900 mb-2">{classItem.title}</h3>
+        <p className="text-sm text-gray-500 mb-4 line-clamp-2">{classItem.description}</p>
 
-      <div className="flex items-center gap-4 text-sm text-gray-500 mb-4">
-        <span className="flex items-center gap-1">
-          <User className="w-4 h-4" />
-          {classItem.instructor}
-        </span>
-        <span className="flex items-center gap-1">
-          <Clock className="w-4 h-4" />
-          {classItem.duration} min
-        </span>
-      </div>
-
-      <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-        <div className="text-sm">
-          <span className="text-gray-500">
-            {format(parseISO(classItem.scheduledAt), 'EEEE')}, {format(parseISO(classItem.scheduledAt), 'h:mm a')}
+        <div className="flex items-center gap-4 text-sm text-gray-500 mb-4">
+          <span className="flex items-center gap-1">
+            <User className="w-4 h-4" />
+            {classItem.instructor}
+          </span>
+          <span className="flex items-center gap-1">
+            <Clock className="w-4 h-4" />
+            {classItem.duration} min
           </span>
         </div>
-        <a
-          href={classItem.zoomLink || '#'}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-colors ${
-            isLive
-              ? 'bg-red-500 hover:bg-red-600 text-white'
-              : 'bg-coral-100 hover:bg-coral-200 text-coral-600'
-          }`}
-        >
-          {isLive ? 'Join Now' : 'Set Reminder'}
-          <ExternalLink className="w-4 h-4" />
-        </a>
+
+        <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+          <div className="text-sm">
+            <span className="text-gray-500">
+              {format(parseISO(classItem.scheduledAt), 'EEEE')}, {format(parseISO(classItem.scheduledAt), 'h:mm a')}
+            </span>
+          </div>
+          <button
+            onClick={handleButtonClick}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-colors ${
+              isLive
+                ? 'bg-red-500 hover:bg-red-600 text-white'
+                : 'bg-coral-100 hover:bg-coral-200 text-coral-600'
+            }`}
+          >
+            {isLive ? 'Join Now' : 'Set Reminder'}
+            <ExternalLink className="w-4 h-4" />
+          </button>
+        </div>
       </div>
-    </div>
+
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 animate-in slide-in-from-top-5 fade-in duration-300">
+          <div className="bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-3">
+            <CheckCircle2 className="w-5 h-5" />
+            <span className="font-medium">{toastMessage}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Reminder Modal */}
+      <ReminderModal
+        isOpen={showReminderModal}
+        onClose={() => setShowReminderModal(false)}
+        onConfirm={handleSetReminder}
+        scheduledAt={classItem.scheduledAt}
+        title={classItem.title}
+      />
+    </>
   );
 }
 

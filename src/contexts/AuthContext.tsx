@@ -19,7 +19,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signUp: (email: string, password: string, name: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, name: string) => Promise<{ error: Error | null; needsConfirmation?: boolean }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signInWithMagicLink: (email: string) => Promise<{ error: Error | null; message?: string }>;
   signOut: () => Promise<void>;
@@ -65,16 +65,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signUp = async (email: string, password: string, name: string) => {
     if (DEMO_MODE) {
       setUser(DEMO_USER);
-      return { error: null };
+      return { error: null, needsConfirmation: false };
     }
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: { name }
+        data: { name },
+        emailRedirectTo: `${window.location.origin}/`
       }
     });
-    return { error };
+    
+    // Check if email confirmation is required
+    const needsConfirmation = data?.user && !data?.session;
+    
+    return { error, needsConfirmation };
   };
 
   const signIn = async (email: string, password: string) => {

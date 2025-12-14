@@ -78,12 +78,33 @@ const availableWidgets = [
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const { data: habits = [] } = useHabits();
-  const { data: weightEntries = [] } = useWeightEntries();
-  const { data: journalEntries = [] } = useJournalEntries();
-  const { data: userBadges = [] } = useUserBadges();
-  const { metrics: healthMetrics } = useHealthMetrics();
-  const { classes: liveClasses = [] } = useLiveClasses();
+  const { data: habits = [], error: habitsError } = useHabits();
+  const { data: weightEntries = [], error: weightError } = useWeightEntries();
+  const { data: journalEntries = [], error: journalError } = useJournalEntries();
+  const { data: userBadges = [], error: badgesError } = useUserBadges();
+  const { metrics: healthMetrics, loading: metricsLoading } = useHealthMetrics();
+  const { classes: liveClasses = [], error: classesError } = useLiveClasses();
+  
+  // Log errors for debugging
+  useEffect(() => {
+    if (habitsError) console.error('Error loading habits:', habitsError);
+    if (weightError) console.error('Error loading weight entries:', weightError);
+    if (journalError) console.error('Error loading journal entries:', journalError);
+    if (badgesError) console.error('Error loading badges:', badgesError);
+    if (classesError) console.error('Error loading live classes:', classesError);
+  }, [habitsError, weightError, journalError, badgesError, classesError]);
+  
+  // Debug: Log user and data state
+  useEffect(() => {
+    console.log('Dashboard state:', {
+      user: user?.id,
+      habitsCount: habits.length,
+      weightCount: weightEntries.length,
+      journalCount: journalEntries.length,
+      badgesCount: userBadges.length,
+      liveClassesCount: liveClasses.length
+    });
+  }, [user?.id, habits.length, weightEntries.length, journalEntries.length, userBadges.length, liveClasses.length]);
   const { colorPreset, setColorPreset, colorPresets, primaryColor } = useTheme();
   const [widgets, setWidgets] = useState<WidgetConfig[]>(() => {
     const saved = localStorage.getItem('dashboardWidgets');
@@ -121,6 +142,31 @@ export default function Dashboard() {
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-coral-200 border-t-coral-500 rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-500">Loading your dashboard...</p>
+          {!user && <p className="text-sm text-red-500 mt-2">Not authenticated</p>}
+        </div>
+      </div>
+    );
+  }
+  
+  // Show error message if there are errors and no data
+  const hasErrors = habitsError || weightError || journalError || badgesError || classesError;
+  const hasNoData = habits.length === 0 && weightEntries.length === 0 && journalEntries.length === 0 && userBadges.length === 0;
+  
+  if (hasErrors && hasNoData && user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center max-w-md p-6">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <X className="w-8 h-8 text-red-600" />
+          </div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Error Loading Data</h2>
+          <p className="text-gray-600 mb-4">There was an error loading your dashboard data. Please refresh the page.</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-coral-500 text-white rounded-lg hover:bg-coral-600"
+          >
+            Refresh Page
+          </button>
         </div>
       </div>
     );

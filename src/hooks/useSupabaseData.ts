@@ -64,9 +64,13 @@ export function useUserData<T>(
 
         const { data: result, error } = await query
 
-        if (error) throw error
+        if (error) {
+          console.error(`Error fetching ${table}:`, error);
+          throw error;
+        }
         setData((result as T[]) || [])
       } catch (err) {
+        console.error(`Error in useUserData for ${table}:`, err);
         setError(err as Error)
       } finally {
         setLoading(false)

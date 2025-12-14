@@ -1120,22 +1120,26 @@ export function useClassReminders() {
         }
       }
 
-      // Request push notification permission if needed
+      // Request push notification permission if needed (don't block on this)
       if (notificationType === 'push' && 'Notification' in window) {
         try {
           // Request notification permission
           if (Notification.permission === 'default') {
             await Notification.requestPermission()
           }
-          
-          // Note: Full push subscription with VAPID keys requires additional setup
-          // For now, browser notifications will work when reminders are due
           console.log('Push notifications ready')
         } catch (error) {
           console.error('Error setting up push notifications:', error)
-          // Don't throw - email fallback will work
+          // Don't throw - reminder is saved, notifications will work when due
         }
       }
+
+      // Log success for debugging
+      console.log('Reminder saved successfully:', {
+        type: notificationType,
+        minutes: reminderMinutesBefore,
+        reminderTime: reminderTime.toISOString()
+      })
 
       return true
     } catch (err) {

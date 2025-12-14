@@ -35,7 +35,15 @@ export default function ReminderModal({
     } catch (error) {
       console.error('Error setting reminder:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to set reminder. Please try again.';
-      alert(errorMessage);
+      
+      // Show more helpful error message
+      if (errorMessage.includes('table not found') || errorMessage.includes('relation')) {
+        alert('The reminders feature is not set up yet. Please contact support to enable reminders.');
+      } else if (errorMessage.includes('permission') || errorMessage.includes('policy')) {
+        alert('You do not have permission to set reminders. Please make sure you are logged in.');
+      } else {
+        alert(errorMessage);
+      }
     } finally {
       setIsSubmitting(false);
     }

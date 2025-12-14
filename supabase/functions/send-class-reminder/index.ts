@@ -55,15 +55,41 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-    // Get user email
+    // Get user email from public.users table
+    // First try to get from users table
     const { data: userData, error: userError } = await supabase
       .from('users')
       .select('email, name')
       .eq('id', userId)
-      .single()
+      .maybeSingle()
 
-    if (userError || !userData) {
-      throw new Error('User not found')
+    let userEmail: string | null = null
+    let userName = 'there'
+
+    if (userData) {
+      userEmail = userData.email
+      userName = userData.name || userData.email?.split('@')[0] || 'there'
+    } else {
+      // Fallback: try to get from auth.users via direct query (requires service role)
+      // Note: This is a workaround - ideally the users table should be synced with auth.users
+      const { data: authData, error: authError } = await supabase
+        .rpc('get_user_email', { user_uuid: userId })
+        .single()
+        .catch(() => ({ data: null, error: null }))
+
+      if (authData?.email) {
+        userEmail = authData.email
+        userName = authData.name || authData.email.split('@')[0] || 'there'
+      }
+    }
+
+    // If still no email, use the one passed from client if available
+    if (!userEmail && passedEmail) {
+      userEmail = passedEmail
+    }
+
+    if (!userEmail) {
+      throw new Error('User email not found. Please make sure your account has a valid email address.')
     }
 
     // Format the class time
@@ -94,7 +120,7 @@ serve(async (req) => {
     <h1 style="color: white; margin: 0; font-size: 24px;">Class Reminder</h1>
   </div>
   <div style="background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 10px 10px;">
-    <p style="font-size: 16px; margin-bottom: 20px;">Hi ${userData.name || 'there'},</p>
+    <p style="font-size: 16px; margin-bottom: 20px;">Hi ${userName},</p>
     
     <p style="font-size: 16px; margin-bottom: 20px;">
       This is a reminder that <strong>"${classTitle}"</strong> is starting in <strong>${reminderMinutes} minutes</strong>.
@@ -123,7 +149,7 @@ serve(async (req) => {
 
     // Plain text version for fallback
     const textBody = `
-Hi ${userData.name || 'there'},
+Hi ${userName},
 
 This is a reminder that "${classTitle}" is starting in ${reminderMinutes} minutes.
 
@@ -138,9 +164,9 @@ See you there!
     // Send email using Resend
     let emailSent = false
     try {
-      await sendEmailWithResend(userData.email, emailSubject, htmlBody)
+      await sendEmailWithResend(userEmail, emailSubject, htmlBody)
       emailSent = true
-      console.log(`Email sent successfully to ${userData.email}`)
+      console.log(`Email sent successfully to ${userEmail}`)
     } catch (emailError) {
       console.error('Error sending email:', emailError)
       // Continue to create notification even if email fails

@@ -734,7 +734,8 @@ function LiveClassCard({ classItem, isLive }: LiveClassCardProps) {
         reminderMinutes,
         classItem.scheduledAt
       );
-      setToastMessage(`Reminder set! You'll be notified ${reminderMinutes} minutes before the class.`);
+      const notificationTypeText = notificationType === 'push' ? 'push notification' : 'email';
+      setToastMessage(`Reminder set! You'll receive a ${notificationTypeText} ${reminderMinutes} minutes before the class.`);
       setTimeout(() => setToastMessage(null), 3000);
     } catch (error) {
       console.error('Error setting reminder:', error);

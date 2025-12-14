@@ -67,7 +67,7 @@ export function useReminderChecker() {
           if (reminder.notification_type === 'email') {
             try {
               const { data: { session } } = await supabase.auth.getSession();
-              if (session) {
+              if (session && user.email) {
                 await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-class-reminder`, {
                   method: 'POST',
                   headers: {
@@ -79,7 +79,9 @@ export function useReminderChecker() {
                     userId: user.id,
                     classTitle: classData.title,
                     scheduledAt: classData.scheduled_at,
-                    reminderMinutes: reminder.reminder_minutes_before
+                    reminderMinutes: reminder.reminder_minutes_before,
+                    userEmail: user.email, // Pass email from client
+                    userName: user.user_metadata?.name || user.email?.split('@')[0] || 'there'
                   })
                 });
               }

@@ -1,7 +1,7 @@
 -- Enhance Activity Tracking
 -- This migration adds comprehensive activity tracking for all user actions
 
--- Create user_activity table if it doesn't exist (in case migration 010 hasn't been run)
+-- Step 1: Create user_activity table (this must run first)
 CREATE TABLE IF NOT EXISTS public.user_activity (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -12,199 +12,101 @@ CREATE TABLE IF NOT EXISTS public.user_activity (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Drop existing constraint if it exists, then add new one with all activity types
-DO $$
-BEGIN
-  -- Only proceed if table exists
-  IF EXISTS (
-    SELECT 1 FROM information_schema.tables 
-    WHERE table_schema = 'public' 
-    AND table_name = 'user_activity'
-  ) THEN
-    -- Drop constraint if it exists
-    IF EXISTS (
-      SELECT 1 FROM pg_constraint 
-      WHERE conname = 'user_activity_activity_type_check'
-      AND conrelid = 'public.user_activity'::regclass
-    ) THEN
-      ALTER TABLE public.user_activity DROP CONSTRAINT user_activity_activity_type_check;
-    END IF;
-    
-    -- Add new constraint with all activity types
-    BEGIN
-      ALTER TABLE public.user_activity 
-      ADD CONSTRAINT user_activity_activity_type_check 
-      CHECK (activity_type IN (
-        'video_view',
-        'favorite_added',
-        'favorite_removed',
-        'reminder_set',
-        'reminder_cancelled',
-        'login',
-        'weight_logged',
-        'journal_entry_created',
-        'journal_entry_updated',
-        'habit_completed',
-        'session_completed'
-      ));
-    EXCEPTION
-      WHEN duplicate_object THEN
-        -- Constraint already exists, that's fine
-        NULL;
-    END;
-  END IF;
-END $$;
+-- Step 2: Drop existing constraint if it exists
+ALTER TABLE public.user_activity 
+DROP CONSTRAINT IF EXISTS user_activity_activity_type_check;
 
--- Add helpful columns for better organization (only if table exists)
-DO $$
-BEGIN
-  IF EXISTS (
-    SELECT 1 FROM information_schema.tables 
-    WHERE table_schema = 'public' 
-    AND table_name = 'user_activity'
-  ) THEN
-    ALTER TABLE public.user_activity 
-    ADD COLUMN IF NOT EXISTS activity_description TEXT,
-    ADD COLUMN IF NOT EXISTS entity_title TEXT;
-  END IF;
-END $$;
+-- Step 3: Add constraint with all activity types
+ALTER TABLE public.user_activity 
+ADD CONSTRAINT user_activity_activity_type_check 
+CHECK (activity_type IN (
+  'video_view',
+  'favorite_added',
+  'favorite_removed',
+  'reminder_set',
+  'reminder_cancelled',
+  'login',
+  'weight_logged',
+  'journal_entry_created',
+  'journal_entry_updated',
+  'habit_completed',
+  'session_completed'
+));
 
--- Create a view for organized activity display in Supabase (only if table exists)
-DO $$
-BEGIN
-  -- Only create view if the table exists
-  IF EXISTS (
-    SELECT 1 FROM information_schema.tables 
-    WHERE table_schema = 'public' 
-    AND table_name = 'user_activity'
-  ) THEN
-    EXECUTE '
-    CREATE OR REPLACE VIEW public.user_activity_detailed AS
-    SELECT 
-      ua.id,
-      ua.user_id,
-      u.email as user_email,
-      u.name as user_name,
-      ua.activity_type,
-      ua.activity_description,
-      ua.entity_type,
-      ua.entity_id,
-      ua.entity_title,
-      ua.metadata,
-      ua.created_at,
-      CASE 
-        WHEN ua.activity_type = ''video_view'' THEN ''Video View''
-        WHEN ua.activity_type = ''favorite_added'' THEN ''Favorite Added''
-        WHEN ua.activity_type = ''favorite_removed'' THEN ''Favorite Removed''
-        WHEN ua.activity_type = ''reminder_set'' THEN ''Reminder Set''
-        WHEN ua.activity_type = ''reminder_cancelled'' THEN ''Reminder Cancelled''
-        WHEN ua.activity_type = ''login'' THEN ''Login''
-        WHEN ua.activity_type = ''weight_logged'' THEN ''Weight Logged''
-        WHEN ua.activity_type = ''journal_entry_created'' THEN ''Journal Entry Created''
-        WHEN ua.activity_type = ''journal_entry_updated'' THEN ''Journal Entry Updated''
-        WHEN ua.activity_type = ''habit_completed'' THEN ''Habit Completed''
-        WHEN ua.activity_type = ''session_completed'' THEN ''Session Completed''
-        ELSE ua.activity_type
-      END as activity_label,
-      TO_CHAR(ua.created_at, ''YYYY-MM-DD HH24:MI:SS'') as formatted_time
-    FROM public.user_activity ua
-    LEFT JOIN public.users u ON ua.user_id = u.id
-    ORDER BY ua.created_at DESC';
-  END IF;
-END $$;
+-- Step 4: Add helpful columns
+ALTER TABLE public.user_activity 
+ADD COLUMN IF NOT EXISTS activity_description TEXT,
+ADD COLUMN IF NOT EXISTS entity_title TEXT;
 
--- Create indexes and enable RLS (only if table exists)
-DO $$
-BEGIN
-  IF EXISTS (
-    SELECT 1 FROM information_schema.tables 
-    WHERE table_schema = 'public' 
-    AND table_name = 'user_activity'
-  ) THEN
-    -- Create index on entity_title for better search
-    CREATE INDEX IF NOT EXISTS idx_user_activity_entity_title ON public.user_activity(entity_title);
-    
-    -- Create index on activity_description
-    CREATE INDEX IF NOT EXISTS idx_user_activity_description ON public.user_activity(activity_description);
-    
-    -- Enable RLS if not already enabled
-    ALTER TABLE public.user_activity ENABLE ROW LEVEL SECURITY;
-    
-    -- Create indexes if they don't exist (from migration 010)
-    CREATE INDEX IF NOT EXISTS idx_user_activity_user_id ON public.user_activity(user_id);
-    CREATE INDEX IF NOT EXISTS idx_user_activity_type ON public.user_activity(activity_type);
-    CREATE INDEX IF NOT EXISTS idx_user_activity_created ON public.user_activity(created_at DESC);
-  END IF;
-END $$;
+-- Step 5: Create indexes
+CREATE INDEX IF NOT EXISTS idx_user_activity_user_id ON public.user_activity(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_activity_type ON public.user_activity(activity_type);
+CREATE INDEX IF NOT EXISTS idx_user_activity_created ON public.user_activity(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_user_activity_entity_title ON public.user_activity(entity_title);
+CREATE INDEX IF NOT EXISTS idx_user_activity_description ON public.user_activity(activity_description);
 
--- Create RLS policies if they don't exist
-DO $$
-BEGIN
-  -- Users can view own activity
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies 
-    WHERE schemaname = 'public' 
-    AND tablename = 'user_activity' 
-    AND policyname = 'Users can view own activity'
-  ) THEN
-    CREATE POLICY "Users can view own activity"
-      ON public.user_activity FOR SELECT
-      USING (auth.uid() = user_id);
-  END IF;
+-- Step 6: Enable RLS
+ALTER TABLE public.user_activity ENABLE ROW LEVEL SECURITY;
 
-  -- Admins can view all activity
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies 
-    WHERE schemaname = 'public' 
-    AND tablename = 'user_activity' 
-    AND policyname = 'Admins can view all activity'
-  ) THEN
-    CREATE POLICY "Admins can view all activity"
-      ON public.user_activity FOR SELECT
-      USING (
-        EXISTS (
-          SELECT 1 FROM public.users 
-          WHERE users.id = auth.uid() 
-          AND users.role = 'admin'
-        )
-      );
-  END IF;
+-- Step 7: Create RLS policies
+DROP POLICY IF EXISTS "Users can view own activity" ON public.user_activity;
+CREATE POLICY "Users can view own activity"
+  ON public.user_activity FOR SELECT
+  USING (auth.uid() = user_id);
 
-  -- Users can insert own activity
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies 
-    WHERE schemaname = 'public' 
-    AND tablename = 'user_activity' 
-    AND policyname = 'Users can insert own activity'
-  ) THEN
-    CREATE POLICY "Users can insert own activity"
-      ON public.user_activity FOR INSERT
-      WITH CHECK (auth.uid() = user_id);
-  END IF;
-END $$;
+DROP POLICY IF EXISTS "Admins can view all activity" ON public.user_activity;
+CREATE POLICY "Admins can view all activity"
+  ON public.user_activity FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.users 
+      WHERE users.id = auth.uid() 
+      AND users.role = 'admin'
+    )
+  );
 
--- Grant access to the view (if it exists)
-DO $$
-BEGIN
-  IF EXISTS (
-    SELECT 1 FROM information_schema.views 
-    WHERE table_schema = 'public' 
-    AND table_name = 'user_activity_detailed'
-  ) THEN
-    GRANT SELECT ON public.user_activity_detailed TO authenticated;
-  END IF;
-END $$;
+DROP POLICY IF EXISTS "Users can insert own activity" ON public.user_activity;
+CREATE POLICY "Users can insert own activity"
+  ON public.user_activity FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
 
--- Add comment to table for documentation (if table exists)
-DO $$
-BEGIN
-  IF EXISTS (
-    SELECT 1 FROM information_schema.tables 
-    WHERE table_schema = 'public' 
-    AND table_name = 'user_activity'
-  ) THEN
-    COMMENT ON TABLE public.user_activity IS 'Comprehensive activity tracking for all user actions in the dashboard. Use user_activity_detailed view for organized display.';
-    COMMENT ON COLUMN public.user_activity.activity_description IS 'Human-readable description of the activity';
-    COMMENT ON COLUMN public.user_activity.entity_title IS 'Title/name of the entity (e.g., class title, journal entry title)';
-  END IF;
-END $$;
+-- Step 8: Create view for organized display
+CREATE OR REPLACE VIEW public.user_activity_detailed AS
+SELECT 
+  ua.id,
+  ua.user_id,
+  u.email as user_email,
+  u.name as user_name,
+  ua.activity_type,
+  ua.activity_description,
+  ua.entity_type,
+  ua.entity_id,
+  ua.entity_title,
+  ua.metadata,
+  ua.created_at,
+  CASE 
+    WHEN ua.activity_type = 'video_view' THEN 'Video View'
+    WHEN ua.activity_type = 'favorite_added' THEN 'Favorite Added'
+    WHEN ua.activity_type = 'favorite_removed' THEN 'Favorite Removed'
+    WHEN ua.activity_type = 'reminder_set' THEN 'Reminder Set'
+    WHEN ua.activity_type = 'reminder_cancelled' THEN 'Reminder Cancelled'
+    WHEN ua.activity_type = 'login' THEN 'Login'
+    WHEN ua.activity_type = 'weight_logged' THEN 'Weight Logged'
+    WHEN ua.activity_type = 'journal_entry_created' THEN 'Journal Entry Created'
+    WHEN ua.activity_type = 'journal_entry_updated' THEN 'Journal Entry Updated'
+    WHEN ua.activity_type = 'habit_completed' THEN 'Habit Completed'
+    WHEN ua.activity_type = 'session_completed' THEN 'Session Completed'
+    ELSE ua.activity_type
+  END as activity_label,
+  TO_CHAR(ua.created_at, 'YYYY-MM-DD HH24:MI:SS') as formatted_time
+FROM public.user_activity ua
+LEFT JOIN public.users u ON ua.user_id = u.id
+ORDER BY ua.created_at DESC;
+
+-- Step 9: Grant access
+GRANT SELECT ON public.user_activity_detailed TO authenticated;
+
+-- Step 10: Add documentation
+COMMENT ON TABLE public.user_activity IS 'Comprehensive activity tracking for all user actions in the dashboard. Use user_activity_detailed view for organized display.';
+COMMENT ON COLUMN public.user_activity.activity_description IS 'Human-readable description of the activity';
+COMMENT ON COLUMN public.user_activity.entity_title IS 'Title/name of the entity (e.g., class title, journal entry title)';

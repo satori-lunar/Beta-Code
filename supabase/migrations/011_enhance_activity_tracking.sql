@@ -1,16 +1,38 @@
 -- Enhance Activity Tracking
 -- This migration adds comprehensive activity tracking for all user actions
+-- NOTE: Run 011_create_user_activity_table.sql first if the table doesn't exist
 
--- Step 1: Create user_activity table (this must run first)
-CREATE TABLE IF NOT EXISTS public.user_activity (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  activity_type TEXT NOT NULL,
-  entity_type TEXT,
-  entity_id UUID,
-  metadata JSONB DEFAULT '{}',
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
+-- Ensure table exists (create if it doesn't)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.tables 
+    WHERE table_schema = 'public' 
+    AND table_name = 'user_activity'
+  ) THEN
+    CREATE TABLE public.user_activity (
+      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+      activity_type TEXT NOT NULL,
+      entity_type TEXT,
+      entity_id UUID,
+      metadata JSONB DEFAULT '{}',
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+    
+    -- Enable RLS
+    ALTER TABLE public.user_activity ENABLE ROW LEVEL SECURITY;
+    
+    -- Basic RLS policies
+    CREATE POLICY "Users can view own activity"
+      ON public.user_activity FOR SELECT
+      USING (auth.uid() = user_id);
+    
+    CREATE POLICY "Users can insert own activity"
+      ON public.user_activity FOR INSERT
+      WITH CHECK (auth.uid() = user_id);
+  END IF;
+END $$;
 
 -- Step 2: Drop existing constraint if it exists
 ALTER TABLE public.user_activity 
@@ -55,15 +77,27 @@ CREATE POLICY "Users can view own activity"
   USING (auth.uid() = user_id);
 
 DROP POLICY IF EXISTS "Admins can view all activity" ON public.user_activity;
-CREATE POLICY "Admins can view all activity"
-  ON public.user_activity FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.users 
-      WHERE users.id = auth.uid() 
-      AND users.role = 'admin'
-    )
-  );
+-- Only create admin policy if role column exists
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_schema = 'public' 
+    AND table_name = 'users' 
+    AND column_name = 'role'
+  ) THEN
+    EXECUTE '
+    CREATE POLICY "Admins can view all activity"
+      ON public.user_activity FOR SELECT
+      USING (
+        EXISTS (
+          SELECT 1 FROM public.users 
+          WHERE users.id = auth.uid() 
+          AND users.role = ''admin''
+        )
+      )';
+  END IF;
+END $$;
 
 DROP POLICY IF EXISTS "Users can insert own activity" ON public.user_activity;
 CREATE POLICY "Users can insert own activity"

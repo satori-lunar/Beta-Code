@@ -716,7 +716,7 @@ interface LiveClassCardProps {
 
 function LiveClassCard({ classItem, isLive }: LiveClassCardProps) {
   const [showReminderModal, setShowReminderModal] = useState(false);
-  const { setReminder, loading: reminderLoading } = useClassReminders();
+  const { setReminder } = useClassReminders();
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const classStyle = courseStyles[classItem.title] || {

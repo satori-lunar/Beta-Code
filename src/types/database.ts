@@ -650,6 +650,42 @@ export type Database = {
         }
         Relationships: []
       }
+      class_reminders: {
+        Row: {
+          id: string
+          user_id: string
+          live_class_id: string
+          notification_type: 'push' | 'email'
+          reminder_minutes_before: number
+          scheduled_reminder_time: string
+          sent: boolean
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          live_class_id: string
+          notification_type: 'push' | 'email'
+          reminder_minutes_before: number
+          scheduled_reminder_time: string
+          sent?: boolean
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          live_class_id?: string
+          notification_type?: 'push' | 'email'
+          reminder_minutes_before?: number
+          scheduled_reminder_time?: string
+          sent?: boolean
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       recorded_sessions: {
         Row: {
           id: string

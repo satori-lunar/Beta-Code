@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Bell, Mail, Clock, Smartphone } from 'lucide-react';
+import { X, Mail, Clock, Smartphone } from 'lucide-react';
 import { format, parseISO, subMinutes } from 'date-fns';
 
 interface ReminderModalProps {

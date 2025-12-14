@@ -1117,21 +1117,9 @@ export function useClassReminders() {
             await Notification.requestPermission()
           }
           
-          // Subscribe to push notifications if permission granted
-          if (Notification.permission === 'granted') {
-            const subscription = await registration.pushManager.subscribe({
-              userVisibleOnly: true,
-              applicationServerKey: urlBase64ToUint8Array(
-                // You'll need to add your VAPID public key here
-                // For now, we'll use a placeholder - replace with actual key from Supabase
-                'YOUR_VAPID_PUBLIC_KEY'
-              )
-            })
-            
-            // Store subscription in database (you may want to create a push_subscriptions table)
-            // For now, we'll just log it
-            console.log('Push subscription:', subscription)
-          }
+          // Note: Full push subscription with VAPID keys requires additional setup
+          // For now, browser notifications will work when reminders are due
+          console.log('Push notifications ready')
         } catch (error) {
           console.error('Error setting up push notifications:', error)
           // Don't throw - email fallback will work

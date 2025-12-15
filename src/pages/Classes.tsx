@@ -11,7 +11,6 @@ import {
   Video,
   ExternalLink,
   Radio,
-  ChevronRight,
   CheckCircle2,
   Moon,
   UtensilsCrossed,
@@ -28,11 +27,8 @@ import {
   Flame,
   Waves,
   Flower2,
-  Compass
 } from 'lucide-react';
 import { useRecordedSessions, useLiveClasses, useFavoriteSessions, useSessionCompletions, useClassReminders } from '../hooks/useSupabaseData';
-import { pathwayDefinitions } from './Pathways';
-import { usePathways } from '../hooks/usePathways';
 import { useReminderChecker } from '../hooks/useReminderChecker';
 import { useTrackVideoView, useTrackFavorite, useTrackReminder } from '../hooks/useActivityTracking';
 import { format, parseISO, isAfter, isBefore, addHours } from 'date-fns';
@@ -68,7 +64,7 @@ const courseStyles: Record<string, { gradient: string; icon: any }> = {
   'Made 2 Move: Group Exercise Replays': { gradient: 'from-green-500 to-teal-600', icon: Activity },
   'Inner Chords': { gradient: 'from-violet-500 to-purple-600', icon: Waves },
   'Instinctive Meditation': { gradient: 'from-indigo-400 to-blue-500', icon: Brain },
-  'The Reflecting Pool': { gradient: 'from-blue-400 to-indigo-500', icon: Compass },
+  'The Reflecting Pool': { gradient: 'from-blue-400 to-indigo-500', icon: Activity },
   'Tangled: Challenging Relationships': { gradient: 'from-rose-500 to-pink-600', icon: Users },
   'The Heart of Nourishment': { gradient: 'from-amber-400 to-orange-500', icon: Heart },
   'Grief & Growth': { gradient: 'from-gray-500 to-slate-600', icon: Flower2 },
@@ -84,43 +80,20 @@ export default function Classes() {
   const { classes: liveClasses, loading: classesLoading } = useLiveClasses();
   const { favoriteIds, toggleFavorite } = useFavoriteSessions();
   const { completedIds, toggleCompletion } = useSessionCompletions();
-  const { pathways, userProgress, loading: pathwaysLoading, enrollInPathway } = usePathways();
   const { trackView } = useTrackVideoView();
   const { trackFavorite } = useTrackFavorite();
 
   // Check for due reminders
   useReminderChecker();
 
-  // Get initial tab and optional filters from navigation state (e.g. from HealthDashboard or Pathways)
+  // Get initial tab from navigation state (e.g. from HealthDashboard)
   const initialState = (location.state as any) || {};
-  const initialPathwayTitle: string | undefined = initialState.pathwayTitle;
-
   const [activeTab, setActiveTab] = useState<'live' | 'recorded' | 'favorites' | 'completed'>(
-    initialState.activeTab || (initialPathwayTitle ? 'recorded' : 'live')
+    initialState.activeTab || 'live'
   );
   const [selectedWeekday, setSelectedWeekday] = useState<string>('Sunday');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedPathwayId, setSelectedPathwayId] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-
-  // If we came from a Pathway with a title, map that title to a real pathway ID
-  useEffect(() => {
-    if (!initialPathwayTitle || !pathways || pathways.length === 0) return;
-    const match = pathways.find(p => p.title === initialPathwayTitle);
-    if (match) {
-      setSelectedPathwayId(match.id);
-    }
-  }, [initialPathwayTitle, pathways]);
-
-  // Reset pathway selection when switching tabs
-  useEffect(() => {
-    if (activeTab !== 'recorded') {
-      setSelectedPathwayId(null);
-    } else if (activeTab === 'recorded' && selectedPathwayId === null) {
-      // Ensure we're showing pathways, not sessions
-      setSelectedPathwayId(null);
-    }
-  }, [activeTab, selectedPathwayId]);
 
   const now = new Date();
 
@@ -165,51 +138,6 @@ export default function Classes() {
       isLive: isClassLive(cls.scheduled_at, cls.duration),
     }));
   }, [liveClasses]);
-
-  // Get live classes for selected pathway (based on class titles).
-  // Prefer static pathwayDefinitions (they reflect your intentional mapping),
-  // fall back to Supabase pathways if no static match is found.
-  const selectedPathwayConfig = useMemo(() => {
-    if (!selectedPathwayId) return null;
-
-    // Try to match Supabase pathway title to our static definitions
-    const supabasePathway = pathways.find(p => p.id === selectedPathwayId) || null;
-    if (supabasePathway) {
-      const staticMatch = pathwayDefinitions.find(
-        p => p.title.toLowerCase() === supabasePathway.title.toLowerCase()
-      );
-      if (staticMatch) return staticMatch;
-      // If no static match by title, fall back to Supabase class_titles
-      return {
-        id: supabasePathway.id,
-        title: supabasePathway.title,
-        class_titles: supabasePathway.class_titles || [],
-      } as { id: string; title: string; class_titles: string[] };
-    }
-
-    // If we only have a title from navigation state
-    if (initialPathwayTitle) {
-      const staticMatch = pathwayDefinitions.find(
-        p => p.title.toLowerCase() === initialPathwayTitle.toLowerCase()
-      );
-      if (staticMatch) return staticMatch;
-    }
-
-    return null;
-  }, [selectedPathwayId, pathways, initialPathwayTitle]);
-
-  const pathwayLiveClasses = useMemo(() => {
-    if (!selectedPathwayConfig) return [];
-    const titles = (selectedPathwayConfig.class_titles || []).map(t => t.toLowerCase());
-    if (titles.length === 0) return [];
-
-    return mappedLiveClasses.filter(c =>
-      titles.some(title =>
-        c.title.toLowerCase().includes(title) ||
-        title.includes(c.title.toLowerCase())
-      )
-    );
-  }, [selectedPathwayConfig, mappedLiveClasses]);
 
   // Filtered data - no filters for live classes, just use all classes
   const filteredLiveClasses = mappedLiveClasses;
@@ -330,7 +258,17 @@ export default function Classes() {
   const favoriteSessions = mappedRecordedSessions.filter((s) => s.isFavorite);
   const completedSessions = mappedRecordedSessions.filter((s) => s.isCompleted);
 
-  const loading = sessionsLoading || classesLoading || pathwaysLoading;
+  const filteredRecordedSessions = useMemo(
+    () =>
+      mappedRecordedSessions.filter(
+        (s) =>
+          s.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          s.description.toLowerCase().includes(searchQuery.toLowerCase())
+      ),
+    [mappedRecordedSessions, searchQuery]
+  );
+
+  const loading = sessionsLoading || classesLoading;
 
   const handleToggleComplete = async (sessionId: string, sessionTitle: string) => {
     // Show toast notification
@@ -372,7 +310,7 @@ export default function Classes() {
       <div className="flex gap-2 border-b border-gray-100 overflow-x-auto scrollbar-hide">
         {[
           { id: 'live', label: 'Live Classes', icon: Radio },
-          { id: 'recorded', label: 'Pathways', icon: Compass },
+          { id: 'recorded', label: 'Recordings', icon: Video },
           { id: 'favorites', label: 'Favorites', icon: Heart },
           { id: 'completed', label: 'Completed', icon: CheckCircle2 },
         ].map((tab) => (
@@ -402,8 +340,8 @@ export default function Classes() {
         ))}
       </div>
 
-      {/* Search - Only show for pathways (not live classes) */}
-      {activeTab === 'recorded' && !selectedPathwayId && (
+      {/* Search - Only show for recordings tab */}
+      {activeTab === 'recorded' && (
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="flex-1 relative">
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -411,23 +349,7 @@ export default function Classes() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search pathways..."
-              className="input pl-12"
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Search for sessions when viewing a pathway */}
-      {activeTab === 'recorded' && selectedPathwayId && (
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search sessions..."
+              placeholder="Search recordings..."
               className="input pl-12"
             />
           </div>
@@ -506,166 +428,43 @@ export default function Classes() {
 
       {/* Pathways */}
       {activeTab === 'recorded' && (
-        <div>
-          {/* Only show pathways, not all sessions directly */}
-          {selectedPathwayId ? (
-            // Show classes for selected pathway
-            <div>
-              <button
-                onClick={() => setSelectedPathwayId(null)}
-                className="mb-4 flex items-center gap-2 text-coral-600 hover:text-coral-700 font-medium"
-              >
-                <ChevronRight className="w-4 h-4 rotate-180" />
-                Back to Pathways
-              </button>
-              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-sm text-blue-800 flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span className="font-medium">Classes in this pathway</span>
-                  <span className="text-blue-600">
-                    ({pathwayLiveClasses.length} matching live class{pathwayLiveClasses.length === 1 ? '' : 'es'})
-                  </span>
-                </p>
-              </div>
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {loading ? (
-                  <div className="col-span-full card text-center py-12">
-                    <p className="text-gray-500">Loading classes...</p>
-                  </div>
-                ) : pathwayLiveClasses.length > 0 ? (
-                  pathwayLiveClasses.map(classItem => (
-                    <LiveClassCard
-                      key={classItem.id}
-                      classItem={classItem}
-                      isLive={classItem.isLive}
-                    />
-                  ))
-                ) : (
-                  <div className="col-span-full card text-center py-12">
-                    <Video className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                    <p className="text-gray-500">No live classes found for this pathway</p>
-                  </div>
-                )}
-              </div>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {loading ? (
+            <div className="col-span-full card text-center py-12">
+              <p className="text-gray-500">Loading recordings...</p>
             </div>
+          ) : filteredRecordedSessions.length > 0 ? (
+            filteredRecordedSessions.map((session) => (
+              <RecordedSessionCard
+                key={session.id}
+                session={session}
+                onToggleFavorite={async () => {
+                  const wasFavorite = favoriteIds.has(session.id);
+                  toggleFavorite(session.id);
+                  await trackFavorite(
+                    session.id,
+                    wasFavorite ? 'favorite_removed' : 'favorite_added',
+                    session.title
+                  );
+                }}
+                onToggleComplete={() => handleToggleComplete(session.id, session.title)}
+                onClick={() => {
+                  if (session.videoUrl) {
+                    trackView(session.id, session.title);
+                    window.open(session.videoUrl, '_blank', 'noopener,noreferrer');
+                  } else {
+                    console.error('No video URL for session:', session.id);
+                  }
+                }}
+              />
+            ))
           ) : (
-            // Show pathways
-            <div className="grid sm:grid-cols-2 lg:grid-cols-2 gap-6">
-              {pathwaysLoading ? (
-                <div className="col-span-full card text-center py-12">
-                  <p className="text-gray-500">Loading pathways...</p>
-                </div>
-              ) : pathways.length > 0 ? (
-                pathways
-                  .filter(pathway =>
-                    pathway.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                    pathway.description.toLowerCase().includes(searchQuery.toLowerCase())
-                  )
-                  .map((pathway) => {
-                    const progress = userProgress[pathway.id];
-                    const isEnrolled = !!progress;
-                    const progressPercentage = progress
-                      ? Math.round((progress.classes_completed / progress.total_classes) * 100)
-                      : 0;
-                    
-                    return (
-                      <div
-                        key={pathway.id}
-                        className="card overflow-hidden hover:shadow-elevated transition-shadow group relative"
-                      >
-                        {/* Pathway Header with Icon */}
-                        <div className={`h-32 bg-gradient-to-br ${pathway.color_gradient} -mx-6 -mt-6 mb-4 relative overflow-hidden`}>
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="text-6xl">{pathway.icon}</div>
-                          </div>
-                          {/* Decorative pattern */}
-                          <div className="absolute inset-0 opacity-10">
-                            <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.3),transparent_50%)]"></div>
-                          </div>
-                          {isEnrolled && (
-                            <div className="absolute top-3 right-3 px-2 py-1 bg-white/90 backdrop-blur-sm rounded-full text-xs font-medium text-gray-700">
-                              {progressPercentage}% Complete
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Pathway Content */}
-                        <div className="space-y-3">
-                          <div>
-                            <h3 className="font-bold text-gray-900 text-xl mb-2">{pathway.title}</h3>
-                            <p className="text-sm text-gray-600 line-clamp-2 mb-3">{pathway.description}</p>
-                          </div>
-
-                          {/* Stats */}
-                          <div className="flex items-center gap-4 text-sm text-gray-500">
-                            <span className="flex items-center gap-1">
-                              <Clock className="w-4 h-4" />
-                              {pathway.estimated_duration}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Video className="w-4 h-4" />
-                              {pathway.total_classes} classes
-                            </span>
-                          </div>
-
-                          {/* Progress Bar (if enrolled) */}
-                          {isEnrolled && progress && (
-                            <div className="space-y-2">
-                              <div className="flex items-center justify-between text-xs text-gray-500">
-                                <span>{progress.classes_completed} / {progress.total_classes} completed</span>
-                                {progress.current_streak > 0 && (
-                                  <span className="flex items-center gap-1 text-orange-600">
-                                    <Flame className="w-3 h-3" />
-                                    {progress.current_streak} day streak
-                                  </span>
-                                )}
-                              </div>
-                              <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                                <div
-                                  className="h-full bg-gradient-to-r from-coral-400 to-coral-600 rounded-full transition-all duration-500"
-                                  style={{ width: `${progressPercentage}%` }}
-                                />
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Action Button */}
-                          <div className="pt-4 border-t border-gray-100">
-                            {isEnrolled ? (
-                              <button
-                                onClick={() => setSelectedPathwayId(pathway.id)}
-                                className="w-full py-2 px-4 bg-coral-500 hover:bg-coral-600 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
-                              >
-                                <span>Continue Journey</span>
-                                <ChevronRight className="w-4 h-4" />
-                              </button>
-                            ) : (
-                              <div className="flex gap-2">
-                                <button
-                                  onClick={() => enrollInPathway(pathway.id, pathway.total_classes)}
-                                  className="flex-1 py-2 px-4 bg-coral-500 hover:bg-coral-600 text-white rounded-lg font-medium transition-colors"
-                                >
-                                  Start Pathway
-                                </button>
-                                <button
-                                  onClick={() => setSelectedPathwayId(pathway.id)}
-                                  className="py-2 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors"
-                                >
-                                  Preview
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })
-              ) : (
-                <div className="col-span-full card text-center py-12">
-                  <Compass className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-500">No pathways found</p>
-                </div>
-              )}
+            <div className="col-span-full card text-center py-12">
+              <Video className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+              <h3 className="font-semibold text-gray-900 mb-2">No recordings found</h3>
+              <p className="text-gray-500">
+                Recordings from completed live sessions will appear here.
+              </p>
             </div>
           )}
         </div>

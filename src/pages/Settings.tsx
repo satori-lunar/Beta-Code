@@ -3,11 +3,9 @@ import {
   Bell,
   Moon,
   Sun,
-  Globe,
   Lock,
   HelpCircle,
   ChevronRight,
-  Camera,
   Save,
   X,
   Check,
@@ -28,18 +26,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { useUserProfile } from '../hooks/useSupabaseData';
 import { supabase } from '../lib/supabase';
 import { useTheme } from '../contexts/ThemeContext';
-import AvatarBuilder, { AvatarDisplay } from '../components/AvatarBuilder';
+// AvatarBuilder and AvatarDisplay removed while profile avatar is disabled
 import ComingSoonModal from '../components/ComingSoonModal';
-
-// Avatar options
-const avatarOptions = [
-  { id: 'gradient-coral', type: 'gradient', colors: ['#f97316', '#ec4899'] },
-  { id: 'gradient-ocean', type: 'gradient', colors: ['#0ea5e9', '#06b6d4'] },
-  { id: 'gradient-forest', type: 'gradient', colors: ['#22c55e', '#10b981'] },
-  { id: 'gradient-sunset', type: 'gradient', colors: ['#f59e0b', '#ef4444'] },
-  { id: 'gradient-lavender', type: 'gradient', colors: ['#a855f7', '#6366f1'] },
-  { id: 'gradient-midnight', type: 'gradient', colors: ['#1e293b', '#475569'] },
-];
 
 export default function Settings() {
   const { user } = useAuth();
@@ -47,19 +35,16 @@ export default function Settings() {
   const { colorPreset, setColorPreset, isDark, toggleDark, colorPresets, primaryColor } = useTheme();
   const [name, setName] = useState(user?.user_metadata?.name || user?.email?.split('@')[0] || '');
   const [email, setEmail] = useState(user?.email || '');
-  const [selectedAvatar, setSelectedAvatar] = useState(profile?.avatar_url || 'gradient-coral');
-  const [customAvatarUrl, setCustomAvatarUrl] = useState<string | null>(null);
   const [notifications, setNotifications] = useState({
     reminders: true,
     classAlerts: true,
     weeklyProgress: true,
     achievements: true,
   });
-  const [language, setLanguage] = useState('English');
-  const [showLanguageModal, setShowLanguageModal] = useState(false);
+  // Language selection temporarily disabled
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
-  const [showAvatarModal, setShowAvatarModal] = useState(false);
+  // Avatar customization temporarily disabled
   const [showColorModal, setShowColorModal] = useState(false);
   const [showComingSoonModal, setShowComingSoonModal] = useState(false);
   const [comingSoonFeature, setComingSoonFeature] = useState('');
@@ -68,8 +53,6 @@ export default function Settings() {
     showProgress: true,
     shareData: false,
   });
-
-  const languages = ['English', 'Spanish', 'French', 'German', 'Portuguese', 'Japanese', 'Chinese'];
 
   const handleSaveProfile = async () => {
     if (!user) return;
@@ -80,13 +63,12 @@ export default function Settings() {
       data: { name: name }
     });
 
-    // Update or create user profile
+    // Update or create user profile (without avatar while avatar UI is disabled)
     if (profile) {
       await supabase
         .from('user_profiles')
         .update({ 
-          full_name: name,
-          avatar_url: selectedAvatar 
+          full_name: name
         })
         .eq('id', user.id);
     } else {
@@ -94,8 +76,7 @@ export default function Settings() {
         .from('user_profiles')
         .insert({ 
           id: user.id,
-          full_name: name,
-          avatar_url: selectedAvatar 
+          full_name: name
         });
     }
   };
@@ -103,40 +84,6 @@ export default function Settings() {
   const handleDeviceConnect = (deviceName: string) => {
     setComingSoonFeature(`${deviceName} Integration`);
     setShowComingSoonModal(true);
-  };
-
-  const renderAvatar = () => {
-    if (selectedAvatar === 'custom' && customAvatarUrl) {
-      return (
-        <img src={customAvatarUrl} alt="Avatar" className="w-full h-full object-cover rounded-full" />
-      );
-    }
-    
-    // Check if it's a JSON avatar config from AvatarBuilder
-    if (selectedAvatar && selectedAvatar.startsWith('{')) {
-      return <AvatarDisplay avatarData={selectedAvatar} size={80} />;
-    }
-    
-    // Legacy gradient avatar
-    const avatar = avatarOptions.find(a => a.id === selectedAvatar);
-    if (avatar) {
-      return (
-        <div
-          className="w-full h-full rounded-full flex items-center justify-center text-white text-2xl font-bold"
-          style={{ background: `linear-gradient(135deg, ${avatar.colors[0]}, ${avatar.colors[1]})` }}
-        >
-          {name.charAt(0) || 'U'}
-        </div>
-      );
-    }
-    return (
-      <div
-        className="w-full h-full rounded-full flex items-center justify-center text-white text-2xl font-bold"
-        style={{ background: `linear-gradient(to bottom right, ${colorPresets[colorPreset]?.light}, ${primaryColor})` }}
-      >
-        {name.charAt(0) || 'U'}
-      </div>
-    );
   };
 
   const settingsSections = [
@@ -162,34 +109,9 @@ export default function Settings() {
         <p className="text-gray-500 mt-1">Manage your account and preferences</p>
       </div>
 
-      {/* Profile Section */}
+      {/* Profile Section (avatar removed) */}
       <div className="card">
         <h2 className="text-lg font-semibold text-gray-900 mb-6">Profile</h2>
-
-        <div className="flex items-center gap-6 mb-6">
-          <div className="relative">
-            <div className="w-20 h-20">
-              {renderAvatar()}
-            </div>
-            <button
-              onClick={() => setShowAvatarModal(true)}
-              className="absolute bottom-0 right-0 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-gray-50 transition-colors"
-            >
-              <Camera className="w-4 h-4 text-gray-600" />
-            </button>
-          </div>
-          <div>
-            <h3 className="font-semibold text-gray-900">{user?.user_metadata?.name || user?.email?.split('@')[0] || 'User'}</h3>
-            <p className="text-sm text-gray-500">Member since {profile?.join_date ? new Date(profile.join_date).toLocaleDateString() : new Date(user?.created_at || '').toLocaleDateString()}</p>
-            <button
-              onClick={() => setShowAvatarModal(true)}
-              className="text-sm mt-1 hover:opacity-80"
-              style={{ color: primaryColor }}
-            >
-              Change avatar
-            </button>
-          </div>
-        </div>
 
         <div className="space-y-4">
           <div>
@@ -414,21 +336,6 @@ export default function Settings() {
             <ChevronRight className="w-5 h-5 text-gray-400" />
           </button>
 
-          {/* Language */}
-          <button
-            onClick={() => setShowLanguageModal(true)}
-            className="w-full flex items-center justify-between p-4 rounded-xl hover:bg-gray-50 transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <Globe className="w-5 h-5 text-gray-400" />
-              <span className="text-gray-700">Language</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-500">{language}</span>
-              <ChevronRight className="w-5 h-5 text-gray-400" />
-            </div>
-          </button>
-
           {/* Help & Support */}
           <button
             onClick={() => setShowHelpModal(true)}
@@ -448,17 +355,6 @@ export default function Settings() {
         <p>Wellness Dashboard v1.0.0</p>
         <p className="mt-1">Made with care for your wellbeing</p>
       </div>
-
-      {/* Avatar Builder Modal */}
-      <AvatarBuilder
-        isOpen={showAvatarModal}
-        onClose={() => setShowAvatarModal(false)}
-        onSave={(avatarData) => {
-          setSelectedAvatar(avatarData);
-          setCustomAvatarUrl(null);
-          handleSaveProfile();
-        }}
-      />
 
       {/* Coming Soon Modal */}
       <ComingSoonModal
@@ -510,42 +406,6 @@ export default function Settings() {
                   {colorPreset === key && (
                     <Check className="w-5 h-5 ml-auto" style={{ color: preset.colors[0] }} />
                   )}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Language Modal */}
-      {showLanguageModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden my-auto">
-            <div className="flex items-center justify-between p-4 border-b border-gray-100">
-              <h3 className="text-lg font-semibold text-gray-900">Select Language</h3>
-              <button
-                onClick={() => setShowLanguageModal(false)}
-                className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center"
-              >
-                <X className="w-5 h-5 text-gray-500" />
-              </button>
-            </div>
-            <div className="p-2 max-h-80 overflow-y-auto">
-              {languages.map((lang) => (
-                <button
-                  key={lang}
-                  onClick={() => {
-                    setLanguage(lang);
-                    setShowLanguageModal(false);
-                  }}
-                  className="w-full flex items-center justify-between p-4 rounded-xl transition-colors hover:bg-gray-50"
-                  style={language === lang ? {
-                    backgroundColor: colorPresets[colorPreset]?.light,
-                    color: primaryColor
-                  } : undefined}
-                >
-                  <span>{lang}</span>
-                  {language === lang && <Check className="w-5 h-5" />}
                 </button>
               ))}
             </div>

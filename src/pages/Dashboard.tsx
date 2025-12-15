@@ -110,7 +110,7 @@ const wellnessQuotes = [
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const { isDark, toggleDark, colorPreset, setColorPreset, colorPresets } = useTheme();
+  const { isDark, toggleDark, colorPreset, setColorPreset, colorPresets, primaryColor } = useTheme();
   const { data: habits = [] } = useHabits();
   const { data: journalEntries = [] } = useJournalEntries();
   const { data: userBadges = [] } = useUserBadges();

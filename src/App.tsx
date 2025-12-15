@@ -10,6 +10,7 @@ import Habits from './pages/Habits';
 import Nutrition from './pages/Nutrition';
 import WeightLog from './pages/WeightLog';
 import Journal from './pages/Journal';
+import Goals from './pages/Goals';
 import Courses from './pages/Courses';
 import Calendar from './pages/Calendar';
 import Classes from './pages/Classes';
@@ -47,6 +48,7 @@ function App() {
                 <Route path="nutrition" element={<ErrorBoundary><Nutrition /></ErrorBoundary>} />
                 <Route path="weight" element={<ErrorBoundary><WeightLog /></ErrorBoundary>} />
                 <Route path="journal" element={<ErrorBoundary><Journal /></ErrorBoundary>} />
+                <Route path="goals" element={<ErrorBoundary><Goals /></ErrorBoundary>} />
                 <Route path="courses" element={<ErrorBoundary><Courses /></ErrorBoundary>} />
                 <Route path="calendar" element={<ErrorBoundary><Calendar /></ErrorBoundary>} />
                 <Route path="classes" element={<ErrorBoundary><Classes /></ErrorBoundary>} />

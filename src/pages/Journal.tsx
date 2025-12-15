@@ -192,67 +192,79 @@ export default function Journal() {
         </div>
       </div>
 
-      {/* Journal Entries */}
-      <div className="space-y-4">
+      {/* Journal Entries - Grid Layout for better organization */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {filteredEntries.map((entry) => (
-          <div key={entry.id} className="card">
-              <div className="flex items-start justify-between gap-4 mb-4">
-              <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg ${getMoodColor(entry.mood || 'neutral')}`}>
+          <div key={entry.id} className="card hover:shadow-lg transition-shadow">
+            {/* Header */}
+            <div className="flex items-start justify-between gap-2 mb-4">
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center text-lg sm:text-xl flex-shrink-0 ${getMoodColor(entry.mood || 'neutral')}`}>
                   {getMoodIcon(entry.mood || 'neutral')}
                 </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900">{entry.title}</h3>
-                  <div className="flex items-center gap-2 text-sm text-gray-500">
-                    <Calendar className="w-4 h-4" />
-                    <span>{format(parseISO(entry.date), 'MMMM d, yyyy')}</span>
-                    <Clock className="w-4 h-4 ml-2" />
-                    <span>{format(parseISO(entry.created_at || entry.date), 'h:mm a')}</span>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-gray-900 truncate text-sm sm:text-base">{entry.title}</h3>
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-xs sm:text-sm text-gray-500">
+                    <div className="flex items-center gap-1">
+                      <Calendar className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                      <span className="truncate">{format(parseISO(entry.date), 'MMM d, yyyy')}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Clock className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                      <span>{format(parseISO(entry.created_at || entry.date), 'h:mm a')}</span>
+                    </div>
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 flex-shrink-0">
                 <button
                   onClick={() => handleEditEntry(entry)}
-                  className="p-2 text-gray-400 hover:text-coral-500 hover:bg-coral-50 rounded-lg transition-colors"
+                  className="p-1.5 sm:p-2 text-gray-400 hover:text-coral-500 hover:bg-coral-50 rounded-lg transition-colors"
+                  aria-label="Edit entry"
                 >
                   <Edit3 className="w-4 h-4" />
                 </button>
                 <button
                   onClick={async () => {
-                    await supabase.from('journal_entries').delete().eq('id', entry.id);
-                    refetch();
+                    if (confirm('Are you sure you want to delete this entry?')) {
+                      await supabase.from('journal_entries').delete().eq('id', entry.id);
+                      refetch();
+                    }
                   }}
-                  className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                  className="p-1.5 sm:p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                  aria-label="Delete entry"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
             </div>
 
-            <p className="text-gray-600 mb-4 whitespace-pre-wrap">{entry.content}</p>
+            {/* Content */}
+            <p className="text-gray-600 mb-4 whitespace-pre-wrap text-sm sm:text-base line-clamp-4">{entry.content}</p>
 
+            {/* Gratitude Section */}
             {entry.gratitude && entry.gratitude.length > 0 && (
-              <div className="mb-4 p-4 bg-amber-50 rounded-xl">
+              <div className="mb-4 p-3 sm:p-4 bg-amber-50 rounded-xl">
                 <div className="flex items-center gap-2 mb-2 text-amber-700">
-                  <Heart className="w-4 h-4" />
-                  <span className="font-medium text-sm">Gratitude</span>
+                  <Heart className="w-4 h-4 flex-shrink-0" />
+                  <span className="font-medium text-xs sm:text-sm">Gratitude</span>
                 </div>
                 <ul className="space-y-1">
                   {entry.gratitude.map((item, index) => (
-                    <li key={index} className="text-sm text-amber-800">• {item}</li>
+                    <li key={index} className="text-xs sm:text-sm text-amber-800 break-words">• {item}</li>
                   ))}
                 </ul>
               </div>
             )}
 
+            {/* Tags */}
             {entry.tags && Array.isArray(entry.tags) && entry.tags.length > 0 && (
               <div className="flex items-center gap-2 flex-wrap">
-                <Tag className="w-4 h-4 text-gray-400" />
+                <Tag className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 flex-shrink-0" />
                 {entry.tags.map((tag: string) => (
                   <span
                     key={tag}
-                    className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm"
+                    className="px-2 sm:px-3 py-0.5 sm:py-1 bg-gray-100 text-gray-600 rounded-full text-xs sm:text-sm"
                   >
                     {tag}
                   </span>
@@ -263,12 +275,12 @@ export default function Journal() {
         ))}
 
         {filteredEntries.length === 0 && (
-          <div className="card text-center py-12">
-            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Edit3 className="w-8 h-8 text-gray-400" />
+          <div className="col-span-full card text-center py-12">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Edit3 className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400" />
             </div>
-            <h3 className="font-semibold text-gray-900 mb-2">No entries found</h3>
-            <p className="text-gray-500">
+            <h3 className="font-semibold text-gray-900 mb-2 text-sm sm:text-base">No entries found</h3>
+            <p className="text-gray-500 text-sm sm:text-base">
               {searchQuery || filterMood
                 ? 'Try adjusting your search or filters'
                 : 'Start journaling to capture your thoughts'}
@@ -279,34 +291,34 @@ export default function Journal() {
 
       {/* Add/Edit Journal Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-          <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6 shadow-elevated my-auto">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-display font-semibold">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center overflow-y-auto">
+          <div className="bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto p-4 sm:p-6 shadow-elevated sm:my-auto">
+            <div className="flex items-center justify-between mb-4 sm:mb-6">
+              <h3 className="text-lg sm:text-xl font-display font-semibold">
                 {editingEntry ? 'Edit Entry' : 'New Journal Entry'}
               </h3>
-              <button onClick={resetForm} className="p-2 hover:bg-gray-100 rounded-lg">
+              <button onClick={resetForm} className="p-2 hover:bg-gray-100 rounded-lg flex-shrink-0">
                 <X className="w-5 h-5 text-gray-500" />
               </button>
             </div>
 
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   How are you feeling?
                 </label>
-                <div className="flex gap-2 flex-wrap">
+                <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
                   {moodOptions.map((mood) => (
                     <button
                       key={mood.id}
                       onClick={() => setNewEntry({ ...newEntry, mood: mood.id as Mood })}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${
+                      className={`flex items-center justify-center gap-2 px-3 sm:px-4 py-2 rounded-xl transition-all text-sm ${
                         newEntry.mood === mood.id
                           ? `${mood.color} ring-2 ring-offset-2 ring-gray-300`
                           : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                       }`}
                     >
-                      <span className="text-lg">{mood.icon}</span>
+                      <span className="text-base sm:text-lg">{mood.icon}</span>
                       <span className="font-medium">{mood.label}</span>
                     </button>
                   ))}

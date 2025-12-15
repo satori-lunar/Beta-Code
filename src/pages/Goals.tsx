@@ -63,11 +63,9 @@ export default function Goals() {
 
   // Fetch goals
   const [goals, setGoals] = useState<Goal[]>([]);
-  const [loading, setLoading] = useState(false);
 
   const fetchGoals = async () => {
     if (!user) return;
-    setLoading(true);
     try {
       const { data, error } = await supabase
         .from('goals' as any)
@@ -76,11 +74,9 @@ export default function Goals() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setGoals((data as Goal[]) || []);
+      setGoals((data as any) || []);
     } catch (error) {
       console.error('Error fetching goals:', error);
-    } finally {
-      setLoading(false);
     }
   };
 

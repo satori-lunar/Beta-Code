@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
   Search,
   PlayCircle,
@@ -87,6 +88,7 @@ const courseStyles: Record<string, { gradient: string; icon: any }> = {
 };
 
 export default function Classes() {
+  const location = useLocation();
   const { sessions: recordedSessions, loading: sessionsLoading } = useRecordedSessions();
   const { classes: liveClasses, loading: classesLoading } = useLiveClasses();
   const { favoriteIds, toggleFavorite } = useFavoriteSessions();
@@ -94,11 +96,15 @@ export default function Classes() {
   const { courses, loading: coursesLoading } = useCourses();
   const { trackView } = useTrackVideoView();
   const { trackFavorite } = useTrackFavorite();
-  
+
   // Check for due reminders
   useReminderChecker();
-  
-  const [activeTab, setActiveTab] = useState<'live' | 'recorded' | 'favorites' | 'completed'>('live');
+
+  // Get initial tab from navigation state (if coming from HealthDashboard)
+  const initialTab = (location.state as any)?.activeTab || 'live';
+  const filterClasses = (location.state as any)?.filterClasses || null;
+
+  const [activeTab, setActiveTab] = useState<'live' | 'recorded' | 'favorites' | 'completed'>(initialTab);
   const [selectedWeekday, setSelectedWeekday] = useState<string>('Sunday');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -566,11 +572,20 @@ export default function Classes() {
                 </div>
               ) : courses.length > 0 ? (
                 courses
-                  .filter(course => 
+                  .filter(course =>
                     course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                     course.description.toLowerCase().includes(searchQuery.toLowerCase())
                   )
                   .filter(course => selectedCategory === 'All' || course.category === selectedCategory)
+                  .filter(course => {
+                    // If filterClasses is provided (from HealthDashboard), only show those specific courses
+                    if (filterClasses && Array.isArray(filterClasses)) {
+                      return filterClasses.some((className: string) =>
+                        course.title.toLowerCase().includes(className.toLowerCase())
+                      );
+                    }
+                    return true;
+                  })
                   .map((course) => {
                     const sessionCount = sessionsByCourse[course.id]?.length || 0;
                     const courseStyle = courseStyles[course.title] || {

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Heart,
   Activity,
@@ -81,6 +82,7 @@ const workoutTypes = [
 ];
 
 export default function HealthDashboard() {
+  const navigate = useNavigate();
   const { healthMetrics, updateHealthMetric, connectedDevices } = useStore();
   const { colorPreset, colorPresets, primaryColor } = useTheme();
   const [editingMetric, setEditingMetric] = useState<MetricKey | null>(null);
@@ -869,9 +871,7 @@ export default function HealthDashboard() {
                 {/* Live Class Recordings */}
                 <button
                   onClick={() => {
-                    setWorkoutMode('indoor');
-                    setShowIndoorOptions(false);
-                    setShowWorkoutCamera(true);
+                    navigate('/classes', { state: { activeTab: 'recorded', filterClasses: ['Foundation in Motion', 'Energy in Motion', 'Hatha Yoga', 'Strength in Motion'] } });
                   }}
                   className="group p-6 rounded-2xl border-2 border-gray-200 hover:border-purple-300 hover:shadow-lg transition-all text-left"
                 >

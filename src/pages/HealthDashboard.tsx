@@ -95,12 +95,33 @@ export default function HealthDashboard() {
   const [workoutMode, setWorkoutMode] = useState<'indoor' | 'outdoor' | null>(null);
   const [selectedPreset, setSelectedPreset] = useState<WorkoutPreset | undefined>(undefined);
   const [activeMindfulness, setActiveMindfulness] = useState<'breathing' | 'bodyscan' | 'gratitude' | 'meditation' | null>(null);
+  const [selfCareChecklist, setSelfCareChecklist] = useState<Record<string, boolean>>({
+    'sleep': false,
+    'water': false,
+    'moved': false,
+    'breaks': false,
+    'connected': false,
+    'enjoy': false,
+  });
 
   // Workout presets and history from Supabase
   const { presets, savePreset, deletePreset } = useWorkoutPresets();
   const { history, saveWorkout } = useWorkoutHistory(5);
 
   const hasConnectedDevice = connectedDevices.some(d => d.connected);
+
+  // Calculate self-care progress
+  const selfCareProgress = Object.values(selfCareChecklist).filter(Boolean).length;
+  const selfCareTotal = Object.keys(selfCareChecklist).length;
+  const selfCarePercentage = (selfCareProgress / selfCareTotal) * 100;
+
+  // Toggle self-care checklist item
+  const toggleSelfCareItem = (key: string) => {
+    setSelfCareChecklist(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+  };
 
   // Handle saving a preset
   const handleSavePreset = async (preset: WorkoutPreset) => {
@@ -720,19 +741,21 @@ export default function HealthDashboard() {
               </h3>
               <div className="space-y-3">
                 {[
-                  { name: 'Slept 7+ hours', icon: Moon, color: '#6366f1', checked: false },
-                  { name: 'Drank enough water', icon: Droplets, color: '#06b6d4', checked: false },
-                  { name: 'Moved my body', icon: Footprints, color: '#22c55e', checked: false },
-                  { name: 'Took breaks', icon: Coffee, color: '#f59e0b', checked: false },
-                  { name: 'Connected with someone', icon: Heart, color: '#ec4899', checked: false },
-                  { name: 'Did something I enjoy', icon: Smile, color: '#8b5cf6', checked: false },
+                  { name: 'Slept 7+ hours', icon: Moon, color: '#6366f1', key: 'sleep' },
+                  { name: 'Drank enough water', icon: Droplets, color: '#06b6d4', key: 'water' },
+                  { name: 'Moved my body', icon: Footprints, color: '#22c55e', key: 'moved' },
+                  { name: 'Took breaks', icon: Coffee, color: '#f59e0b', key: 'breaks' },
+                  { name: 'Connected with someone', icon: Heart, color: '#ec4899', key: 'connected' },
+                  { name: 'Did something I enjoy', icon: Smile, color: '#8b5cf6', key: 'enjoy' },
                 ].map((item) => (
                   <label
-                    key={item.name}
+                    key={item.key}
                     className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer"
                   >
                     <input
                       type="checkbox"
+                      checked={selfCareChecklist[item.key]}
+                      onChange={() => toggleSelfCareItem(item.key)}
                       className="w-5 h-5 rounded-lg border-2 border-gray-300 text-green-500 focus:ring-green-500"
                     />
                     <item.icon className="w-5 h-5" style={{ color: item.color }} />
@@ -743,10 +766,13 @@ export default function HealthDashboard() {
               <div className="mt-4 pt-4 border-t border-gray-100">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-500">Today's progress</span>
-                  <span className="font-medium text-gray-900">0 / 6 completed</span>
+                  <span className="font-medium text-gray-900">{selfCareProgress} / {selfCareTotal} completed</span>
                 </div>
                 <div className="mt-2 h-2 bg-gray-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-gradient-to-r from-green-400 to-emerald-500 rounded-full" style={{ width: '0%' }} />
+                  <div
+                    className="h-full bg-gradient-to-r from-green-400 to-emerald-500 rounded-full transition-all duration-500"
+                    style={{ width: `${selfCarePercentage}%` }}
+                  />
                 </div>
               </div>
             </div>

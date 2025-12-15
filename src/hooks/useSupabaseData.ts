@@ -39,7 +39,7 @@ export function useUserData<T>(
 
   // Memoize user ID and options to prevent unnecessary re-renders
   // Use null instead of undefined for stable dependency comparison
-  const userId = user?.id ?? null
+  const userId = user ? user.id : null
   const orderByColumn = options?.orderBy?.column
   const orderByAscending = options?.orderBy?.ascending
   const limit = options?.limit
@@ -259,8 +259,8 @@ export function useUserProfile() {
   const [profile, setProfile] = useState<Tables['user_profiles']['Row'] | null>(null)
   const [loading, setLoading] = useState(true)
   
-  // Use stable user ID for dependency array (null instead of undefined)
-  const userId = user?.id ?? null ?? null
+  // Use stable user ID for dependency array
+  const userId = user ? user.id : null
 
   useEffect(() => {
     if (!user) {
@@ -292,8 +292,8 @@ export function useHealthMetrics() {
   const [metrics, setMetrics] = useState<Tables['health_metrics']['Row'] | null>(null)
   const [loading, setLoading] = useState(true)
   
-  // Use stable user ID for dependency array (null instead of undefined)
-  const userId = user?.id ?? null ?? null
+  // Use stable user ID for dependency array
+  const userId = user ? user.id : null
 
   useEffect(() => {
     if (!user) {
@@ -356,8 +356,8 @@ export function useRecordedSessions() {
   const [error, setError] = useState<Error | null>(null)
   const [refetchTrigger, setRefetchTrigger] = useState(0)
   
-  // Use stable user ID for dependency array (null instead of undefined)
-  const userId = user?.id ?? null ?? null
+  // Use stable user ID for dependency array
+  const userId = user ? user.id : null
 
   useEffect(() => {
     if (!user) {
@@ -417,8 +417,8 @@ export function useLiveClasses() {
   const [error, setError] = useState<Error | null>(null)
   const [refetchTrigger, setRefetchTrigger] = useState(0)
   
-  // Use stable user ID for dependency array (null instead of undefined)
-  const userId = user?.id ?? null ?? null
+  // Use stable user ID for dependency array
+  const userId = user ? user.id : null
 
   useEffect(() => {
     if (!user) {
@@ -577,8 +577,8 @@ export function useFavoriteSessions() {
   const [error, setError] = useState<Error | null>(null)
   const [refetchTrigger, setRefetchTrigger] = useState(0)
   
-  // Use stable user ID for dependency array (null instead of undefined)
-  const userId = user?.id ?? null ?? null
+  // Use stable user ID for dependency array
+  const userId = user ? user.id : null
 
   useEffect(() => {
     if (!user) {
@@ -729,8 +729,8 @@ export function useSessionCompletions() {
   const [error, setError] = useState<Error | null>(null)
   const [refetchTrigger, setRefetchTrigger] = useState(0)
   
-  // Use stable user ID for dependency array (null instead of undefined)
-  const userId = user?.id ?? null ?? null
+  // Use stable user ID for dependency array
+  const userId = user ? user.id : null
 
   useEffect(() => {
     if (!user) {
@@ -849,8 +849,8 @@ export function useWorkoutPresets() {
   const [loading, setLoading] = useState(true)
   const [refetchTrigger, setRefetchTrigger] = useState(0)
   
-  // Use stable user ID for dependency array (null instead of undefined)
-  const userId = user?.id ?? null ?? null
+  // Use stable user ID for dependency array
+  const userId = user ? user.id : null
 
   useEffect(() => {
     if (!user) {
@@ -949,8 +949,8 @@ export function useWorkoutHistory(limit = 10) {
   const [loading, setLoading] = useState(true)
   const [refetchTrigger, setRefetchTrigger] = useState(0)
   
-  // Use stable user ID for dependency array (null instead of undefined)
-  const userId = user?.id ?? null ?? null
+  // Use stable user ID for dependency array
+  const userId = user ? user.id : null
 
   useEffect(() => {
     if (!user) {
@@ -1040,8 +1040,8 @@ export function useNotifications(limit = 50) {
   const [error, setError] = useState<Error | null>(null)
   const [refetchTrigger, setRefetchTrigger] = useState(0)
   
-  // Use stable user ID for dependency array (null instead of undefined)
-  const userId = user?.id ?? null ?? null
+  // Use stable user ID for dependency array
+  const userId = user ? user.id : null
 
   useEffect(() => {
     if (!user) {

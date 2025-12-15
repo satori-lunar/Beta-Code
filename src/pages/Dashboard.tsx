@@ -87,27 +87,33 @@ export default function Dashboard() {
   const { classes: liveClasses = [], loading: classesLoading, error: classesError } = useLiveClasses();
   
   // Log errors for debugging (using refs to avoid dependency issues)
-  const prevErrorsRef = useRef({ habits: null, weight: null, journal: null, badges: null, classes: null });
+  const prevErrorsRef = useRef<{ habits: Error | null; weight: Error | null; journal: Error | null; badges: Error | null; classes: Error | null }>({
+    habits: null,
+    weight: null,
+    journal: null,
+    badges: null,
+    classes: null
+  });
   useEffect(() => {
     if (habitsError && habitsError !== prevErrorsRef.current.habits) {
       console.error('Error loading habits:', habitsError);
-      prevErrorsRef.current.habits = habitsError;
+      prevErrorsRef.current.habits = habitsError as Error;
     }
     if (weightError && weightError !== prevErrorsRef.current.weight) {
       console.error('Error loading weight entries:', weightError);
-      prevErrorsRef.current.weight = weightError;
+      prevErrorsRef.current.weight = weightError as Error;
     }
     if (journalError && journalError !== prevErrorsRef.current.journal) {
       console.error('Error loading journal entries:', journalError);
-      prevErrorsRef.current.journal = journalError;
+      prevErrorsRef.current.journal = journalError as Error;
     }
     if (badgesError && badgesError !== prevErrorsRef.current.badges) {
       console.error('Error loading badges:', badgesError);
-      prevErrorsRef.current.badges = badgesError;
+      prevErrorsRef.current.badges = badgesError as Error;
     }
     if (classesError && classesError !== prevErrorsRef.current.classes) {
       console.error('Error loading live classes:', classesError);
-      prevErrorsRef.current.classes = classesError;
+      prevErrorsRef.current.classes = classesError as Error;
     }
   });
   

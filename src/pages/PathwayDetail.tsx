@@ -47,9 +47,8 @@ export default function PathwayDetail() {
     navigate('/classes', {
       state: {
         activeTab: 'recorded',
-        pathwayId: pathway.id,
-        filterClasses: pathway.class_titles,
         pathwayTitle: pathway.title,
+        filterClasses: pathway.class_titles,
       },
     });
   };

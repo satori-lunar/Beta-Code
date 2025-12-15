@@ -92,16 +92,25 @@ export default function Classes() {
 
   // Get initial tab and optional filters from navigation state (e.g. from HealthDashboard or Pathways)
   const initialState = (location.state as any) || {};
-  const initialPathwayId: string | null = initialState.pathwayId ?? null;
-  const initialTab: 'live' | 'recorded' | 'favorites' | 'completed' =
-    initialState.activeTab || (initialPathwayId ? 'recorded' : 'live');
+  const initialPathwayTitle: string | undefined = initialState.pathwayTitle;
   const pathwayFilterTitles: string[] | undefined = initialState.filterClasses;
 
-  const [activeTab, setActiveTab] = useState<'live' | 'recorded' | 'favorites' | 'completed'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'live' | 'recorded' | 'favorites' | 'completed'>(
+    initialState.activeTab || (initialPathwayTitle ? 'recorded' : 'live')
+  );
   const [selectedWeekday, setSelectedWeekday] = useState<string>('Sunday');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedPathwayId, setSelectedPathwayId] = useState<string | null>(initialPathwayId);
+  const [selectedPathwayId, setSelectedPathwayId] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // If we came from a Pathway with a title, map that title to a real pathway ID
+  useEffect(() => {
+    if (!initialPathwayTitle || !pathways || pathways.length === 0) return;
+    const match = pathways.find(p => p.title === initialPathwayTitle);
+    if (match) {
+      setSelectedPathwayId(match.id);
+    }
+  }, [initialPathwayTitle, pathways]);
 
   // Reset pathway selection when switching tabs
   useEffect(() => {

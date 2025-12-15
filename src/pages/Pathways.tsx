@@ -126,20 +126,26 @@ export default function Pathways() {
   };
 
   const handleViewClasses = (pathwayId: string) => {
+    const pathway = pathwayDefinitions.find(p => p.id === pathwayId);
+    if (!pathway) return;
+
     navigate('/classes', {
       state: {
         activeTab: 'recorded',
-        pathwayId,
+        pathwayTitle: pathway.title,
       },
     });
   };
 
   const handleEnrollAndView = async (pathwayId: string) => {
     await handleEnroll(pathwayId);
+    const pathway = pathwayDefinitions.find(p => p.id === pathwayId);
+    if (!pathway) return;
+
     navigate('/classes', {
       state: {
         activeTab: 'recorded',
-        pathwayId,
+        pathwayTitle: pathway.title,
       },
     });
   };

@@ -46,8 +46,10 @@ export default function PathwayDetail() {
   const handleGoToClasses = () => {
     navigate('/classes', {
       state: {
-        activeTab: 'live',
+        activeTab: 'recorded',
+        pathwayId: pathway.id,
         filterClasses: pathway.class_titles,
+        pathwayTitle: pathway.title,
       },
     });
   };

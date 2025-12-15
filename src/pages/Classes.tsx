@@ -90,13 +90,17 @@ export default function Classes() {
   // Check for due reminders
   useReminderChecker();
 
-  // Get initial tab from navigation state (if coming from HealthDashboard)
-  const initialTab = (location.state as any)?.activeTab || 'live';
+  // Get initial tab and optional filters from navigation state (e.g. from HealthDashboard or Pathways)
+  const initialState = (location.state as any) || {};
+  const initialPathwayId: string | null = initialState.pathwayId ?? null;
+  const initialTab: 'live' | 'recorded' | 'favorites' | 'completed' =
+    initialState.activeTab || (initialPathwayId ? 'recorded' : 'live');
+  const pathwayFilterTitles: string[] | undefined = initialState.filterClasses;
 
   const [activeTab, setActiveTab] = useState<'live' | 'recorded' | 'favorites' | 'completed'>(initialTab);
   const [selectedWeekday, setSelectedWeekday] = useState<string>('Sunday');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedPathwayId, setSelectedPathwayId] = useState<string | null>(null);
+  const [selectedPathwayId, setSelectedPathwayId] = useState<string | null>(initialPathwayId);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Reset pathway selection when switching tabs
@@ -184,8 +188,20 @@ export default function Classes() {
       )
     : [];
 
-  // Filtered data - no filters for live classes, just use all classes
-  const filteredLiveClasses = mappedLiveClasses;
+  // Filtered data - optionally filter live classes by pathway class titles
+  const filteredLiveClasses = useMemo(() => {
+    if (!pathwayFilterTitles || pathwayFilterTitles.length === 0) {
+      return mappedLiveClasses;
+    }
+
+    const lowerTitles = pathwayFilterTitles.map(t => t.toLowerCase());
+    return mappedLiveClasses.filter(classItem =>
+      lowerTitles.some(title =>
+        classItem.title.toLowerCase().includes(title) ||
+        title.includes(classItem.title.toLowerCase())
+      )
+    );
+  }, [mappedLiveClasses, pathwayFilterTitles]);
 
   // Define class structure matching the SQL file exactly
   // This ensures the same order and grouping as defined in insert-live-classes.sql

@@ -126,12 +126,22 @@ export default function Pathways() {
   };
 
   const handleViewClasses = (pathwayId: string) => {
-    navigate(`/pathways/${pathwayId}`);
+    navigate('/classes', {
+      state: {
+        activeTab: 'recorded',
+        pathwayId,
+      },
+    });
   };
 
   const handleEnrollAndView = async (pathwayId: string) => {
     await handleEnroll(pathwayId);
-    navigate(`/pathways/${pathwayId}`);
+    navigate('/classes', {
+      state: {
+        activeTab: 'recorded',
+        pathwayId,
+      },
+    });
   };
 
   return (

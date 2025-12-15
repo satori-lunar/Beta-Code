@@ -130,7 +130,8 @@ const indoorCardioTypes: CardioType[] = [
     caloriesPerMinute: 4, 
     description: 'Indoor walking workout', 
     hypeEmoji: '🚶',
-    videoId: 'X3fkMqKbVCE', // Indoor walking workout video
+    // Indoor walking follow-through workout video
+    videoId: 'pFvDf1dHoXo',
     tips: ['Keep your head up', 'Swing your arms naturally', 'Maintain steady pace', 'Focus on your breathing']
   },
 ];
@@ -299,7 +300,7 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
   const [showConfig, setShowConfig] = useState(true);
   const [config, setConfig] = useState<WorkoutConfig>({
     goalType: initialPreset?.goalType || 'time',
-    targetTime: initialPreset?.targetTime || 1200, // 20 minutes default
+    targetTime: initialPreset?.targetTime || 1200, // default, will be overridden for some activities
     targetMilestones: initialPreset?.targetMilestones || 5,
     milestoneMode: initialPreset?.milestoneMode || 'manual',
     autoMilestoneInterval: initialPreset?.autoMilestoneInterval || 180, // 3 minutes default
@@ -333,6 +334,32 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
   // Coaching state
   const [lastCoachingTime, setLastCoachingTime] = useState(0);
   const [coachingInterval, setCoachingInterval] = useState(45); // seconds between coaching
+
+  // For specific activities we want a simpler, fixed experience (e.g. indoor walking).
+  // When walking-indoor is selected, force a 29-minute time goal and disable milestones.
+  useEffect(() => {
+    if (selectedActivity.id !== 'walking-indoor') return;
+    setConfig(prev => {
+      const targetTime = 29 * 60; // 29 minutes in seconds
+      if (
+        prev.goalType === 'time' &&
+        prev.targetTime === targetTime &&
+        prev.milestoneMode === 'manual' &&
+        !prev.targetMilestones &&
+        !prev.autoMilestoneInterval
+      ) {
+        return prev;
+      }
+      return {
+        ...prev,
+        goalType: 'time',
+        targetTime,
+        targetMilestones: undefined,
+        milestoneMode: 'manual',
+        autoMilestoneInterval: undefined,
+      };
+    });
+  }, [selectedActivity.id]);
   
   // GPS tracking state (enabled by default for outdoor workouts)
   const [gpsEnabled, setGpsEnabled] = useState(mode === 'outdoor');
@@ -1108,7 +1135,12 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
                   </div>
                   <div className="text-left">
                     <div className="font-semibold text-lg">{selectedActivity.name}</div>
-                    <div className="text-sm text-gray-400">{selectedActivity.description} • ~{selectedActivity.caloriesPerMinute} cal/min</div>
+                    <div className="text-sm text-gray-400">
+                      {selectedActivity.description}
+                      {selectedActivity.id !== 'walking-indoor' && (
+                        <> • ~{selectedActivity.caloriesPerMinute} cal/min</>
+                      )}
+                    </div>
                   </div>
                 </div>
                 <ChevronDown className={`w-5 h-5 transition-transform ${showActivityPicker ? 'rotate-180' : ''}`} />
@@ -1146,98 +1178,131 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
           </div>
 
           {/* Workout Tips & Video Preview */}
-          <div className="bg-gray-800/50 rounded-xl p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h4 className="font-medium text-white flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-yellow-500" />
-                {selectedActivity.name} Tips
+          {selectedActivity.id === 'walking-indoor' ? (
+            // For indoor walking, show only the follow-along video (no tips / guide toggle).
+            <div className="bg-gray-800/50 rounded-xl p-4">
+              <h4 className="font-medium text-white mb-3 flex items-center gap-2">
+                <Play className="w-4 h-4 text-green-400" />
+                Indoor Walking Follow-Along
               </h4>
               {mode === 'indoor' && selectedActivity.videoId && (
-                <button
-                  onClick={() => setShowVideo(!showVideo)}
-                  className="text-sm text-cyan-400 hover:text-cyan-300 flex items-center gap-1"
-                >
-                  {showVideo ? 'Hide' : 'Watch'} Video Guide
-                  <Play className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-            
-            {/* Tips List */}
-            <div className="space-y-2 mb-3">
-              {selectedActivity.tips.map((tip, i) => (
-                <div key={i} className="flex items-center gap-2 text-sm text-gray-400">
-                  <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: selectedActivity.color }} />
-                  {tip}
-                </div>
-              ))}
-            </div>
-
-            {/* Video Embed - Indoor workouts only */}
-            {mode === 'indoor' && showVideo && selectedActivity.videoId && (
-              <div className="mt-4">
                 <div className="relative w-full pt-[56.25%] bg-gray-900 rounded-lg overflow-hidden">
                   <iframe
                     className="absolute inset-0 w-full h-full"
                     src={`https://www.youtube.com/embed/${selectedActivity.videoId}?modestbranding=1&rel=0`}
-                    title="Workout Guide"
+                    title="Indoor Walking Workout"
                     frameBorder="0"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
                   />
                 </div>
-                <p className="text-xs text-gray-500 mt-2 text-center">
-                  Watch for form tips, then start your workout when ready!
-                </p>
+              )}
+            </div>
+          ) : (
+            <div className="bg-gray-800/50 rounded-xl p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="font-medium text-white flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-yellow-500" />
+                  {selectedActivity.name} Tips
+                </h4>
+                {mode === 'indoor' && selectedActivity.videoId && (
+                  <button
+                    onClick={() => setShowVideo(!showVideo)}
+                    className="text-sm text-cyan-400 hover:text-cyan-300 flex items-center gap-1"
+                  >
+                    {showVideo ? 'Hide' : 'Watch'} Video Guide
+                    <Play className="w-4 h-4" />
+                  </button>
+                )}
               </div>
-            )}
-          </div>
+              
+              {/* Tips List */}
+              <div className="space-y-2 mb-3">
+                {selectedActivity.tips.map((tip, i) => (
+                  <div key={i} className="flex items-center gap-2 text-sm text-gray-400">
+                    <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: selectedActivity.color }} />
+                    {tip}
+                  </div>
+                ))}
+              </div>
+
+              {/* Video Embed - Indoor workouts only */}
+              {mode === 'indoor' && showVideo && selectedActivity.videoId && (
+                <div className="mt-4">
+                  <div className="relative w-full pt-[56.25%] bg-gray-900 rounded-lg overflow-hidden">
+                    <iframe
+                      className="absolute inset-0 w-full h-full"
+                      src={`https://www.youtube.com/embed/${selectedActivity.videoId}?modestbranding=1&rel=0`}
+                      title="Workout Guide"
+                      frameBorder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2 text-center">
+                    Watch for form tips, then start your workout when ready!
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
           
           {/* Goal Type */}
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-3">Workout Goal</label>
-            <div className="grid grid-cols-3 gap-3">
-              <button
-                onClick={() => setConfig({ ...config, goalType: 'free' })}
-                className={`p-4 rounded-xl transition-all ${
-                  config.goalType === 'free'
-                    ? 'bg-cyan-500/20 border-2 border-cyan-500 text-white'
-                    : 'bg-gray-700 border-2 border-transparent text-gray-300 hover:bg-gray-600'
-                }`}
-              >
-                <Sparkles className="w-6 h-6 mx-auto mb-2" />
-                <div className="font-medium">Free</div>
-                <div className="text-xs text-gray-400">No goal</div>
-              </button>
-              <button
-                onClick={() => setConfig({ ...config, goalType: 'time' })}
-                className={`p-4 rounded-xl transition-all ${
-                  config.goalType === 'time'
-                    ? 'bg-blue-500/20 border-2 border-blue-500 text-white'
-                    : 'bg-gray-700 border-2 border-transparent text-gray-300 hover:bg-gray-600'
-                }`}
-              >
-                <Clock className="w-6 h-6 mx-auto mb-2" />
-                <div className="font-medium">Time</div>
-                <div className="text-xs text-gray-400">Set duration</div>
-              </button>
-              <button
-                onClick={() => setConfig({ ...config, goalType: 'milestones' })}
-                className={`p-4 rounded-xl transition-all ${
-                  config.goalType === 'milestones'
-                    ? 'bg-purple-500/20 border-2 border-purple-500 text-white'
-                    : 'bg-gray-700 border-2 border-transparent text-gray-300 hover:bg-gray-600'
-                }`}
-              >
-                <MapPin className="w-6 h-6 mx-auto mb-2" />
-                <div className="font-medium">Milestones</div>
-                <div className="text-xs text-gray-400">Mark points</div>
-              </button>
+          {selectedActivity.id !== 'walking-indoor' ? (
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-3">Workout Goal</label>
+              <div className="grid grid-cols-3 gap-3">
+                <button
+                  onClick={() => setConfig({ ...config, goalType: 'free' })}
+                  className={`p-4 rounded-xl transition-all ${
+                    config.goalType === 'free'
+                      ? 'bg-cyan-500/20 border-2 border-cyan-500 text-white'
+                      : 'bg-gray-700 border-2 border-transparent text-gray-300 hover:bg-gray-600'
+                  }`}
+                >
+                  <Sparkles className="w-6 h-6 mx-auto mb-2" />
+                  <div className="font-medium">Free</div>
+                  <div className="text-xs text-gray-400">No goal</div>
+                </button>
+                <button
+                  onClick={() => setConfig({ ...config, goalType: 'time' })}
+                  className={`p-4 rounded-xl transition-all ${
+                    config.goalType === 'time'
+                      ? 'bg-blue-500/20 border-2 border-blue-500 text-white'
+                      : 'bg-gray-700 border-2 border-transparent text-gray-300 hover:bg-gray-600'
+                  }`}
+                >
+                  <Clock className="w-6 h-6 mx-auto mb-2" />
+                  <div className="font-medium">Time</div>
+                  <div className="text-xs text-gray-400">Set duration</div>
+                </button>
+                <button
+                  onClick={() => setConfig({ ...config, goalType: 'milestones' })}
+                  className={`p-4 rounded-xl transition-all ${
+                    config.goalType === 'milestones'
+                      ? 'bg-purple-500/20 border-2 border-purple-500 text-white'
+                      : 'bg-gray-700 border-2 border-transparent text-gray-300 hover:bg-gray-600'
+                  }`}
+                >
+                  <MapPin className="w-6 h-6 mx-auto mb-2" />
+                  <div className="font-medium">Milestones</div>
+                  <div className="text-xs text-gray-400">Mark points</div>
+                </button>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Duration
+              </label>
+              <p className="text-sm text-gray-400">
+                This indoor walking workout is fixed at <span className="font-semibold text-white">29 minutes</span>.
+              </p>
+            </div>
+          )}
           
           {/* Time Goal Setting */}
-          {config.goalType === 'time' && (
+          {config.goalType === 'time' && selectedActivity.id !== 'walking-indoor' && (
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Duration: {Math.floor((config.targetTime || 0) / 60)} minutes
@@ -1751,22 +1816,26 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
             )}
             
             {/* Checkpoints */}
-            <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-4 text-center border border-gray-700">
-              <div className="text-2xl sm:text-3xl font-bold" style={{ color: selectedActivity.color }}>
-                {milestones}
+            {selectedActivity.id !== 'walking-indoor' && (
+              <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-4 text-center border border-gray-700">
+                <div className="text-2xl sm:text-3xl font-bold" style={{ color: selectedActivity.color }}>
+                  {milestones}
+                </div>
+                <div className="text-xs text-gray-400">
+                  {config.goalType === 'milestones' ? `/ ${config.targetMilestones}` : ''} Checkpoints
+                </div>
               </div>
-              <div className="text-xs text-gray-400">
-                {config.goalType === 'milestones' ? `/ ${config.targetMilestones}` : ''} Checkpoints
-              </div>
-            </div>
+            )}
             
             {/* Calories */}
-            <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-4 text-center border border-gray-700">
-              <div className="text-2xl sm:text-3xl font-bold text-orange-400">
-                {Math.round(calories)}
+            {selectedActivity.id !== 'walking-indoor' && (
+              <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-4 text-center border border-gray-700">
+                <div className="text-2xl sm:text-3xl font-bold text-orange-400">
+                  {Math.round(calories)}
+                </div>
+                <div className="text-xs text-gray-400">🔥 Calories</div>
               </div>
-              <div className="text-xs text-gray-400">🔥 Calories</div>
-            </div>
+            )}
             
             {/* Progress/Streak/Goal */}
             <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-4 text-center border border-gray-700">
@@ -1868,8 +1937,8 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
             </div>
           )}
           
-          {/* Milestone Button - Only show for manual mode */}
-          {config.milestoneMode === 'manual' && (
+          {/* Milestone Button - Only show for manual mode and non-walking indoor */}
+          {config.milestoneMode === 'manual' && selectedActivity.id !== 'walking-indoor' && (
             <button
               onClick={completeMilestone}
               disabled={isPaused}
@@ -1881,7 +1950,7 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
           )}
           
           {/* Auto mode indicator */}
-          {config.milestoneMode === 'auto' && (
+          {config.milestoneMode === 'auto' && selectedActivity.id !== 'walking-indoor' && (
             <div className="w-full py-4 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border-2 border-cyan-500/30 text-cyan-400 rounded-xl font-medium text-center mb-4">
               <Timer className="w-5 h-5 inline mr-2" />
               Auto-checkpoints every {Math.floor((config.autoMilestoneInterval || 180) / 60)} min

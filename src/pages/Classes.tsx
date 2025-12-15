@@ -12,6 +12,7 @@ import {
   ExternalLink,
   Radio,
   CheckCircle2,
+  ChevronRight,
   Moon,
   UtensilsCrossed,
   Sparkles,
@@ -29,6 +30,7 @@ import {
   Flower2,
 } from 'lucide-react';
 import { useRecordedSessions, useLiveClasses, useFavoriteSessions, useSessionCompletions, useClassReminders } from '../hooks/useSupabaseData';
+import { useCourses } from '../hooks/useCourses';
 import { useReminderChecker } from '../hooks/useReminderChecker';
 import { useTrackVideoView, useTrackFavorite, useTrackReminder } from '../hooks/useActivityTracking';
 import { format, parseISO, isAfter, isBefore, addHours } from 'date-fns';
@@ -80,6 +82,7 @@ export default function Classes() {
   const { classes: liveClasses, loading: classesLoading } = useLiveClasses();
   const { favoriteIds, toggleFavorite } = useFavoriteSessions();
   const { completedIds, toggleCompletion } = useSessionCompletions();
+  const { courses: courseList, loading: coursesLoading } = useCourses();
   const { trackView } = useTrackVideoView();
   const { trackFavorite } = useTrackFavorite();
 
@@ -93,6 +96,7 @@ export default function Classes() {
   );
   const [selectedWeekday, setSelectedWeekday] = useState<string>('Sunday');
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const now = new Date();
@@ -260,15 +264,27 @@ export default function Classes() {
 
   const filteredRecordedSessions = useMemo(
     () =>
-      mappedRecordedSessions.filter(
-        (s) =>
+      mappedRecordedSessions.filter((s) => {
+        const matchesSearch =
           s.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          s.description.toLowerCase().includes(searchQuery.toLowerCase())
-      ),
-    [mappedRecordedSessions, searchQuery]
+          s.description.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesCourse = selectedCourseId ? s.courseId === selectedCourseId : true;
+        return matchesSearch && matchesCourse;
+      }),
+    [mappedRecordedSessions, searchQuery, selectedCourseId]
   );
 
-  const loading = sessionsLoading || classesLoading;
+  const filteredCourses = useMemo(
+    () =>
+      courseList.filter(
+        (c) =>
+          c.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          c.description.toLowerCase().includes(searchQuery.toLowerCase())
+      ),
+    [courseList, searchQuery]
+  );
+
+  const loading = sessionsLoading || classesLoading || coursesLoading;
 
   const handleToggleComplete = async (sessionId: string, sessionTitle: string) => {
     // Show toast notification
@@ -426,45 +442,116 @@ export default function Classes() {
         </div>
       )}
 
-      {/* Pathways */}
+      {/* Recordings (Courses + Sessions) */}
       {activeTab === 'recorded' && (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {loading ? (
-            <div className="col-span-full card text-center py-12">
-              <p className="text-gray-500">Loading recordings...</p>
-            </div>
-          ) : filteredRecordedSessions.length > 0 ? (
-            filteredRecordedSessions.map((session) => (
-              <RecordedSessionCard
-                key={session.id}
-                session={session}
-                onToggleFavorite={async () => {
-                  const wasFavorite = favoriteIds.has(session.id);
-                  toggleFavorite(session.id);
-                  await trackFavorite(
-                    session.id,
-                    wasFavorite ? 'favorite_removed' : 'favorite_added',
-                    session.title
-                  );
-                }}
-                onToggleComplete={() => handleToggleComplete(session.id, session.title)}
-                onClick={() => {
-                  if (session.videoUrl) {
-                    trackView(session.id, session.title);
-                    window.open(session.videoUrl, '_blank', 'noopener,noreferrer');
-                  } else {
-                    console.error('No video URL for session:', session.id);
-                  }
-                }}
-              />
-            ))
+        <div className="space-y-6">
+          {selectedCourseId ? (
+            <>
+              <button
+                onClick={() => setSelectedCourseId(null)}
+                className="mb-4 flex items-center gap-2 text-coral-600 hover:text-coral-700 font-medium"
+              >
+                <ChevronRight className="w-4 h-4 rotate-180" />
+                Back to all recordings
+              </button>
+              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-800 flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span className="font-medium">
+                    {filteredRecordedSessions.length} session
+                    {filteredRecordedSessions.length === 1 ? '' : 's'} in this class
+                  </span>
+                </p>
+              </div>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {loading ? (
+                  <div className="col-span-full card text-center py-12">
+                    <p className="text-gray-500">Loading recordings...</p>
+                  </div>
+                ) : filteredRecordedSessions.length > 0 ? (
+                  filteredRecordedSessions.map((session) => (
+                    <RecordedSessionCard
+                      key={session.id}
+                      session={session}
+                      onToggleFavorite={async () => {
+                        const wasFavorite = favoriteIds.has(session.id);
+                        toggleFavorite(session.id);
+                        await trackFavorite(
+                          session.id,
+                          wasFavorite ? 'favorite_removed' : 'favorite_added',
+                          session.title
+                        );
+                      }}
+                      onToggleComplete={() => handleToggleComplete(session.id, session.title)}
+                      onClick={() => {
+                        if (session.videoUrl) {
+                          trackView(session.id, session.title);
+                          window.open(session.videoUrl, '_blank', 'noopener,noreferrer');
+                        } else {
+                          console.error('No video URL for session:', session.id);
+                        }
+                      }}
+                    />
+                  ))
+                ) : (
+                  <div className="col-span-full card text-center py-12">
+                    <Video className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                    <p className="text-gray-500">No sessions found for this class</p>
+                  </div>
+                )}
+              </div>
+            </>
           ) : (
-            <div className="col-span-full card text-center py-12">
-              <Video className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-              <h3 className="font-semibold text-gray-900 mb-2">No recordings found</h3>
-              <p className="text-gray-500">
-                Recordings from completed live sessions will appear here.
-              </p>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {loading ? (
+                <div className="col-span-full card text-center py-12">
+                  <p className="text-gray-500">Loading recordings...</p>
+                </div>
+              ) : filteredCourses.length > 0 ? (
+                filteredCourses.map((course) => {
+                  const gradientClass = courseStyles[course.title] || 'from-coral-400 to-coral-600';
+                  return (
+                    <div
+                      key={course.id}
+                      className="card overflow-hidden hover:shadow-elevated transition-shadow cursor-pointer group"
+                      onClick={() => setSelectedCourseId(course.id)}
+                    >
+                      <div className={`h-36 bg-gradient-to-br ${gradientClass} -mx-6 -mt-6 mb-4 relative`}>
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <PlayCircle className="w-16 h-16 text-white" />
+                        </div>
+                      </div>
+
+                      <h3 className="font-semibold text-gray-900 mb-2 group-hover:text-coral-600 transition-colors">
+                        {course.title}
+                      </h3>
+                      <p className="text-sm text-gray-500 mb-4 line-clamp-2">{course.description}</p>
+
+                      <div className="flex items-center gap-4 text-sm text-gray-500 mb-2">
+                        <span className="flex items-center gap-1">
+                          <User className="w-4 h-4" />
+                          {course.instructor}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-4 h-4" />
+                          {course.duration}
+                        </span>
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        {course.session_count} session{course.session_count === 1 ? '' : 's'}
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="col-span-full card text-center py-12">
+                  <Video className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                  <h3 className="font-semibold text-gray-900 mb-2">No recordings found</h3>
+                  <p className="text-gray-500">
+                    Recordings from completed live sessions will appear here.
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </div>

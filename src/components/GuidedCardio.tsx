@@ -107,7 +107,8 @@ const indoorCardioTypes: CardioType[] = [
     caloriesPerMinute: 8, 
     description: 'Dance fitness party', 
     hypeEmoji: '💃',
-    videoId: 'vNPbnbl85u4', // Zumba workout video
+    // Follow-through Zumba workout video
+    videoId: 'mZeFvX3ALKY',
     tips: ['Move to the beat!', 'Keep it fun and energetic', 'Don\'t worry about perfect moves', 'Just keep moving and having fun!']
   },
   { 

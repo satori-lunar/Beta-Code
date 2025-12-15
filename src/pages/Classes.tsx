@@ -32,7 +32,7 @@ import {
   Compass
 } from 'lucide-react';
 import { useRecordedSessions, useLiveClasses, useFavoriteSessions, useSessionCompletions, useClassReminders } from '../hooks/useSupabaseData';
-import { useCourses } from '../hooks/useCourses';
+import { usePathways } from '../hooks/usePathways';
 import { useReminderChecker } from '../hooks/useReminderChecker';
 import { useTrackVideoView, useTrackFavorite, useTrackReminder } from '../hooks/useActivityTracking';
 import { format, parseISO, isAfter, isBefore, addHours } from 'date-fns';
@@ -84,7 +84,7 @@ export default function Classes() {
   const { classes: liveClasses, loading: classesLoading } = useLiveClasses();
   const { favoriteIds, toggleFavorite } = useFavoriteSessions();
   const { completedIds, toggleCompletion } = useSessionCompletions();
-  const { courses, loading: coursesLoading } = useCourses();
+  const { pathways, userProgress, achievements, loading: pathwaysLoading, enrollInPathway, unenrollFromPathway } = usePathways();
   const { trackView } = useTrackVideoView();
   const { trackFavorite } = useTrackFavorite();
 
@@ -98,18 +98,18 @@ export default function Classes() {
   const [activeTab, setActiveTab] = useState<'live' | 'recorded' | 'favorites' | 'completed'>(initialTab);
   const [selectedWeekday, setSelectedWeekday] = useState<string>('Sunday');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
+  const [selectedPathwayId, setSelectedPathwayId] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Reset course selection when switching tabs or when recorded tab is first opened
+  // Reset pathway selection when switching tabs
   useEffect(() => {
     if (activeTab !== 'recorded') {
-      setSelectedCourseId(null);
-    } else if (activeTab === 'recorded' && selectedCourseId === null) {
-      // Ensure we're showing courses, not sessions
-      setSelectedCourseId(null);
+      setSelectedPathwayId(null);
+    } else if (activeTab === 'recorded' && selectedPathwayId === null) {
+      // Ensure we're showing pathways, not sessions
+      setSelectedPathwayId(null);
     }
-  }, [activeTab, selectedCourseId]);
+  }, [activeTab, selectedPathwayId]);
 
   const now = new Date();
 
@@ -160,26 +160,28 @@ export default function Classes() {
     title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     description.toLowerCase().includes(searchQuery.toLowerCase());
 
-  // Group sessions by course
-  const sessionsByCourse = useMemo(() => {
+  // Group sessions by pathway based on class titles
+  const sessionsByPathway = useMemo(() => {
     const grouped: Record<string, typeof mappedRecordedSessions> = {};
-    mappedRecordedSessions.forEach(session => {
-      const courseId = session.courseId;
-      if (courseId) {
-        if (!grouped[courseId]) grouped[courseId] = [];
-        grouped[courseId].push(session);
-      } else {
-        // Sessions without a course go into a "no course" group
-        if (!grouped['no-course']) grouped['no-course'] = [];
-        grouped['no-course'].push(session);
+
+    pathways.forEach(pathway => {
+      const pathwaySessions = mappedRecordedSessions.filter(session =>
+        pathway.class_titles.some(classTitle =>
+          session.title.toLowerCase().includes(classTitle.toLowerCase()) ||
+          classTitle.toLowerCase().includes(session.title.toLowerCase())
+        )
+      );
+      if (pathwaySessions.length > 0) {
+        grouped[pathway.id] = pathwaySessions;
       }
     });
-    return grouped;
-  }, [mappedRecordedSessions]);
 
-  // Get sessions for selected course (excluding completed ones)
-  const courseSessions = selectedCourseId
-    ? (sessionsByCourse[selectedCourseId] || []).filter(
+    return grouped;
+  }, [mappedRecordedSessions, pathways]);
+
+  // Get sessions for selected pathway (excluding completed ones)
+  const pathwaySessions = selectedPathwayId
+    ? (sessionsByPathway[selectedPathwayId] || []).filter(
         (s) => !s.isCompleted && filterBySearch(s.title, s.description)
       )
     : [];
@@ -345,7 +347,7 @@ export default function Classes() {
       <div className="flex gap-2 border-b border-gray-100 overflow-x-auto scrollbar-hide">
         {[
           { id: 'live', label: 'Live Classes', icon: Radio },
-          { id: 'recorded', label: 'Recordings', icon: Video },
+          { id: 'recorded', label: 'Pathways', icon: Compass },
           { id: 'favorites', label: 'Favorites', icon: Heart },
           { id: 'completed', label: 'Completed', icon: CheckCircle2 },
         ].map((tab) => (
@@ -375,8 +377,8 @@ export default function Classes() {
         ))}
       </div>
 
-      {/* Search - Only show for recorded courses (not live classes) */}
-      {activeTab === 'recorded' && !selectedCourseId && (
+      {/* Search - Only show for pathways (not live classes) */}
+      {activeTab === 'recorded' && !selectedPathwayId && (
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="flex-1 relative">
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -384,15 +386,15 @@ export default function Classes() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search courses..."
+              placeholder="Search pathways..."
               className="input pl-12"
             />
           </div>
         </div>
       )}
 
-      {/* Search for sessions when viewing a course */}
-      {activeTab === 'recorded' && selectedCourseId && (
+      {/* Search for sessions when viewing a pathway */}
+      {activeTab === 'recorded' && selectedPathwayId && (
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="flex-1 relative">
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -477,25 +479,25 @@ export default function Classes() {
         </div>
       )}
 
-      {/* Recorded Sessions */}
+      {/* Pathways */}
       {activeTab === 'recorded' && (
         <div>
-          {/* Only show courses, not all sessions directly */}
-          {selectedCourseId ? (
-            // Show sessions for selected course
+          {/* Only show pathways, not all sessions directly */}
+          {selectedPathwayId ? (
+            // Show sessions for selected pathway
             <div>
               <button
-                onClick={() => setSelectedCourseId(null)}
+                onClick={() => setSelectedPathwayId(null)}
                 className="mb-4 flex items-center gap-2 text-coral-600 hover:text-coral-700 font-medium"
               >
                 <ChevronRight className="w-4 h-4 rotate-180" />
-                Back to Courses
+                Back to Pathways
               </button>
               <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                 <p className="text-sm text-blue-800 flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4" />
                   <span className="font-medium">Showing incomplete sessions only</span>
-                  <span className="text-blue-600">({courseSessions.length} remaining)</span>
+                  <span className="text-blue-600">({pathwaySessions.length} remaining)</span>
                 </p>
               </div>
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -503,8 +505,8 @@ export default function Classes() {
                   <div className="col-span-full card text-center py-12">
                     <p className="text-gray-500">Loading sessions...</p>
                   </div>
-                ) : courseSessions.length > 0 ? (
-                  courseSessions.map((session) => (
+                ) : pathwaySessions.length > 0 ? (
+                  pathwaySessions.map((session) => (
                     <RecordedSessionCard
                       key={session.id}
                       session={session}
@@ -527,80 +529,119 @@ export default function Classes() {
                 ) : (
                   <div className="col-span-full card text-center py-12">
                     <Video className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                    <p className="text-gray-500">No sessions found in this course</p>
+                    <p className="text-gray-500">No sessions found in this pathway</p>
                   </div>
                 )}
               </div>
             </div>
           ) : (
-            // Show courses
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {loading ? (
+            // Show pathways
+            <div className="grid sm:grid-cols-2 lg:grid-cols-2 gap-6">
+              {pathwaysLoading ? (
                 <div className="col-span-full card text-center py-12">
-                  <p className="text-gray-500">Loading courses...</p>
+                  <p className="text-gray-500">Loading pathways...</p>
                 </div>
-              ) : courses.length > 0 ? (
-                courses
-                  .filter(course =>
-                    course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                    course.description.toLowerCase().includes(searchQuery.toLowerCase())
+              ) : pathways.length > 0 ? (
+                pathways
+                  .filter(pathway =>
+                    pathway.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    pathway.description.toLowerCase().includes(searchQuery.toLowerCase())
                   )
-                  .filter(course => {
-                    // If filterClasses is provided (from HealthDashboard), only show those specific courses
-                    if (filterClasses && Array.isArray(filterClasses)) {
-                      return filterClasses.some((className: string) =>
-                        course.title.toLowerCase().includes(className.toLowerCase())
-                      );
-                    }
-                    return true;
-                  })
-                  .map((course) => {
-                    const sessionCount = sessionsByCourse[course.id]?.length || 0;
-                    const courseStyle = courseStyles[course.title] || {
-                      gradient: classImages[course.category] || 'from-coral-400 to-coral-600',
-                      icon: BookOpen
-                    };
-                    const IconComponent = courseStyle.icon;
+                  .map((pathway) => {
+                    const sessionCount = sessionsByPathway[pathway.id]?.length || 0;
+                    const progress = userProgress[pathway.id];
+                    const isEnrolled = !!progress;
+                    const progressPercentage = progress
+                      ? Math.round((progress.classes_completed / progress.total_classes) * 100)
+                      : 0;
                     
                     return (
                       <div
-                        key={course.id}
-                        onClick={() => setSelectedCourseId(course.id)}
-                        className="card overflow-hidden hover:shadow-elevated transition-shadow cursor-pointer group"
+                        key={pathway.id}
+                        className="card overflow-hidden hover:shadow-elevated transition-shadow group relative"
                       >
-                        <div className={`h-40 bg-gradient-to-br ${courseStyle.gradient} -mx-6 -mt-6 mb-4 relative overflow-hidden`}>
-                          {/* Icon - always visible, glows on hover */}
+                        {/* Pathway Header with Icon */}
+                        <div className={`h-32 bg-gradient-to-br ${pathway.color_gradient} -mx-6 -mt-6 mb-4 relative overflow-hidden`}>
                           <div className="absolute inset-0 flex items-center justify-center">
-                            <IconComponent className="w-16 h-16 text-white/90 group-hover:text-white transition-all duration-300 group-hover:scale-110 group-hover:drop-shadow-[0_0_20px_rgba(255,255,255,0.8)] group-hover:filter group-hover:brightness-110" />
+                            <div className="text-6xl">{pathway.icon}</div>
                           </div>
-                          {/* Decorative pattern overlay */}
+                          {/* Decorative pattern */}
                           <div className="absolute inset-0 opacity-10">
                             <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.3),transparent_50%)]"></div>
-                            <div className="absolute bottom-0 right-0 w-full h-full bg-[radial-gradient(circle_at_70%_70%,rgba(255,255,255,0.2),transparent_50%)]"></div>
                           </div>
-                          {/* Subtle overlay on hover for extra depth */}
-                          <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                          {isEnrolled && (
+                            <div className="absolute top-3 right-3 px-2 py-1 bg-white/90 backdrop-blur-sm rounded-full text-xs font-medium text-gray-700">
+                              {progressPercentage}% Complete
+                            </div>
+                          )}
                         </div>
-                        <div className="space-y-2">
-                          <h3 className="font-semibold text-gray-900 text-lg group-hover:text-coral-600 transition-colors">
-                            {course.title}
-                          </h3>
-                          <p className="text-sm text-gray-600 line-clamp-2">
-                            {course.description}
-                          </p>
-                          <div className="flex items-center gap-4 text-sm text-gray-500 pt-2">
+
+                        {/* Pathway Content */}
+                        <div className="space-y-3">
+                          <div>
+                            <h3 className="font-bold text-gray-900 text-xl mb-2">{pathway.title}</h3>
+                            <p className="text-sm text-gray-600 line-clamp-2 mb-3">{pathway.description}</p>
+                          </div>
+
+                          {/* Stats */}
+                          <div className="flex items-center gap-4 text-sm text-gray-500">
                             <span className="flex items-center gap-1">
-                              <User className="w-4 h-4" />
-                              {course.instructor}
+                              <Clock className="w-4 h-4" />
+                              {pathway.estimated_duration}
                             </span>
                             <span className="flex items-center gap-1">
                               <Video className="w-4 h-4" />
-                              {sessionCount} {sessionCount === 1 ? 'session' : 'sessions'}
+                              {pathway.total_classes} classes
                             </span>
                           </div>
-                          <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                            <span className="text-sm text-gray-500">{course.category}</span>
-                            <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-coral-600 transition-colors" />
+
+                          {/* Progress Bar (if enrolled) */}
+                          {isEnrolled && progress && (
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between text-xs text-gray-500">
+                                <span>{progress.classes_completed} / {progress.total_classes} completed</span>
+                                {progress.current_streak > 0 && (
+                                  <span className="flex items-center gap-1 text-orange-600">
+                                    <Flame className="w-3 h-3" />
+                                    {progress.current_streak} day streak
+                                  </span>
+                                )}
+                              </div>
+                              <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                                <div
+                                  className="h-full bg-gradient-to-r from-coral-400 to-coral-600 rounded-full transition-all duration-500"
+                                  style={{ width: `${progressPercentage}%` }}
+                                />
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Action Button */}
+                          <div className="pt-4 border-t border-gray-100">
+                            {isEnrolled ? (
+                              <button
+                                onClick={() => setSelectedPathwayId(pathway.id)}
+                                className="w-full py-2 px-4 bg-coral-500 hover:bg-coral-600 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                              >
+                                <span>Continue Journey</span>
+                                <ChevronRight className="w-4 h-4" />
+                              </button>
+                            ) : (
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => enrollInPathway(pathway.id, pathway.total_classes)}
+                                  className="flex-1 py-2 px-4 bg-coral-500 hover:bg-coral-600 text-white rounded-lg font-medium transition-colors"
+                                >
+                                  Start Pathway
+                                </button>
+                                <button
+                                  onClick={() => setSelectedPathwayId(pathway.id)}
+                                  className="py-2 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors"
+                                >
+                                  Preview
+                                </button>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -608,8 +649,8 @@ export default function Classes() {
                   })
               ) : (
                 <div className="col-span-full card text-center py-12">
-                  <BookOpen className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-500">No courses found</p>
+                  <Compass className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500">No pathways found</p>
                 </div>
               )}
             </div>

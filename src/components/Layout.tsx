@@ -23,7 +23,8 @@ import {
   User,
   Clock,
   Activity,
-  Shield
+  Shield,
+  Flag
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -39,6 +40,7 @@ const navigation = [
   { name: 'Nutrition', href: '/nutrition', icon: Apple },
   { name: 'Weight Log', href: '/weight', icon: Scale },
   { name: 'Journal', href: '/journal', icon: BookOpen },
+  { name: 'Goals', href: '/goals', icon: Flag },
   { name: 'Courses', href: '/courses', icon: GraduationCap },
   { name: 'Calendar', href: '/calendar', icon: CalendarDays },
   { name: 'Classes', href: '/classes', icon: Video },
@@ -51,6 +53,7 @@ const pages = [
   { name: 'Nutrition', description: 'Log meals and water intake', href: '/nutrition' },
   { name: 'Weight Log', description: 'Track your weight progress', href: '/weight' },
   { name: 'Journal', description: 'Write and reflect', href: '/journal' },
+  { name: 'Goals', description: 'Set and track your wellness goals', href: '/goals' },
   { name: 'Courses', description: 'Learn and grow', href: '/courses' },
   { name: 'Calendar', description: 'View your schedule', href: '/calendar' },
   { name: 'Classes', description: 'Live and recorded sessions', href: '/classes' },

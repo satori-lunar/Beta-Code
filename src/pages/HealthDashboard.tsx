@@ -89,6 +89,7 @@ export default function HealthDashboard() {
   const [activeTab, setActiveTab] = useState<TabType>('workout');
   const [showWorkoutCamera, setShowWorkoutCamera] = useState(false);
   const [showModeSelection, setShowModeSelection] = useState(false);
+  const [showIndoorOptions, setShowIndoorOptions] = useState(false);
   const [workoutMode, setWorkoutMode] = useState<'indoor' | 'outdoor' | null>(null);
   const [selectedPreset, setSelectedPreset] = useState<WorkoutPreset | undefined>(undefined);
   const [activeMindfulness, setActiveMindfulness] = useState<'breathing' | 'bodyscan' | 'gratitude' | 'meditation' | null>(null);
@@ -824,6 +825,76 @@ export default function HealthDashboard() {
               onSavePreset={handleSavePreset}
               initialPreset={selectedPreset}
             />
+          ) : showIndoorOptions ? (
+            <div className="card p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold text-gray-900">Choose Your Workout Type</h3>
+                <button
+                  onClick={() => setShowIndoorOptions(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* YouTube Embedded Workouts */}
+                <button
+                  onClick={() => {
+                    setWorkoutMode('indoor');
+                    setShowIndoorOptions(false);
+                    setShowWorkoutCamera(true);
+                  }}
+                  className="group p-6 rounded-2xl border-2 border-gray-200 hover:border-red-300 hover:shadow-lg transition-all text-left"
+                >
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="w-16 h-16 rounded-xl bg-red-100 group-hover:bg-red-200 flex items-center justify-center transition-colors">
+                      <Play className="w-8 h-8 text-red-600" />
+                    </div>
+                    <div>
+                      <h4 className="text-xl font-bold text-gray-900">YouTube Workouts</h4>
+                      <p className="text-sm text-gray-500">Follow along with videos</p>
+                    </div>
+                  </div>
+                  <p className="text-gray-600 mb-4">
+                    Stream workout videos directly in the app. Perfect for guided sessions with professional trainers.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="px-3 py-1 bg-red-50 text-red-700 rounded-full text-sm font-medium">Zumba</span>
+                    <span className="px-3 py-1 bg-red-50 text-red-700 rounded-full text-sm font-medium">Cardio</span>
+                    <span className="px-3 py-1 bg-red-50 text-red-700 rounded-full text-sm font-medium">Dance</span>
+                  </div>
+                </button>
+
+                {/* Coach Recordings */}
+                <button
+                  onClick={() => {
+                    setWorkoutMode('indoor');
+                    setShowIndoorOptions(false);
+                    setShowWorkoutCamera(true);
+                  }}
+                  className="group p-6 rounded-2xl border-2 border-gray-200 hover:border-purple-300 hover:shadow-lg transition-all text-left"
+                >
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="w-16 h-16 rounded-xl bg-purple-100 group-hover:bg-purple-200 flex items-center justify-center transition-colors">
+                      <Dumbbell className="w-8 h-8 text-purple-600" />
+                    </div>
+                    <div>
+                      <h4 className="text-xl font-bold text-gray-900">Coach Recordings</h4>
+                      <p className="text-sm text-gray-500">Pre-recorded sessions</p>
+                    </div>
+                  </div>
+                  <p className="text-gray-600 mb-4">
+                    Watch pre-recorded workout sessions from our certified coaches. Great for structured programs.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="px-3 py-1 bg-purple-50 text-purple-700 rounded-full text-sm font-medium">Strength</span>
+                    <span className="px-3 py-1 bg-purple-50 text-purple-700 rounded-full text-sm font-medium">HIIT</span>
+                    <span className="px-3 py-1 bg-purple-50 text-purple-700 rounded-full text-sm font-medium">Yoga</span>
+                  </div>
+                </button>
+              </div>
+            </div>
           ) : showModeSelection ? (
             <div className="card p-6">
               <div className="flex items-center justify-between mb-6">
@@ -840,9 +911,8 @@ export default function HealthDashboard() {
                 {/* Indoor Workout */}
                 <button
                   onClick={() => {
-                    setWorkoutMode('indoor');
                     setShowModeSelection(false);
-                    setShowWorkoutCamera(true);
+                    setShowIndoorOptions(true);
                   }}
                   className="group p-6 rounded-2xl border-2 border-gray-200 hover:border-purple-300 hover:shadow-lg transition-all text-left"
                 >
@@ -856,26 +926,23 @@ export default function HealthDashboard() {
                     </div>
                   </div>
                   <p className="text-gray-600 mb-4">
-                    Zumba, Cardio, and Walking workouts with guided videos and optional camera for form check.
+                    Choose from YouTube workouts or watch coach recordings with optional camera for form check.
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    <span className="px-3 py-1 bg-purple-50 text-purple-700 rounded-full text-sm font-medium">Zumba</span>
-                    <span className="px-3 py-1 bg-purple-50 text-purple-700 rounded-full text-sm font-medium">Cardio</span>
-                    <span className="px-3 py-1 bg-purple-50 text-purple-700 rounded-full text-sm font-medium">Walking</span>
+                    <span className="px-3 py-1 bg-purple-50 text-purple-700 rounded-full text-sm font-medium">YouTube Videos</span>
+                    <span className="px-3 py-1 bg-purple-50 text-purple-700 rounded-full text-sm font-medium">Coach Recordings</span>
                   </div>
                 </button>
 
-                {/* Outdoor Workout */}
-                <button
-                  onClick={() => {
-                    setWorkoutMode('outdoor');
-                    setShowModeSelection(false);
-                    setShowWorkoutCamera(true);
-                  }}
-                  className="group p-6 rounded-2xl border-2 border-gray-200 hover:border-green-300 hover:shadow-lg transition-all text-left"
-                >
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="w-16 h-16 rounded-xl bg-green-100 group-hover:bg-green-200 flex items-center justify-center transition-colors">
+                {/* Outdoor Workout - Coming Soon */}
+                <div className="group p-6 rounded-2xl border-2 border-gray-200 bg-gray-50 relative overflow-hidden">
+                  <div className="absolute top-3 right-3">
+                    <span className="px-3 py-1 bg-green-500 text-white rounded-full text-xs font-bold">
+                      COMING SOON
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-4 mb-4 opacity-60">
+                    <div className="w-16 h-16 rounded-xl bg-green-100 flex items-center justify-center">
                       <Navigation className="w-8 h-8 text-green-600" />
                     </div>
                     <div>
@@ -883,15 +950,18 @@ export default function HealthDashboard() {
                       <p className="text-sm text-gray-500">Track your route with GPS</p>
                     </div>
                   </div>
-                  <p className="text-gray-600 mb-4">
+                  <p className="text-gray-600 mb-4 opacity-60">
                     Running, Walking, and Jogging with real-time GPS tracking and route mapping.
                   </p>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-2 opacity-60">
                     <span className="px-3 py-1 bg-green-50 text-green-700 rounded-full text-sm font-medium">Running</span>
                     <span className="px-3 py-1 bg-green-50 text-green-700 rounded-full text-sm font-medium">Walking</span>
                     <span className="px-3 py-1 bg-green-50 text-green-700 rounded-full text-sm font-medium">Jogging</span>
                   </div>
-                </button>
+                  <p className="mt-4 text-sm text-green-700 font-medium">
+                    We're building GPS tracking and outdoor route mapping. Stay tuned!
+                  </p>
+                </div>
               </div>
             </div>
           ) : (

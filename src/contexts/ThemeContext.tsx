@@ -66,7 +66,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const [isDark, setIsDark] = useState<boolean>(() => {
     const saved = localStorage.getItem('isDark');
-    return saved === 'true';
+    // Default to light mode (false) if no saved preference
+    return saved === null ? false : saved === 'true';
   });
 
   const applyTheme = (presetKey: string) => {

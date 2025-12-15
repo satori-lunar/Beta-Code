@@ -15,9 +15,13 @@ import {
   Lock,
   Star,
   Zap,
-  Trophy
+  Trophy,
+  Palette,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { useHabits, useJournalEntries, useUserBadges } from '../hooks/useSupabaseData';
 import { format, isToday, parseISO } from 'date-fns';
 
@@ -106,12 +110,14 @@ const wellnessQuotes = [
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const { isDark, toggleDark, colorPreset, setColorPreset, colorPresets } = useTheme();
   const { data: habits = [] } = useHabits();
   const { data: journalEntries = [] } = useJournalEntries();
   const { data: userBadges = [] } = useUserBadges();
 
   const [dailyQuote, setDailyQuote] = useState('');
   const [showBadgeModal, setShowBadgeModal] = useState(false);
+  const [showThemeModal, setShowThemeModal] = useState(false);
 
   // Set daily quote (changes each day)
   useEffect(() => {
@@ -151,8 +157,15 @@ export default function Dashboard() {
               </p>
             </div>
 
-            {/* Streak Badge */}
+            {/* Streak Badge and Theme Button */}
             <div className="flex items-center gap-6">
+              <button
+                onClick={() => setShowThemeModal(true)}
+                className="p-3 hover:bg-purple-100 dark:hover:bg-purple-900 rounded-xl transition-colors"
+                title="Customize theme"
+              >
+                <Palette className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+              </button>
               <div className="text-center">
                 <div className="flex items-center gap-2 mb-1">
                   <Flame className="w-8 h-8 text-orange-500" />
@@ -470,6 +483,125 @@ export default function Dashboard() {
                     </div>
                   );
                 })}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Theme Customization Modal */}
+      {showThemeModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full">
+            <div className="border-b border-gray-200 dark:border-gray-700 p-6 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Palette className="w-8 h-8 text-purple-500" />
+                <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
+                  Customize Your Theme
+                </h2>
+              </div>
+              <button
+                onClick={() => setShowThemeModal(false)}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                <X className="w-6 h-6 text-gray-600 dark:text-gray-300" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Dark/Light Mode Toggle */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+                  Appearance
+                </h3>
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={toggleDark}
+                    className={`flex items-center gap-3 px-6 py-4 rounded-xl border-2 transition-all flex-1 ${
+                      !isDark
+                        ? 'border-purple-500 bg-purple-50 dark:bg-purple-900'
+                        : 'border-gray-200 dark:border-gray-600 hover:border-purple-300'
+                    }`}
+                  >
+                    <Sun className={`w-6 h-6 ${!isDark ? 'text-purple-600' : 'text-gray-400'}`} />
+                    <div className="text-left">
+                      <p className={`font-semibold ${!isDark ? 'text-purple-900 dark:text-purple-100' : 'text-gray-700 dark:text-gray-300'}`}>
+                        Light Mode
+                      </p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Bright and clear
+                      </p>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={toggleDark}
+                    className={`flex items-center gap-3 px-6 py-4 rounded-xl border-2 transition-all flex-1 ${
+                      isDark
+                        ? 'border-purple-500 bg-purple-50 dark:bg-purple-900'
+                        : 'border-gray-200 dark:border-gray-600 hover:border-purple-300'
+                    }`}
+                  >
+                    <Moon className={`w-6 h-6 ${isDark ? 'text-purple-600 dark:text-purple-400' : 'text-gray-400'}`} />
+                    <div className="text-left">
+                      <p className={`font-semibold ${isDark ? 'text-purple-900 dark:text-purple-100' : 'text-gray-700 dark:text-gray-300'}`}>
+                        Dark Mode
+                      </p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Easy on the eyes
+                      </p>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Color Preset Selection */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+                  Color Theme
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {Object.entries(colorPresets).map(([key, preset]) => (
+                    <button
+                      key={key}
+                      onClick={() => setColorPreset(key)}
+                      className={`p-4 rounded-xl border-2 transition-all ${
+                        colorPreset === key
+                          ? 'border-purple-500 bg-purple-50 dark:bg-purple-900'
+                          : 'border-gray-200 dark:border-gray-600 hover:border-purple-300'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="flex gap-1">
+                          {preset.colors.map((color, idx) => (
+                            <div
+                              key={idx}
+                              className="w-6 h-6 rounded-full"
+                              style={{ backgroundColor: color }}
+                            />
+                          ))}
+                        </div>
+                        {colorPreset === key && (
+                          <CheckCircle2 className="w-5 h-5 text-purple-600 dark:text-purple-400 ml-auto" />
+                        )}
+                      </div>
+                      <p className={`text-sm font-medium ${
+                        colorPreset === key
+                          ? 'text-purple-900 dark:text-purple-100'
+                          : 'text-gray-700 dark:text-gray-300'
+                      }`}>
+                        {preset.name}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Preview */}
+              <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4">
+                <p className="text-sm text-gray-600 dark:text-gray-300 text-center">
+                  Theme changes apply instantly across the entire app
+                </p>
               </div>
             </div>
           </div>

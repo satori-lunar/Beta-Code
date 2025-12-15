@@ -1380,7 +1380,11 @@ export async function checkFirstTimeBadges(
 
   const badge = firstTimeBadges[action]
   if (badge) {
-    await awardBadge(userId, badge)
+    console.log(`Attempting to award badge: ${badge.name} to user ${userId}`);
+    const result = await awardBadge(userId, badge);
+    console.log(`Badge award result:`, result);
+    return result;
   }
+  return null;
 }
 

@@ -141,17 +141,31 @@ export default function Habits() {
     
     // Check for badges when completing a habit
     if (isCompleting) {
-      // Check for first habit badge (only if this is truly the first completion)
-      if (completedDates.length === 0) {
-        await checkFirstTimeBadges(user.id, 'habit_complete');
-      }
-      
-      // Check for streak badges
-      if (newStreak > 0) {
-        await checkAndAwardStreakBadges(user.id, newStreak);
+      try {
+        // Check for first habit badge (check if user has ever completed any habit before)
+        const totalCompletions = habits.reduce((sum, h) => {
+          const dates = (h.completed_dates as any) || [];
+          return sum + dates.length;
+        }, 0);
+
+        console.log('Total completions across all habits:', totalCompletions);
+
+        if (totalCompletions === 0) {
+          console.log('Awarding first habit badge...');
+          const result = await checkFirstTimeBadges(user.id, 'habit_complete');
+          console.log('First habit badge result:', result);
+        }
+
+        // Check for streak badges
+        if (newStreak > 0) {
+          console.log('Checking streak badges for streak:', newStreak);
+          await checkAndAwardStreakBadges(user.id, newStreak);
+        }
+      } catch (error) {
+        console.error('Error awarding badges:', error);
       }
     }
-    
+
     refetch();
   };
 

@@ -342,7 +342,7 @@ export default function Classes() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-gray-100">
+      <div className="flex gap-2 border-b border-gray-100 overflow-x-auto scrollbar-hide">
         {[
           { id: 'live', label: 'Live Classes', icon: Radio },
           { id: 'recorded', label: 'Recordings', icon: Video },
@@ -352,21 +352,22 @@ export default function Classes() {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as 'live' | 'recorded' | 'favorites' | 'completed')}
-            className={`flex items-center gap-2 px-4 py-3 font-medium transition-colors border-b-2 -mb-px ${
+            className={`flex items-center gap-2 px-3 sm:px-4 py-3 font-medium transition-colors border-b-2 -mb-px whitespace-nowrap text-sm sm:text-base ${
               activeTab === tab.id
                 ? 'text-coral-600 border-coral-500'
                 : 'text-gray-500 border-transparent hover:text-gray-700'
             }`}
           >
-            <tab.icon className="w-5 h-5" />
-            {tab.label}
+            <tab.icon className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+            <span className="hidden xs:inline sm:inline">{tab.label}</span>
+            <span className="inline xs:hidden sm:hidden">{tab.id === 'live' ? 'Live' : tab.id === 'recorded' ? 'Videos' : tab.label}</span>
             {tab.id === 'favorites' && favoriteSessions.length > 0 && (
-              <span className="ml-1 px-2 py-0.5 bg-coral-100 text-coral-600 text-xs rounded-full">
+              <span className="px-2 py-0.5 bg-coral-100 text-coral-600 text-xs rounded-full">
                 {favoriteSessions.length}
               </span>
             )}
             {tab.id === 'completed' && completedSessions.length > 0 && (
-              <span className="ml-1 px-2 py-0.5 bg-green-100 text-green-600 text-xs rounded-full">
+              <span className="px-2 py-0.5 bg-green-100 text-green-600 text-xs rounded-full">
                 {completedSessions.length}
               </span>
             )}
@@ -425,7 +426,7 @@ export default function Classes() {
           )}
 
           {/* Weekday Tabs */}
-          <div className="flex gap-2 border-b border-gray-100 overflow-x-auto scrollbar-hide">
+          <div className="flex gap-2 border-b border-gray-100 overflow-x-auto scrollbar-hide pb-2">
             {weekdayOrder.map((weekday) => {
               const classesForDay = classesByWeekday[weekday] || [];
               if (classesForDay.length === 0) return null;
@@ -434,14 +435,14 @@ export default function Classes() {
                 <button
                   key={weekday}
                   onClick={() => setSelectedWeekday(weekday)}
-                  className={`flex items-center gap-2 px-4 py-3 font-medium transition-colors border-b-2 -mb-px whitespace-nowrap ${
+                  className={`flex flex-col items-center gap-1 px-3 sm:px-4 py-2 font-medium transition-colors border-b-2 -mb-2 ${
                     selectedWeekday === weekday
                       ? 'text-coral-600 border-coral-500'
                       : 'text-gray-500 border-transparent hover:text-gray-700'
                   }`}
                 >
-                  {weekday}
-                  <span className="ml-1 px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full">
+                  <span className="text-xs sm:text-sm whitespace-nowrap">{weekday}</span>
+                  <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full min-w-[24px] text-center">
                     {classesForDay.length}
                   </span>
                 </button>

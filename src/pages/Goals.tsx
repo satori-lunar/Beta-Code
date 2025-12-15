@@ -192,13 +192,13 @@ export default function Goals() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-        <div className="flex-1">
+      <div className="space-y-4">
+        <div>
           <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">Category</label>
-          <div className="flex gap-2 overflow-x-auto pb-2 sm:pb-0 scrollbar-hide">
+          <div className="flex flex-wrap gap-2">
             <button
               onClick={() => setFilterCategory('all')}
-              className={`px-3 sm:px-4 py-2 rounded-xl whitespace-nowrap transition-colors text-xs sm:text-sm ${
+              className={`px-3 sm:px-4 py-2 rounded-xl transition-colors text-xs sm:text-sm ${
                 filterCategory === 'all'
                   ? 'bg-coral-100 text-coral-700'
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -210,7 +210,7 @@ export default function Goals() {
               <button
                 key={cat.id}
                 onClick={() => setFilterCategory(cat.id)}
-                className={`px-3 sm:px-4 py-2 rounded-xl whitespace-nowrap transition-colors text-xs sm:text-sm ${
+                className={`px-3 sm:px-4 py-2 rounded-xl transition-colors text-xs sm:text-sm ${
                   filterCategory === cat.id ? cat.color : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
@@ -220,12 +220,12 @@ export default function Goals() {
           </div>
         </div>
 
-        <div className="flex-1">
+        <div>
           <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">Status</label>
-          <div className="flex gap-2 overflow-x-auto pb-2 sm:pb-0 scrollbar-hide">
+          <div className="flex flex-wrap gap-2">
             <button
               onClick={() => setFilterStatus('all')}
-              className={`px-3 sm:px-4 py-2 rounded-xl whitespace-nowrap transition-colors text-xs sm:text-sm ${
+              className={`px-3 sm:px-4 py-2 rounded-xl transition-colors text-xs sm:text-sm ${
                 filterStatus === 'all'
                   ? 'bg-coral-100 text-coral-700'
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -237,7 +237,7 @@ export default function Goals() {
               <button
                 key={status.id}
                 onClick={() => setFilterStatus(status.id)}
-                className={`px-3 sm:px-4 py-2 rounded-xl whitespace-nowrap transition-colors text-xs sm:text-sm ${
+                className={`px-3 sm:px-4 py-2 rounded-xl transition-colors text-xs sm:text-sm ${
                   filterStatus === status.id ? status.color : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >

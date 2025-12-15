@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Search,
   Clock,
@@ -9,17 +10,11 @@ import {
   PlayCircle,
   Flame,
   Star,
-  Calendar,
-  User,
-  ExternalLink,
-  X,
 } from 'lucide-react';
 import { usePathways } from '../hooks/usePathways';
-import { useLiveClasses } from '../hooks/useSupabaseData';
-import { format, parseISO, isAfter, isBefore, addHours } from 'date-fns';
 
 // Define the pathways with their classes
-const pathwayDefinitions = [
+export const pathwayDefinitions = [
   {
     id: 'self-compassion',
     title: 'Self-Compassion Pathway',
@@ -100,68 +95,14 @@ const pathwayDefinitions = [
 ];
 
 export default function Pathways() {
+  const navigate = useNavigate();
   const { userProgress, loading, enrollInPathway, unenrollFromPathway } = usePathways();
-  const { classes: liveClasses, loading: classesLoading } = useLiveClasses();
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedPathwayId, setSelectedPathwayId] = useState<string | null>(null);
 
   // Get the current enrolled pathway
   const enrolledPathwayId = Object.keys(userProgress).find(
     (id) => !userProgress[id].completed
   );
-
-  // Helper to check if a class is live
-  const isClassLive = (scheduledAt: string, duration: number) => {
-    const now = new Date();
-    const startTime = parseISO(scheduledAt);
-    const endTime = addHours(startTime, duration / 60);
-    return isAfter(now, startTime) && isBefore(now, endTime);
-  };
-
-  // Get classes for selected pathway
-  const pathwayClasses = useMemo(() => {
-    if (!selectedPathwayId) return [];
-    
-    const pathway = pathwayDefinitions.find((p) => p.id === selectedPathwayId);
-    if (!pathway) return [];
-
-    // Filter live classes that match pathway class titles
-    return (liveClasses || []).filter((classItem) =>
-      pathway.class_titles.some((title) =>
-        classItem.title.toLowerCase().includes(title.toLowerCase()) ||
-        title.toLowerCase().includes(classItem.title.toLowerCase())
-      )
-    );
-  }, [selectedPathwayId, liveClasses]);
-
-  // Group classes by weekday
-  const classesByWeekday = useMemo(() => {
-    const grouped: Record<string, typeof pathwayClasses> = {
-      Sunday: [],
-      Monday: [],
-      Tuesday: [],
-      Wednesday: [],
-      Thursday: [],
-      Friday: [],
-      Saturday: [],
-    };
-
-    pathwayClasses.forEach((classItem) => {
-      const weekday = format(parseISO(classItem.scheduled_at), 'EEEE');
-      if (grouped[weekday]) {
-        grouped[weekday].push(classItem);
-      }
-    });
-
-    // Sort classes within each day by scheduled time
-    Object.keys(grouped).forEach((day) => {
-      grouped[day].sort((a, b) =>
-        parseISO(a.scheduled_at).getTime() - parseISO(b.scheduled_at).getTime()
-      );
-    });
-
-    return grouped;
-  }, [pathwayClasses]);
 
   // Filter pathways based on search
   const filteredPathways = pathwayDefinitions.filter((pathway) =>
@@ -185,17 +126,12 @@ export default function Pathways() {
   };
 
   const handleViewClasses = (pathwayId: string) => {
-    // Toggle selection - if already selected, deselect
-    if (selectedPathwayId === pathwayId) {
-      setSelectedPathwayId(null);
-    } else {
-      setSelectedPathwayId(pathwayId);
-    }
+    navigate(`/pathways/${pathwayId}`);
   };
 
   const handleEnrollAndView = async (pathwayId: string) => {
     await handleEnroll(pathwayId);
-    setSelectedPathwayId(pathwayId);
+    navigate(`/pathways/${pathwayId}`);
   };
 
   return (
@@ -359,8 +295,8 @@ export default function Pathways() {
                           onClick={() => handleViewClasses(pathway.id)}
                           className="w-full py-2 px-4 bg-coral-500 hover:bg-coral-600 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
                         >
-                          <span>{selectedPathwayId === pathway.id ? 'Hide Classes' : 'View Classes'}</span>
-                          <ChevronRight className={`w-4 h-4 transition-transform ${selectedPathwayId === pathway.id ? 'rotate-90' : ''}`} />
+                        <span>View Classes</span>
+                        <ChevronRight className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => unenrollFromPathway(pathway.id)}
@@ -378,8 +314,8 @@ export default function Pathways() {
                           onClick={() => handleViewClasses(pathway.id)}
                           className="w-full py-2 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
                         >
-                          <span>{selectedPathwayId === pathway.id ? 'Hide Classes' : 'Review Classes'}</span>
-                          <ChevronRight className={`w-4 h-4 transition-transform ${selectedPathwayId === pathway.id ? 'rotate-90' : ''}`} />
+                          <span>Review Classes</span>
+                          <ChevronRight className="w-4 h-4" />
                         </button>
                       </div>
                     ) : (
@@ -409,105 +345,6 @@ export default function Pathways() {
         <div className="card text-center py-12">
           <Compass className="w-12 h-12 text-gray-300 mx-auto mb-4" />
           <p className="text-gray-500">No pathways found matching your search</p>
-        </div>
-      )}
-
-      {/* Classes for Selected Pathway */}
-      {selectedPathwayId && (
-        <div className="card p-6 space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-bold text-gray-900">
-                {pathwayDefinitions.find((p) => p.id === selectedPathwayId)?.title} Classes
-              </h2>
-              <p className="text-sm text-gray-500 mt-1">
-                View scheduled times for all classes in this pathway
-              </p>
-            </div>
-            <button
-              onClick={() => setSelectedPathwayId(null)}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <X className="w-5 h-5 text-gray-500" />
-            </button>
-          </div>
-
-          {classesLoading ? (
-            <div className="text-center py-8">
-              <p className="text-gray-500">Loading classes...</p>
-            </div>
-          ) : pathwayClasses.length === 0 ? (
-            <div className="text-center py-8">
-              <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500">No upcoming classes found for this pathway</p>
-            </div>
-          ) : (
-            <div className="space-y-6">
-              {Object.entries(classesByWeekday)
-                .filter(([_, classes]) => classes.length > 0)
-                .map(([weekday, classes]) => (
-                  <div key={weekday}>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                      <Calendar className="w-5 h-5 text-coral-600" />
-                      {weekday}
-                    </h3>
-                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {classes.map((classItem) => {
-                        const isLive = isClassLive(classItem.scheduled_at, classItem.duration);
-                        const scheduledDate = parseISO(classItem.scheduled_at);
-                        
-                        return (
-                          <div
-                            key={classItem.id}
-                            className="p-4 border border-gray-200 rounded-xl hover:shadow-md transition-shadow"
-                          >
-                            <div className="flex items-start justify-between mb-3">
-                              <div className="flex-1">
-                                <h4 className="font-semibold text-gray-900 mb-1">{classItem.title}</h4>
-                                <p className="text-sm text-gray-500 line-clamp-2">{classItem.description}</p>
-                              </div>
-                              {isLive && (
-                                <div className="ml-2 px-2 py-1 bg-red-500 text-white text-xs font-medium rounded-full flex items-center gap-1">
-                                  <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
-                                  LIVE
-                                </div>
-                              )}
-                            </div>
-
-                            <div className="space-y-2 mb-4">
-                              <div className="flex items-center gap-2 text-sm text-gray-600">
-                                <User className="w-4 h-4" />
-                                <span>{classItem.instructor}</span>
-                              </div>
-                              <div className="flex items-center gap-2 text-sm text-gray-600">
-                                <Clock className="w-4 h-4" />
-                                <span>
-                                  {format(scheduledDate, 'h:mm a')} • {classItem.duration} min
-                                </span>
-                              </div>
-                            </div>
-
-                            {classItem.zoom_link && (
-                              <button
-                                onClick={() => window.open(classItem.zoom_link, '_blank', 'noopener,noreferrer')}
-                                className={`w-full py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${
-                                  isLive
-                                    ? 'bg-red-500 hover:bg-red-600 text-white'
-                                    : 'bg-coral-100 hover:bg-coral-200 text-coral-700'
-                                }`}
-                              >
-                                {isLive ? 'Join Now' : 'Set Reminder'}
-                                <ExternalLink className="w-4 h-4" />
-                              </button>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
-            </div>
-          )}
         </div>
       )}
 

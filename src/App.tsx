@@ -12,6 +12,7 @@ import WeightLog from './pages/WeightLog';
 import Journal from './pages/Journal';
 import Goals from './pages/Goals';
 import Pathways from './pages/Pathways';
+import PathwayDetail from './pages/PathwayDetail';
 import Calendar from './pages/Calendar';
 import Classes from './pages/Classes';
 import Settings from './pages/Settings';
@@ -50,6 +51,7 @@ function App() {
                 <Route path="journal" element={<ErrorBoundary><Journal /></ErrorBoundary>} />
                 <Route path="goals" element={<ErrorBoundary><Goals /></ErrorBoundary>} />
                 <Route path="pathways" element={<ErrorBoundary><Pathways /></ErrorBoundary>} />
+                <Route path="pathways/:id" element={<ErrorBoundary><PathwayDetail /></ErrorBoundary>} />
                 <Route path="calendar" element={<ErrorBoundary><Calendar /></ErrorBoundary>} />
                 <Route path="classes" element={<ErrorBoundary><Classes /></ErrorBoundary>} />
                 <Route path="settings" element={<ErrorBoundary><Settings /></ErrorBoundary>} />

@@ -1,1573 +1,206 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Flame,
-  Award,
   Target,
-  Droplet,
-  Moon,
   Dumbbell,
-  Brain,
-  Sunrise,
-  TrendingUp,
-  Calendar,
-  PlayCircle,
-  ChevronRight,
-  CheckCircle2,
-  Circle,
-  Clock,
-  Users,
-  Video,
-  Settings,
-  Plus,
-  GripVertical,
-  X,
-  Palette,
-  Check,
-  Heart,
-  Sparkles,
-  Smile,
   BookOpen,
-  Star
+  Scale,
+  Calendar,
+  Video,
+  Star,
+  TrendingUp,
+  Heart,
+  Brain
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { useTheme } from '../contexts/ThemeContext';
-import { useHabits, useWeightEntries, useJournalEntries, useUserBadges, useHealthMetrics, useLiveClasses } from '../hooks/useSupabaseData';
-import { supabase } from '../lib/supabase';
-import { format, isToday, parseISO } from 'date-fns';
-
-const badgeIcons: Record<string, React.ElementType> = {
-  flame: Flame,
-  sunrise: Sunrise,
-  droplet: Droplet,
-  brain: Brain,
-  dumbbell: Dumbbell,
-};
-
-interface WidgetConfig {
-  id: string;
-  type: string;
-  title: string;
-  size: 'small' | 'medium' | 'large' | 'full';
-  visible: boolean;
-}
-
-const defaultWidgets: WidgetConfig[] = [
-  { id: 'welcome', type: 'welcome', title: 'Welcome Header', size: 'full', visible: true },
-  { id: 'wellness-tip', type: 'wellness-tip', title: 'Daily Wellness Tip', size: 'medium', visible: true },
-  { id: 'gratitude', type: 'gratitude', title: 'Daily Gratitude', size: 'medium', visible: true },
-  { id: 'badges', type: 'badges', title: 'Your Badges', size: 'full', visible: true },
-  { id: 'stats', type: 'stats', title: 'Stats Grid', size: 'full', visible: true },
-  { id: 'habits', type: 'habits', title: "Today's Habits", size: 'medium', visible: true },
-  { id: 'journal', type: 'journal', title: 'Latest Journal Entry', size: 'medium', visible: true },
-  { id: 'mood-tracker', type: 'mood-tracker', title: 'How are you feeling?', size: 'medium', visible: true },
-];
-
-const availableWidgets = [
-  { type: 'welcome', title: 'Welcome Header', description: 'Greeting with streak and badges count', icon: Sunrise },
-  { type: 'badges', title: 'Your Badges', description: 'Display earned badges', icon: Award },
-  { type: 'stats', title: 'Stats Grid', description: 'Habits, water, sleep, weight stats', icon: TrendingUp },
-  { type: 'habits', title: "Today's Habits", description: 'Track daily habits', icon: Target },
-  { type: 'journal', title: 'Latest Journal Entry', description: 'Recent journal entry', icon: BookOpen },
-  { type: 'wellness-tip', title: 'Daily Wellness Tip', description: 'Inspirational wellness quotes and tips', icon: Sparkles },
-  { type: 'gratitude', title: 'Daily Gratitude', description: 'Prompt for daily gratitude practice', icon: Heart },
-  { type: 'mood-tracker', title: 'Mood Tracker', description: 'Quick mood check-in widget', icon: Smile },
-  { type: 'live-classes', title: "Today's Live Classes", description: 'Live classes scheduled for today', icon: Video },
-  { type: 'upcoming-class', title: 'Next Live Class', description: 'Upcoming class info', icon: Calendar },
-  { type: 'course-progress', title: 'Course Progress', description: 'Track course completion', icon: Star },
-];
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const { data: habits = [], loading: habitsLoading, error: habitsError } = useHabits();
-  const { data: weightEntries = [], loading: weightLoading, error: weightError } = useWeightEntries();
-  const { data: journalEntries = [], loading: journalLoading, error: journalError } = useJournalEntries();
-  const { data: userBadges = [], loading: badgesLoading, error: badgesError } = useUserBadges();
-  const { metrics: healthMetrics, loading: metricsLoading } = useHealthMetrics();
-  const { classes: liveClasses = [], loading: classesLoading, error: classesError } = useLiveClasses();
-  
-  // Log errors for debugging (using refs to avoid dependency issues)
-  const prevErrorsRef = useRef<{ habits: Error | null; weight: Error | null; journal: Error | null; badges: Error | null; classes: Error | null }>({
-    habits: null,
-    weight: null,
-    journal: null,
-    badges: null,
-    classes: null
-  });
-  useEffect(() => {
-    if (habitsError && habitsError !== prevErrorsRef.current.habits) {
-      console.error('Error loading habits:', habitsError);
-      prevErrorsRef.current.habits = habitsError as Error;
-    }
-    if (weightError && weightError !== prevErrorsRef.current.weight) {
-      console.error('Error loading weight entries:', weightError);
-      prevErrorsRef.current.weight = weightError as Error;
-    }
-    if (journalError && journalError !== prevErrorsRef.current.journal) {
-      console.error('Error loading journal entries:', journalError);
-      prevErrorsRef.current.journal = journalError as Error;
-    }
-    if (badgesError && badgesError !== prevErrorsRef.current.badges) {
-      console.error('Error loading badges:', badgesError);
-      prevErrorsRef.current.badges = badgesError as Error;
-    }
-    if (classesError && classesError !== prevErrorsRef.current.classes) {
-      console.error('Error loading live classes:', classesError);
-      prevErrorsRef.current.classes = classesError as Error;
-    }
-  });
-  
-  // Test Supabase connection on mount (with error handling for mobile)
-  useEffect(() => {
-    if (user) {
-      const testConnection = async () => {
-        try {
-          // Use a timeout to prevent hanging on mobile
-          const timeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Connection test timeout')), 5000)
-          );
-          
-          const queryPromise = supabase
-            .from('habits')
-            .select('count')
-            .limit(0);
-          
-          const { error } = await Promise.race([queryPromise, timeoutPromise]) as any;
-          
-          if (error) {
-            console.error('❌ Supabase connection test failed:', error);
-          } else {
-            console.log('✅ Supabase connection test passed');
-          }
-        } catch (err) {
-          // Silently fail on mobile - don't crash the app
-          console.warn('⚠️ Supabase connection test failed (non-critical):', err);
-        }
-      };
-      
-      // Only test on desktop or if explicitly enabled
-      if (typeof window !== 'undefined' && window.innerWidth > 768) {
-        testConnection();
-      }
-    }
-  }, [user?.id]);
-  
-  // Debug: Log user and data state (mobile-safe)
-  useEffect(() => {
-    try {
-      // Only log on desktop to avoid mobile console issues
-      if (typeof window !== 'undefined' && window.innerWidth > 768) {
-        console.log('📊 Dashboard state:', {
-          user: user?.id,
-          habitsCount: habits.length,
-          weightCount: weightEntries.length,
-          journalCount: journalEntries.length,
-          badgesCount: userBadges.length,
-          liveClassesCount: liveClasses.length,
-          loading: {
-            habits: habitsLoading,
-            weight: weightLoading,
-            journal: journalLoading,
-            badges: badgesLoading,
-            metrics: metricsLoading,
-            classes: classesLoading
-          }
-        });
-      }
-    } catch (err) {
-      // Silently fail - don't crash the app
-    }
-  }, [user?.id, habits.length, weightEntries.length, journalEntries.length, userBadges.length, liveClasses.length, habitsLoading, weightLoading, journalLoading, badgesLoading, metricsLoading, classesLoading]);
-  
-  const { colorPreset, setColorPreset, colorPresets, primaryColor } = useTheme();
-  const [widgets, setWidgets] = useState<WidgetConfig[]>(() => {
-    const saved = localStorage.getItem('dashboardWidgets');
-    return saved ? JSON.parse(saved) : defaultWidgets;
-  });
-  const [editMode, setEditMode] = useState(false);
-  const [showAddWidget, setShowAddWidget] = useState(false);
-  const [showThemePicker, setShowThemePicker] = useState(false);
-  const [draggedWidget, setDraggedWidget] = useState<string | null>(null);
-
-  const today = format(new Date(), 'yyyy-MM-dd');
-
-  // For now, use empty arrays for data not yet in Supabase
-  const courses: any[] = [];
-  
-  // Check if any data is still loading
-  const isLoading = habitsLoading || weightLoading || journalLoading || badgesLoading || metricsLoading || classesLoading;
-  
-  // Show loading state only very briefly on initial load (300ms max)
-  // Always show dashboard after that - data will populate as it loads
-  const [showInitialLoader, setShowInitialLoader] = useState(true);
-  const [diagnostics, setDiagnostics] = useState<any>(null);
-  
-  // Comprehensive diagnostic logging (with mobile-safe error handling)
-  useEffect(() => {
-    try {
-      const diag = {
-        timestamp: new Date().toISOString(),
-        user: user ? { id: user.id, email: user.email } : null,
-        loading: {
-          habits: habitsLoading,
-          weight: weightLoading,
-          journal: journalLoading,
-          badges: badgesLoading,
-          metrics: metricsLoading,
-          classes: classesLoading,
-          anyLoading: isLoading
-        },
-        data: {
-          habits: habits.length,
-          weight: weightEntries.length,
-          journal: journalEntries.length,
-          badges: userBadges.length,
-          classes: liveClasses.length
-        },
-        errors: {
-          habits: habitsError?.message,
-          weight: weightError?.message,
-          journal: journalError?.message,
-          badges: badgesError?.message,
-          classes: classesError?.message
-        },
-        showInitialLoader
-      };
-
-      setDiagnostics(diag);
-      // Only log on desktop to avoid mobile console issues
-      if (typeof window !== 'undefined' && window.innerWidth > 768) {
-        console.log('🔍 Dashboard Diagnostics:', diag);
-      }
-    } catch (err) {
-      // Silently fail - don't crash the app
-      console.warn('Diagnostic logging failed (non-critical):', err);
-    }
-  }, [user?.id, habitsLoading, weightLoading, journalLoading, badgesLoading, metricsLoading, classesLoading, isLoading, habits.length, weightEntries.length, journalEntries.length, userBadges.length, liveClasses.length, showInitialLoader]);
-  
-  useEffect(() => {
-    // Only run if we're still showing the loader
-    if (!showInitialLoader) return;
-
-    // CRITICAL: Force hide loader after 300ms - dashboard MUST show
-    // This ensures the dashboard ALWAYS appears, even if hooks are stuck loading
-    const timer = setTimeout(() => {
-      try {
-        if (typeof window !== 'undefined' && window.innerWidth > 768) {
-          console.log('⏰ Force hiding initial loader after timeout - dashboard will show');
-        }
-        setShowInitialLoader(false);
-      } catch (err) {
-        // Force hide even if logging fails
-        setShowInitialLoader(false);
-      }
-    }, 300);
-
-    // If we have any data, hide loader immediately
-    const hasData = habits.length > 0 || weightEntries.length > 0 || journalEntries.length > 0 || userBadges.length > 0 || liveClasses.length > 0;
-    if (user && hasData) {
-      try {
-        if (typeof window !== 'undefined' && window.innerWidth > 768) {
-          console.log('✅ Hiding loader - data available');
-        }
-        setShowInitialLoader(false);
-        clearTimeout(timer);
-      } catch (err) {
-        setShowInitialLoader(false);
-        clearTimeout(timer);
-      }
-    }
-
-    // Also hide loader if user exists and we're not loading anymore (even if no data)
-    if (user && !isLoading) {
-      try {
-        if (typeof window !== 'undefined' && window.innerWidth > 768) {
-          console.log('✅ Hiding loader - loading complete');
-        }
-        setShowInitialLoader(false);
-        clearTimeout(timer);
-      } catch (err) {
-        setShowInitialLoader(false);
-        clearTimeout(timer);
-      }
-    }
-
-    return () => clearTimeout(timer);
-  }, [user?.id, isLoading, habits.length, weightEntries.length, journalEntries.length, userBadges.length, liveClasses.length, showInitialLoader]);
-  
-  // CRITICAL: Force show dashboard if loader has been showing for too long
-  // This is a safety net in case the timeout doesn't fire
-  useEffect(() => {
-    if (!showInitialLoader || !user) return;
-
-    const safetyTimer = setTimeout(() => {
-      console.warn('⚠️ Safety timer: Force showing dashboard after 1 second');
-      setShowInitialLoader(false);
-    }, 1000);
-
-    return () => clearTimeout(safetyTimer);
-  }, [showInitialLoader, user?.id]);
-
-  // CRITICAL FIX: Always show dashboard after timeout, regardless of loading state
-  // Only show spinner if we're still in initial load AND it's been less than 300ms
-  if (showInitialLoader && user) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-coral-200 border-t-coral-500 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-500">Loading your dashboard...</p>
-          {diagnostics && (
-            <div className="mt-4 text-xs text-gray-400 max-w-md mx-auto">
-              <p>User: {diagnostics.user?.id ? '✓' : '✗'}</p>
-              <p>Loading: {diagnostics.loading.anyLoading ? 'Yes' : 'No'}</p>
-              <p className="mt-2 text-red-400">If this doesn't disappear, check console for errors</p>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-  
-  // If no user, don't render (ProtectedRoute should handle this, but just in case)
-  if (!user) {
-    console.warn('⚠️ Dashboard rendered without user - this should not happen');
-    return null;
-  }
-  
-  // CRITICAL: Log when dashboard is about to render
-  useEffect(() => {
-    if (typeof window !== 'undefined' && window.innerWidth > 768) {
-      console.log('✅ Dashboard rendering with data:', {
-        habits: habits.length,
-        weight: weightEntries.length,
-        journal: journalEntries.length,
-        badges: userBadges.length,
-        classes: liveClasses.length,
-        stillLoading: isLoading
-      });
-    }
-  }, [habits.length, weightEntries.length, journalEntries.length, userBadges.length, liveClasses.length, isLoading]);
-  
-  // Log errors but don't block the dashboard - show it anyway
-  const hasErrors = habitsError || weightError || journalError || badgesError || classesError;
-  if (hasErrors) {
-    console.warn('Some data failed to load, but showing dashboard anyway:', {
-      habitsError: habitsError?.message,
-      weightError: weightError?.message,
-      journalError: journalError?.message,
-      badgesError: badgesError?.message,
-      classesError: classesError?.message
-    });
-  }
-
-  // Show a non-blocking error banner if there are errors
-  const ErrorBanner = () => {
-    if (!hasErrors) return null;
-    return (
-      <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-xl">
-        <div className="flex items-start gap-3">
-          <div className="w-5 h-5 text-amber-600 mt-0.5">⚠️</div>
-          <div className="flex-1">
-            <p className="text-sm font-medium text-amber-900">Some data couldn't be loaded</p>
-            <p className="text-xs text-amber-700 mt-1">
-              The dashboard is showing, but some features may be unavailable. Check the browser console for details.
-            </p>
-          </div>
-          <button
-            onClick={() => window.location.reload()}
-            className="text-xs px-3 py-1 bg-amber-100 text-amber-700 rounded-lg hover:bg-amber-200 transition-colors"
-          >
-            Refresh
-          </button>
-        </div>
-      </div>
-    );
-  };
-
-  const completedHabitsToday = habits.filter(h => {
-    const completedDates = h.completed_dates as any;
-    return Array.isArray(completedDates) && completedDates.includes(today);
-  }).length;
-
-  // Map live classes to expected format (use useMemo to prevent recalculation)
-  const mappedLiveClasses = useMemo(() => {
-    return (liveClasses || []).map(cls => ({
-      id: cls.id,
-      title: cls.title,
-      description: cls.description || '',
-      instructor: cls.instructor,
-      scheduledAt: cls.scheduled_at,
-      duration: cls.duration,
-      zoomLink: cls.zoom_link || '#',
-      thumbnail: cls.thumbnail_url || '',
-      category: cls.category,
-    }));
-  }, [liveClasses]);
-
-  const upcomingClass = useMemo(() => {
-    return mappedLiveClasses.find(c => new Date(c.scheduledAt) > new Date());
-  }, [mappedLiveClasses]);
-
-  const todaysClasses = useMemo(() => {
-    return mappedLiveClasses.filter(c => {
-      const classDate = parseISO(c.scheduledAt);
-      return isToday(classDate);
-    }).sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime());
-  }, [mappedLiveClasses]);
-
-  const latestWeight = weightEntries[0]; // Already sorted descending by date
-  const previousWeight = weightEntries[1];
-  const weightChange = latestWeight && previousWeight
-    ? (latestWeight.weight - previousWeight.weight).toFixed(1)
-    : null;
-
-  // Save widgets to localStorage whenever they change
-  const saveWidgets = (newWidgets: WidgetConfig[]) => {
-    setWidgets(newWidgets);
-    localStorage.setItem('dashboardWidgets', JSON.stringify(newWidgets));
-  };
-
-  const handleDragStart = (e: React.DragEvent, widgetId: string) => {
-    setDraggedWidget(widgetId);
-    e.dataTransfer.effectAllowed = 'move';
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-  };
-
-  const handleDrop = (e: React.DragEvent, targetId: string) => {
-    e.preventDefault();
-    if (!draggedWidget || draggedWidget === targetId) return;
-
-    const newWidgets = [...widgets];
-    const draggedIndex = newWidgets.findIndex(w => w.id === draggedWidget);
-    const targetIndex = newWidgets.findIndex(w => w.id === targetId);
-
-    const [removed] = newWidgets.splice(draggedIndex, 1);
-    newWidgets.splice(targetIndex, 0, removed);
-
-    saveWidgets(newWidgets);
-    setDraggedWidget(null);
-  };
-
-  const handleDragEnd = () => {
-    setDraggedWidget(null);
-  };
-
-  const cycleWidgetSize = (id: string) => {
-    const newWidgets = widgets.map(w => {
-      if (w.id === id) {
-        const sizes: Array<'small' | 'medium' | 'large' | 'full'> = ['small', 'medium', 'large', 'full'];
-        const currentIndex = sizes.indexOf(w.size);
-        const nextIndex = (currentIndex + 1) % sizes.length;
-        return { ...w, size: sizes[nextIndex] };
-      }
-      return w;
-    });
-    saveWidgets(newWidgets);
-  };
-
-  const removeWidget = (id: string) => {
-    saveWidgets(widgets.filter(w => w.id !== id));
-  };
-
-  const addWidget = (type: string) => {
-    const widgetInfo = availableWidgets.find(w => w.type === type);
-    if (!widgetInfo) return;
-
-    // Check if widget of this type already exists
-    const alreadyExists = widgets.some(w => w.type === type && w.visible);
-    if (alreadyExists) {
-      // Don't add duplicates, but close the modal
-      setShowAddWidget(false);
-      return;
-    }
-
-    const newWidget: WidgetConfig = {
-      id: `${type}-${Date.now()}`,
-      type,
-      title: widgetInfo.title,
-      size: 'medium',
-      visible: true,
-    };
-
-    saveWidgets([...widgets, newWidget]);
-    setShowAddWidget(false);
-  };
-
-  const resetToDefault = () => {
-    saveWidgets(defaultWidgets);
-  };
-
-  const getWidgetClasses = (size: string) => {
-    switch (size) {
-      case 'small':
-        return 'col-span-12 sm:col-span-6 lg:col-span-4';
-      case 'medium':
-        return 'col-span-12 lg:col-span-6';
-      case 'large':
-        return 'col-span-12 lg:col-span-8';
-      case 'full':
-        return 'col-span-12';
-      default:
-        return 'col-span-12 lg:col-span-6';
-    }
-  };
-
-  // Widget Components
-  const WelcomeWidget = () => (
-    <div
-      className="rounded-3xl p-6 lg:p-8 text-white"
-      style={{
-        background: `linear-gradient(to right, ${primaryColor}, ${colorPresets[colorPreset]?.colors[1] || primaryColor})`
-      }}
-    >
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-        <div>
-          <h1 className="text-2xl lg:text-3xl font-display font-bold mb-2">
-            Good {getGreeting()}, {user?.user_metadata?.name || user?.email?.split('@')[0] || 'there'}!
-          </h1>
-          <p className="text-white/80">
-            You're doing great! Keep up with your wellness journey.
-          </p>
-        </div>
-        <div className="flex items-center gap-6">
-          <div className="text-center">
-            <div className="flex items-center justify-center gap-2 mb-1">
-              <Flame className="w-8 h-8 text-yellow-300 animate-pulse-slow" />
-              <span className="text-4xl font-bold">{completedHabitsToday}</span>
-            </div>
-            <p className="text-sm text-white/80">Habits Today</p>
-          </div>
-          <div className="w-px h-16 bg-white/20" />
-          <div className="text-center">
-            <div className="flex items-center justify-center gap-2 mb-1">
-              <Award className="w-8 h-8 text-yellow-300" />
-              <span className="text-4xl font-bold">{userBadges.length}</span>
-            </div>
-            <p className="text-sm text-white/80">Badges</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  const BadgesWidget = () => {
-    if (badgesLoading) {
-      return (
-        <div className="card">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-display font-semibold text-gray-900">Your Badges</h2>
-          </div>
-          <div className="flex items-center justify-center py-8">
-            <div className="w-8 h-8 border-4 border-gray-200 border-t-gray-400 rounded-full animate-spin"></div>
-          </div>
-        </div>
-      );
-    }
-    
-    if (userBadges.length === 0) {
-      return (
-        <div className="card">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-display font-semibold text-gray-900">Your Badges</h2>
-            <Link
-              to="/badges"
-              className="text-sm font-medium flex items-center gap-1 hover:opacity-80"
-              style={{ color: primaryColor }}
-            >
-              View All <ChevronRight className="w-4 h-4" />
-            </Link>
-          </div>
-          <div className="text-center py-8">
-            <Award className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500 mb-4">No badges yet. Start completing habits to earn your first badge!</p>
-            <Link
-              to="/habits"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors text-white hover:opacity-90"
-              style={{ backgroundColor: primaryColor }}
-            >
-              View Habits
-            </Link>
-          </div>
-        </div>
-      );
-    }
-    
-    return (
-      <div className="card">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-display font-semibold text-gray-900">Your Badges</h2>
-          <Link
-            to="/badges"
-            className="text-sm font-medium flex items-center gap-1 hover:opacity-80"
-            style={{ color: primaryColor }}
-          >
-            View All <ChevronRight className="w-4 h-4" />
-          </Link>
-        </div>
-        <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
-          {userBadges.map((badge) => {
-            const IconComponent = badgeIcons[badge.icon || ''] || Award;
-            return (
-              <div
-                key={badge.id}
-                className="flex-shrink-0 flex flex-col items-center gap-2 p-4 rounded-2xl border min-w-[120px]"
-                style={{
-                  background: `linear-gradient(to bottom right, ${colorPresets[colorPreset]?.light}, ${colorPresets[colorPreset]?.light}dd)`,
-                  borderColor: `${primaryColor}30`
-                }}
-              >
-                <div
-                  className="w-14 h-14 rounded-full flex items-center justify-center shadow-lg"
-                  style={{
-                    background: `linear-gradient(to bottom right, ${primaryColor}, ${colorPresets[colorPreset]?.colors[1]})`
-                  }}
-                >
-                  <IconComponent className="w-7 h-7 text-white" />
-                </div>
-                <span className="text-sm font-medium text-gray-800 text-center">{badge.name}</span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  };
-
-  const StatsWidget = () => {
-    // Get water intake from health metrics
-    const hydration = healthMetrics?.hydration as { value?: number; goal?: number } | null;
-    const waterIntake = hydration?.value || 0;
-    const waterGoal = hydration?.goal || 2000; // Default 2000ml goal
-    const waterPercentage = waterGoal > 0 ? Math.round((waterIntake / waterGoal) * 100) : 0;
-
-    // Get sleep from health metrics
-    const sleepData = healthMetrics?.sleep_hours as { value?: number; goal?: number } | null;
-    const sleepHours = sleepData?.value || 0;
-    const sleepGoal = sleepData?.goal || 8;
-    const sleepFormatted = sleepHours > 0 
-      ? `${Math.floor(sleepHours)}:${String(Math.round((sleepHours % 1) * 60)).padStart(2, '0')}h`
-      : '--';
-
-    return (
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="stat-card">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 rounded-xl bg-sage-100 flex items-center justify-center">
-              <Target className="w-5 h-5 text-sage-600" />
-            </div>
-            <span className="text-sm text-gray-500">Today's Habits</span>
-          </div>
-          <p className="text-2xl font-bold text-gray-900">
-            {completedHabitsToday}/{habits.length}
-          </p>
-          <p className="text-xs text-gray-500 mt-1">
-            {habits.length > 0 ? Math.round((completedHabitsToday / habits.length) * 100) : 0}% complete
-          </p>
-        </div>
-
-        <div className="stat-card">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center">
-              <Droplet className="w-5 h-5 text-blue-600" />
-            </div>
-            <span className="text-sm text-gray-500">Water Intake</span>
-          </div>
-          <p className="text-2xl font-bold text-gray-900">
-            {waterIntake > 0 ? `${waterIntake.toLocaleString()}ml` : '--'}
-          </p>
-          <p className="text-xs text-gray-500 mt-1">
-            {waterIntake > 0 ? `${waterPercentage}% of ${waterGoal}ml goal` : 'No data logged'}
-          </p>
-        </div>
-
-        <div className="stat-card">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center">
-              <Moon className="w-5 h-5 text-purple-600" />
-            </div>
-            <span className="text-sm text-gray-500">Sleep</span>
-          </div>
-          <p className="text-2xl font-bold text-gray-900">{sleepFormatted}</p>
-          <p className="text-xs text-gray-500 mt-1">
-            {sleepHours > 0 ? `Goal: ${sleepGoal}h` : 'No data logged'}
-          </p>
-        </div>
-
-        <div className="stat-card">
-          <div className="flex items-center gap-3 mb-3">
-            <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center"
-              style={{ backgroundColor: colorPresets[colorPreset]?.light }}
-            >
-              <TrendingUp className="w-5 h-5" style={{ color: primaryColor }} />
-            </div>
-            <span className="text-sm text-gray-500">Weight</span>
-          </div>
-          <p className="text-2xl font-bold text-gray-900">
-            {latestWeight?.weight || '--'}{latestWeight?.unit ? ` ${latestWeight.unit}` : ''}
-          </p>
-          {weightChange ? (
-            <p className={`text-xs mt-1 ${Number(weightChange) < 0 ? 'text-green-600' : 'text-gray-500'}`}>
-              {Number(weightChange) < 0 ? '' : '+'}{weightChange} {latestWeight?.unit} this week
-            </p>
-          ) : (
-            <p className="text-xs text-gray-500 mt-1">
-              {latestWeight ? 'Log more to track progress' : 'No data logged'}
-            </p>
-          )}
-        </div>
-      </div>
-    );
-  };
-
-  const LiveClassesWidget = () => {
-    if (todaysClasses.length === 0) return null;
-
-    return (
-      <div className="card">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center">
-              <Video className="w-5 h-5 text-red-600" />
-            </div>
-            <div>
-              <h2 className="text-xl font-display font-semibold text-gray-900">Today's Live Classes</h2>
-              <p className="text-sm text-gray-500">{todaysClasses.length} class{todaysClasses.length !== 1 ? 'es' : ''} scheduled</p>
-            </div>
-          </div>
-          <Link
-            to="/classes"
-            className="text-sm font-medium flex items-center gap-1 hover:opacity-80"
-            style={{ color: primaryColor }}
-          >
-            View All <ChevronRight className="w-4 h-4" />
-          </Link>
-        </div>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {todaysClasses.map((liveClass) => {
-            const classTime = new Date(liveClass.scheduledAt);
-            const now = new Date();
-            const isLive = classTime <= now && classTime.getTime() + liveClass.duration * 60000 > now.getTime();
-            const isPast = classTime.getTime() + liveClass.duration * 60000 < now.getTime();
-
-            return (
-              <div
-                key={liveClass.id}
-                className="p-4 rounded-xl border transition-all"
-                style={{
-                  background: isLive
-                    ? `linear-gradient(to bottom right, ${colorPresets[colorPreset]?.light}, white)`
-                    : isPast ? '#f9fafb' : 'white',
-                  borderColor: isLive ? primaryColor : isPast ? '#e5e7eb' : '#e5e7eb',
-                  opacity: isPast ? 0.6 : 1,
-                  boxShadow: isLive ? `0 0 0 2px ${primaryColor}40` : undefined
-                }}
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-gray-500" />
-                    <span className="text-sm font-medium text-gray-600">
-                      {format(classTime, 'h:mm a')}
-                    </span>
-                  </div>
-                  {isLive && (
-                    <span
-                      className="flex items-center gap-1 px-2 py-0.5 text-white text-xs font-medium rounded-full animate-pulse"
-                      style={{ backgroundColor: primaryColor }}
-                    >
-                      <span className="w-1.5 h-1.5 bg-white rounded-full"></span>
-                      LIVE
-                    </span>
-                  )}
-                  {isPast && (
-                    <span className="px-2 py-0.5 bg-gray-200 text-gray-600 text-xs font-medium rounded-full">
-                      Ended
-                    </span>
-                  )}
-                </div>
-                <h3 className="font-semibold text-gray-900 mb-1">{liveClass.title}</h3>
-                <p className="text-sm text-gray-500 mb-3">{liveClass.instructor}</p>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-400 flex items-center gap-1">
-                    <Users className="w-3 h-3" />
-                    {liveClass.duration} min
-                  </span>
-                  {!isPast && (
-                    <a
-                      href={liveClass.zoomLink || '#'}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors text-white hover:opacity-90"
-                      style={{ backgroundColor: primaryColor }}
-                    >
-                      <PlayCircle className="w-4 h-4" />
-                      {isLive ? 'Join Now' : 'Join'}
-                    </a>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  };
-
-  const HabitsWidget = () => {
-    if (habitsLoading) {
-      return (
-        <div className="card h-full">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-display font-semibold text-gray-900">Today's Habits</h2>
-          </div>
-          <div className="flex items-center justify-center py-8">
-            <div className="w-8 h-8 border-4 border-gray-200 border-t-gray-400 rounded-full animate-spin"></div>
-          </div>
-        </div>
-      );
-    }
-    
-    if (habits.length === 0) {
-      return (
-        <div className="card h-full">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-display font-semibold text-gray-900">Today's Habits</h2>
-            <Link
-              to="/habits"
-              className="text-sm font-medium flex items-center gap-1 hover:opacity-80"
-              style={{ color: primaryColor }}
-            >
-              Create Habit <ChevronRight className="w-4 h-4" />
-            </Link>
-          </div>
-          <div className="text-center py-8">
-            <Target className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500 mb-4">No habits yet. Create your first habit to get started!</p>
-            <Link
-              to="/habits"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors text-white hover:opacity-90"
-              style={{ backgroundColor: primaryColor }}
-            >
-              <Plus className="w-4 h-4" />
-              Create Habit
-            </Link>
-          </div>
-        </div>
-      );
-    }
-    
-    return (
-      <div className="card h-full">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-display font-semibold text-gray-900">Today's Habits</h2>
-          <Link
-            to="/habits"
-            className="text-sm font-medium flex items-center gap-1 hover:opacity-80"
-            style={{ color: primaryColor }}
-          >
-            View All <ChevronRight className="w-4 h-4" />
-          </Link>
-        </div>
-        <div className="space-y-3">
-          {habits.slice(0, 5).map((habit) => {
-            const completedDates = (habit.completed_dates as any) || [];
-            const isCompleted = Array.isArray(completedDates) && completedDates.includes(today);
-            return (
-              <div
-                key={habit.id}
-                className={`flex items-center gap-4 p-4 rounded-xl transition-colors ${
-                  isCompleted ? 'bg-sage-50' : 'bg-gray-50 hover:bg-gray-100'
-                }`}
-              >
-                <div
-                  className="w-10 h-10 rounded-xl flex items-center justify-center"
-                  style={{ backgroundColor: (habit.color || '#10b981') + '30' }}
-                >
-                  {isCompleted ? (
-                    <CheckCircle2 className="w-5 h-5 text-sage-600" />
-                  ) : (
-                    <Circle className="w-5 h-5" style={{ color: habit.color || '#10b981' }} />
-                  )}
-                </div>
-                <div className="flex-1">
-                  <p className={`font-medium ${isCompleted ? 'text-gray-500 line-through' : 'text-gray-900'}`}>
-                    {habit.name}
-                  </p>
-                  <p className="text-xs text-gray-500 flex items-center gap-1">
-                    <Flame className="w-3 h-3" /> {habit.streak} day streak
-                  </p>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  };
-
-  const UpcomingClassWidget = () => {
-    if (!upcomingClass) return null;
-
-    return (
-      <div
-        className="card text-white h-full"
-        style={{
-          background: `linear-gradient(to bottom right, ${colorPresets[colorPreset]?.dark}, ${primaryColor})`
-        }}
-      >
-        <div className="flex items-start justify-between mb-4">
-          <div>
-            <p className="text-sm text-white/60 mb-1">Next Live Class</p>
-            <h3 className="text-lg font-semibold">{upcomingClass.title}</h3>
-          </div>
-          <div className="p-2 bg-white/10 rounded-xl">
-            <Calendar className="w-5 h-5" />
-          </div>
-        </div>
-        <p className="text-sm text-white/70 mb-4">{upcomingClass.description}</p>
-        <div className="flex items-center justify-between">
-          <div className="text-sm text-white/60">
-            {format(new Date(upcomingClass.scheduledAt), 'MMM d, h:mm a')}
-          </div>
-          <Link
-            to="/classes"
-            className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-xl text-sm font-medium transition-colors backdrop-blur-sm"
-          >
-            <PlayCircle className="w-4 h-4" />
-            Join Class
-          </Link>
-        </div>
-      </div>
-    );
-  };
-
-  const CourseProgressWidget = () => (
-    <div className="card h-full">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-display font-semibold text-gray-900">Course Progress</h2>
-        <Link
-          to="/courses"
-          className="text-sm font-medium flex items-center gap-1 hover:opacity-80"
-          style={{ color: primaryColor }}
-        >
-          View All <ChevronRight className="w-4 h-4" />
-        </Link>
-      </div>
-      <div className="space-y-4">
-        {courses.slice(0, 3).map((course) => {
-          const progress = Math.round((course.completedSessions / course.sessions) * 100);
-          return (
-            <div key={course.id} className="flex items-center gap-4">
-              <div
-                className="w-12 h-12 rounded-xl flex items-center justify-center font-bold text-sm"
-                style={{
-                  background: `linear-gradient(to bottom right, ${colorPresets[colorPreset]?.light}, ${colorPresets[colorPreset]?.light}aa)`,
-                  color: primaryColor
-                }}
-              >
-                {progress}%
-              </div>
-              <div className="flex-1">
-                <p className="font-medium text-gray-900">{course.title}</p>
-                <div className="flex items-center gap-2 mt-1">
-                  <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all duration-500"
-                      style={{
-                        width: `${progress}%`,
-                        background: `linear-gradient(to right, ${primaryColor}, ${colorPresets[colorPreset]?.colors[1]})`
-                      }}
-                    />
-                  </div>
-                  <span className="text-xs text-gray-500">
-                    {course.completedSessions}/{course.sessions}
-                  </span>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-
-  const WellnessTipWidget = () => {
-    const tips = [
-      { quote: "Self-care isn't selfish. It's essential.", author: "Unknown" },
-      { quote: "Progress, not perfection, is the goal.", author: "Unknown" },
-      { quote: "Every small step forward is a victory worth celebrating.", author: "Unknown" },
-      { quote: "You are stronger than you think and more capable than you know.", author: "Unknown" },
-      { quote: "Take time for yourself. You deserve it.", author: "Unknown" },
-      { quote: "Wellness is a journey, not a destination.", author: "Unknown" },
-      { quote: "Your mental health is just as important as your physical health.", author: "Unknown" },
-      { quote: "Be kind to yourself. You're doing your best.", author: "Unknown" },
-    ];
-    
-    const todayTip = tips[new Date().getDate() % tips.length];
-    
-    return (
-      <div className="card h-full">
-        <div className="flex items-center gap-3 mb-4">
-          <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center"
-            style={{ backgroundColor: colorPresets[colorPreset]?.light }}
-          >
-            <Sparkles className="w-5 h-5" style={{ color: primaryColor }} />
-          </div>
-          <h2 className="text-xl font-display font-semibold text-gray-900">Daily Wellness Tip</h2>
-        </div>
-        <div
-          className="p-6 rounded-xl"
-          style={{
-            background: `linear-gradient(to bottom right, ${colorPresets[colorPreset]?.light}, ${colorPresets[colorPreset]?.light}dd)`,
-          }}
-        >
-          <p className="text-lg font-medium text-gray-900 mb-2 italic">"{todayTip.quote}"</p>
-          <p className="text-sm text-gray-600">— {todayTip.author}</p>
-        </div>
-      </div>
-    );
-  };
-
-  const GratitudeWidget = () => {
-    const prompts = [
-      "What made you smile today?",
-      "Who are you grateful for?",
-      "What moment brought you joy?",
-      "What are you thankful for today?",
-      "What simple pleasure are you grateful for?",
-    ];
-    
-    const todayPrompt = prompts[new Date().getDate() % prompts.length];
-    
-    return (
-      <div className="card h-full">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-xl bg-pink-100 flex items-center justify-center">
-            <Heart className="w-5 h-5 text-pink-600" />
-          </div>
-          <h2 className="text-xl font-display font-semibold text-gray-900">Daily Gratitude</h2>
-        </div>
-        <div
-          className="p-6 rounded-xl border"
-          style={{
-            backgroundColor: colorPresets[colorPreset]?.light,
-            borderColor: `${primaryColor}30`
-          }}
-        >
-          <p className="text-gray-700 mb-4 font-medium">{todayPrompt}</p>
-          <Link
-            to="/journal"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors text-white hover:opacity-90"
-            style={{ backgroundColor: primaryColor }}
-          >
-            <BookOpen className="w-4 h-4" />
-            Write in Journal
-          </Link>
-        </div>
-      </div>
-    );
-  };
-
-  const MoodTrackerWidget = () => {
-    const recentMoods = journalEntries
-      .slice(0, 5)
-      .map(entry => ({
-        date: entry.date,
-        mood: entry.mood || 'neutral',
-      }))
-      .reverse();
-    
-    return (
-      <div className="card h-full">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center">
-              <Smile className="w-5 h-5 text-purple-600" />
-            </div>
-            <h2 className="text-xl font-display font-semibold text-gray-900">How are you feeling?</h2>
-          </div>
-          <Link
-            to="/journal"
-            className="text-sm font-medium flex items-center gap-1 hover:opacity-80"
-            style={{ color: primaryColor }}
-          >
-            Log Mood <ChevronRight className="w-4 h-4" />
-          </Link>
-        </div>
-        {recentMoods.length > 0 ? (
-          <div className="space-y-3">
-            {recentMoods.map((entry, idx) => (
-              <div key={idx} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50">
-                <span className={`badge ${getMoodBadgeClass(entry.mood)}`}>
-                  {entry.mood}
-                </span>
-                <span className="text-sm text-gray-600 flex-1">
-                  {format(parseISO(entry.date), 'MMM d')}
-                </span>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div
-            className="p-6 rounded-xl border text-center"
-            style={{
-              backgroundColor: colorPresets[colorPreset]?.light,
-              borderColor: `${primaryColor}30`
-            }}
-          >
-            <Smile className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-600 mb-4">Start tracking your mood</p>
-            <Link
-              to="/journal"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors text-white hover:opacity-90"
-              style={{ backgroundColor: primaryColor }}
-            >
-              <Plus className="w-4 h-4" />
-              Add Mood Entry
-            </Link>
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  const JournalWidget = () => {
-    if (journalEntries.length === 0) {
-      return (
-        <div className="card">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-display font-semibold text-gray-900">Latest Journal Entry</h2>
-            <Link
-              to="/journal"
-              className="text-sm font-medium flex items-center gap-1 hover:opacity-80"
-              style={{ color: primaryColor }}
-            >
-              Start Journaling <ChevronRight className="w-4 h-4" />
-            </Link>
-          </div>
-          <div
-            className="p-8 rounded-xl border text-center"
-            style={{
-              backgroundColor: colorPresets[colorPreset]?.light,
-              borderColor: `${primaryColor}30`
-            }}
-          >
-            <BookOpen className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-600 mb-4">Start your wellness journey with journaling</p>
-            <Link
-              to="/journal"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors text-white hover:opacity-90"
-              style={{ backgroundColor: primaryColor }}
-            >
-              <Plus className="w-4 h-4" />
-              Create First Entry
-            </Link>
-          </div>
-        </div>
-      );
-    }
-
-    return (
-      <div className="card">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-display font-semibold text-gray-900">Latest Journal Entry</h2>
-          <Link
-            to="/journal"
-            className="text-sm font-medium flex items-center gap-1 hover:opacity-80"
-            style={{ color: primaryColor }}
-          >
-            View All <ChevronRight className="w-4 h-4" />
-          </Link>
-        </div>
-        <div
-          className="p-4 rounded-xl border"
-          style={{
-            backgroundColor: colorPresets[colorPreset]?.light,
-            borderColor: `${primaryColor}30`
-          }}
-        >
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-sm text-gray-500">{format(new Date(journalEntries[0].date || new Date()), 'MMMM d, yyyy')}</span>
-            <span className={`badge ${getMoodBadgeClass(journalEntries[0].mood || 'neutral')}`}>
-              {journalEntries[0].mood || 'neutral'}
-            </span>
-          </div>
-          <h3 className="font-semibold text-gray-900 mb-2">{journalEntries[0].title || 'Untitled'}</h3>
-          <p className="text-gray-600 text-sm line-clamp-2">{journalEntries[0].content}</p>
-        </div>
-      </div>
-    );
-  };
-
-  const renderWidget = (widget: WidgetConfig) => {
-    switch (widget.type) {
-      case 'welcome':
-        return <WelcomeWidget />;
-      case 'badges':
-        return <BadgesWidget />;
-      case 'stats':
-        return <StatsWidget />;
-      case 'live-classes':
-        return <LiveClassesWidget />;
-      case 'habits':
-        return <HabitsWidget />;
-      case 'upcoming-class':
-        return <UpcomingClassWidget />;
-      case 'course-progress':
-        return <CourseProgressWidget />;
-      case 'journal':
-        return <JournalWidget />;
-      case 'wellness-tip':
-        return <WellnessTipWidget />;
-      case 'gratitude':
-        return <GratitudeWidget />;
-      case 'mood-tracker':
-        return <MoodTrackerWidget />;
-      default:
-        return <div className="card p-4 text-gray-500">Unknown widget</div>;
-    }
-  };
-
-  // Diagnostic panel (can be toggled with a query param ?debug=1)
-  // Safely check for window and URLSearchParams (mobile compatibility)
-  const showDiagnostics = typeof window !== 'undefined' && 
-    typeof URLSearchParams !== 'undefined' &&
-    new URLSearchParams(window.location.search).get('debug') === '1';
-  
-  // Safe JSON stringify for mobile
-  const safeStringify = (obj: any) => {
-    try {
-      return JSON.stringify(obj, null, 2);
-    } catch (err) {
-      return 'Unable to stringify';
-    }
-  };
 
   return (
-    <div className="space-y-4 sm:space-y-6 pb-20 lg:pb-0">
-      {/* Diagnostic Panel */}
-      {showDiagnostics && diagnostics && (
-        <div className="card bg-yellow-50 border-2 border-yellow-200">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-yellow-900">🔍 Diagnostic Information</h3>
-            <button
-              onClick={() => {
-                try {
-                  if (typeof window !== 'undefined') {
-                    window.location.search = '';
-                  }
-                } catch (err) {
-                  // Fallback
-                  window.location.href = window.location.pathname;
-                }
-              }}
-              className="text-yellow-700 hover:text-yellow-900"
-            >
-              ✕
-            </button>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 dark:from-gray-900 dark:via-purple-900 dark:to-gray-900 py-8 px-4">
+      <div className="max-w-7xl mx-auto">
+        {/* Welcome Header */}
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 mb-8">
+          <div className="flex items-center justify-between">
             <div>
-              <p className="font-semibold mb-2">User Status:</p>
-              <pre className="bg-white p-2 rounded text-xs overflow-auto">
-                {safeStringify(diagnostics.user)}
-              </pre>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                Welcome back, {user?.user_metadata?.name || 'Friend'}!
+              </h1>
+              <p className="text-gray-600 dark:text-gray-300 mt-2 text-lg">
+                Your wellness journey starts here
+              </p>
             </div>
-            <div>
-              <p className="font-semibold mb-2">Loading States:</p>
-              <pre className="bg-white p-2 rounded text-xs overflow-auto">
-                {safeStringify(diagnostics.loading)}
-              </pre>
-            </div>
-            <div>
-              <p className="font-semibold mb-2">Data Counts:</p>
-              <pre className="bg-white p-2 rounded text-xs overflow-auto">
-                {safeStringify(diagnostics.data)}
-              </pre>
-            </div>
-            <div>
-              <p className="font-semibold mb-2">Errors:</p>
-              <pre className="bg-white p-2 rounded text-xs overflow-auto">
-                {safeStringify(diagnostics.errors)}
-              </pre>
-            </div>
-          </div>
-          <div className="mt-4 pt-4 border-t border-yellow-300">
-            <button
-              onClick={() => {
-                try {
-                  if (typeof window !== 'undefined') {
-                    window.location.reload();
-                  }
-                } catch (err) {
-                  // Fallback
-                  window.location.href = window.location.href;
-                }
-              }}
-              className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 mr-2"
-            >
-              Reload Page
-            </button>
-            <button
-              onClick={() => {
-                try {
-                  if (typeof console !== 'undefined' && console.log) {
-                    console.log('Full diagnostics:', diagnostics);
-                    alert('Check console for full diagnostics');
-                  } else {
-                    alert('Console not available');
-                  }
-                } catch (err) {
-                  alert('Unable to log diagnostics');
-                }
-              }}
-              className="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600"
-            >
-              Log to Console
-            </button>
+            <Flame className="w-16 h-16 text-orange-500" />
           </div>
         </div>
-      )}
-      
-      {/* Error Banner - Non-blocking */}
-      <ErrorBanner />
-      
-      {/* Edit Mode Controls */}
-      <div className="flex items-center justify-end gap-2">
-        {/* Theme Picker Button */}
-        <div className="relative">
-          <button
-            onClick={() => setShowThemePicker(!showThemePicker)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl transition-colors bg-gray-100 text-gray-600 hover:bg-gray-200"
+
+        {/* Quick Access Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Habits */}
+          <Link
+            to="/habits"
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 hover:shadow-2xl transition-all transform hover:-translate-y-1"
           >
-            <Palette className="w-5 h-5" style={{ color: primaryColor }} />
-            <span className="hidden sm:inline">Theme</span>
-          </button>
-
-          {/* Theme Picker Dropdown */}
-          {showThemePicker && (
-            <div className="absolute right-0 top-12 z-50 bg-white rounded-2xl shadow-xl border border-gray-100 p-4 w-[calc(100vw-2rem)] sm:w-64 max-w-xs">
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="font-semibold text-gray-900">Color Theme</h4>
-                <button
-                  onClick={() => setShowThemePicker(false)}
-                  className="w-6 h-6 rounded-full hover:bg-gray-100 flex items-center justify-center"
-                >
-                  <X className="w-4 h-4 text-gray-500" />
-                </button>
-              </div>
-              <div className="grid grid-cols-3 gap-2">
-                {Object.entries(colorPresets).map(([key, preset]) => (
-                  <button
-                    key={key}
-                    onClick={() => {
-                      setColorPreset(key);
-                      setShowThemePicker(false);
-                    }}
-                    className={`relative flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${
-                      colorPreset === key ? 'ring-2 ring-offset-1' : 'hover:bg-gray-50'
-                    }`}
-                    style={{
-                      ['--tw-ring-color' as string]: colorPreset === key ? preset.colors[0] : undefined
-                    }}
-                  >
-                    <div className="flex -space-x-1">
-                      {preset.colors.slice(0, 2).map((color, i) => (
-                        <div
-                          key={i}
-                          className="w-5 h-5 rounded-full border-2 border-white shadow-sm"
-                          style={{ backgroundColor: color }}
-                        />
-                      ))}
-                    </div>
-                    <span className="text-xs text-gray-600">{preset.name}</span>
-                    {colorPreset === key && (
-                      <div
-                        className="absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center"
-                        style={{ backgroundColor: preset.colors[0] }}
-                      >
-                        <Check className="w-3 h-3 text-white" />
-                      </div>
-                    )}
-                  </button>
-                ))}
-              </div>
+            <div className="flex items-center justify-between mb-4">
+              <Target className="w-10 h-10 text-blue-500" />
+              <TrendingUp className="w-5 h-5 text-green-500" />
             </div>
-          )}
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">
+              Daily Habits
+            </h2>
+            <p className="text-gray-600 dark:text-gray-300">
+              Track and build positive habits
+            </p>
+          </Link>
+
+          {/* Workout */}
+          <Link
+            to="/workout"
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 hover:shadow-2xl transition-all transform hover:-translate-y-1"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <Dumbbell className="w-10 h-10 text-purple-500" />
+              <Heart className="w-5 h-5 text-red-500" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">
+              Workouts
+            </h2>
+            <p className="text-gray-600 dark:text-gray-300">
+              Start your fitness journey
+            </p>
+          </Link>
+
+          {/* Journal */}
+          <Link
+            to="/journal"
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 hover:shadow-2xl transition-all transform hover:-translate-y-1"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <BookOpen className="w-10 h-10 text-green-500" />
+              <Star className="w-5 h-5 text-yellow-500" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">
+              Journal
+            </h2>
+            <p className="text-gray-600 dark:text-gray-300">
+              Reflect on your day
+            </p>
+          </Link>
+
+          {/* Weight Tracking */}
+          <Link
+            to="/weight"
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 hover:shadow-2xl transition-all transform hover:-translate-y-1"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <Scale className="w-10 h-10 text-pink-500" />
+              <TrendingUp className="w-5 h-5 text-green-500" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">
+              Weight Tracker
+            </h2>
+            <p className="text-gray-600 dark:text-gray-300">
+              Monitor your progress
+            </p>
+          </Link>
+
+          {/* Health Metrics */}
+          <Link
+            to="/health"
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 hover:shadow-2xl transition-all transform hover:-translate-y-1"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <Heart className="w-10 h-10 text-red-500" />
+              <TrendingUp className="w-5 h-5 text-green-500" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">
+              Health Metrics
+            </h2>
+            <p className="text-gray-600 dark:text-gray-300">
+              Track vital health data
+            </p>
+          </Link>
+
+          {/* Mindfulness */}
+          <Link
+            to="/mindfulness"
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 hover:shadow-2xl transition-all transform hover:-translate-y-1"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <Brain className="w-10 h-10 text-indigo-500" />
+              <Star className="w-5 h-5 text-yellow-500" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">
+              Mindfulness
+            </h2>
+            <p className="text-gray-600 dark:text-gray-300">
+              Find your inner peace
+            </p>
+          </Link>
+
+          {/* Live Classes */}
+          <Link
+            to="/live-classes"
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 hover:shadow-2xl transition-all transform hover:-translate-y-1"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <Video className="w-10 h-10 text-cyan-500" />
+              <Calendar className="w-5 h-5 text-orange-500" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">
+              Live Classes
+            </h2>
+            <p className="text-gray-600 dark:text-gray-300">
+              Join wellness sessions
+            </p>
+          </Link>
+
+          {/* Nutrition */}
+          <Link
+            to="/nutrition"
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 hover:shadow-2xl transition-all transform hover:-translate-y-1"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <Flame className="w-10 h-10 text-orange-500" />
+              <TrendingUp className="w-5 h-5 text-green-500" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">
+              Nutrition
+            </h2>
+            <p className="text-gray-600 dark:text-gray-300">
+              Track your meals
+            </p>
+          </Link>
+
+          {/* Courses */}
+          <Link
+            to="/courses"
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 hover:shadow-2xl transition-all transform hover:-translate-y-1"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <Star className="w-10 h-10 text-yellow-500" />
+              <TrendingUp className="w-5 h-5 text-green-500" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">
+              Courses
+            </h2>
+            <p className="text-gray-600 dark:text-gray-300">
+              Learn and grow
+            </p>
+          </Link>
         </div>
 
-        <button
-          onClick={() => setShowAddWidget(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl transition-colors theme-bg-primary text-white hover:theme-bg-primary-dark"
-          style={{ backgroundColor: editMode ? primaryColor : undefined }}
-        >
-          <Plus className="w-5 h-5" />
-          <span className="hidden sm:inline">Add Widget</span>
-        </button>
-        <button
-          onClick={() => setEditMode(!editMode)}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl transition-colors"
-          style={{
-            backgroundColor: editMode ? colorPresets[colorPreset]?.light : '#f3f4f6',
-            color: editMode ? primaryColor : '#4b5563'
-          }}
-        >
-          <Settings className="w-5 h-5" />
-          <span className="hidden sm:inline">{editMode ? 'Done' : 'Customize'}</span>
-        </button>
+        {/* Motivational Message */}
+        <div className="mt-8 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl shadow-xl p-8 text-white text-center">
+          <h3 className="text-2xl font-bold mb-2">
+            Every journey begins with a single step
+          </h3>
+          <p className="text-purple-100">
+            Your wellness is our priority. Explore your tools and make today count!
+          </p>
+        </div>
       </div>
-
-      {editMode && (
-        <div
-          className="p-3 rounded-xl text-sm flex items-center justify-between"
-          style={{
-            backgroundColor: colorPresets[colorPreset]?.light,
-            borderColor: primaryColor,
-            color: primaryColor,
-            border: '1px solid'
-          }}
-        >
-          <span><strong>Edit Mode:</strong> Drag to reorder. Click size to resize. Click × to remove.</span>
-          <button
-            onClick={resetToDefault}
-            className="font-medium hover:opacity-80"
-            style={{ color: primaryColor }}
-          >
-            Reset to Default
-          </button>
-        </div>
-      )}
-
-      {/* Widgets Grid */}
-      <div className="grid grid-cols-12 gap-6">
-        {widgets.filter(w => w.visible).map(widget => (
-          <div
-            key={widget.id}
-            className={`${getWidgetClasses(widget.size)} transition-all duration-300 ${
-              draggedWidget === widget.id ? 'opacity-50' : ''
-            } ${editMode ? 'ring-2 ring-dashed rounded-2xl' : ''}`}
-            style={editMode ? { ['--tw-ring-color' as string]: `${primaryColor}40` } : undefined}
-            draggable={editMode}
-            onDragStart={(e) => handleDragStart(e, widget.id)}
-            onDragOver={handleDragOver}
-            onDrop={(e) => handleDrop(e, widget.id)}
-            onDragEnd={handleDragEnd}
-          >
-            <div className="relative h-full">
-              {editMode && (
-                <div className="absolute top-2 left-2 right-2 z-10 flex items-center justify-between">
-                  <div className="flex items-center gap-1">
-                    <div className="cursor-move p-1.5 bg-white/90 backdrop-blur-sm rounded-lg shadow-sm">
-                      <GripVertical className="w-4 h-4 text-gray-400" />
-                    </div>
-                    <button
-                      onClick={() => cycleWidgetSize(widget.id)}
-                      className="px-2 py-1 bg-white/90 backdrop-blur-sm rounded-lg shadow-sm text-xs font-medium text-gray-600 hover:bg-white"
-                    >
-                      {widget.size}
-                    </button>
-                  </div>
-                  <button
-                    onClick={() => removeWidget(widget.id)}
-                    className="p-1.5 bg-red-500 text-white rounded-lg shadow-sm hover:bg-red-600 transition-colors"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              )}
-              <div className="h-full">
-                {renderWidget(widget)}
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Add Widget Modal */}
-      {showAddWidget && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full overflow-hidden my-auto">
-            <div className="flex items-center justify-between p-4 border-b border-gray-100">
-              <h3 className="text-lg font-semibold text-gray-900">Add Widget</h3>
-              <button
-                onClick={() => setShowAddWidget(false)}
-                className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center"
-              >
-                <X className="w-5 h-5 text-gray-500" />
-              </button>
-            </div>
-            <div className="p-4 max-h-96 overflow-y-auto">
-              <div className="grid gap-3">
-                {availableWidgets.map(widget => {
-                  const isAdded = widgets.some(w => w.type === widget.type && w.visible);
-                  const IconComponent = widget.icon || Plus;
-                  
-                  return (
-                    <button
-                      key={widget.type}
-                      onClick={() => addWidget(widget.type)}
-                      disabled={isAdded}
-                      className={`flex items-start gap-4 p-4 rounded-xl text-left transition-colors ${
-                        isAdded
-                          ? 'bg-gray-100 opacity-60 cursor-not-allowed'
-                          : 'bg-gray-50 hover:bg-gray-100'
-                      }`}
-                    >
-                      <div
-                        className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
-                        style={{
-                          backgroundColor: isAdded ? '#e5e7eb' : colorPresets[colorPreset]?.light,
-                          color: isAdded ? '#9ca3af' : primaryColor
-                        }}
-                      >
-                        {isAdded ? (
-                          <Check className="w-6 h-6" />
-                        ) : (
-                          <IconComponent className="w-6 h-6" />
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <p className="font-medium text-gray-900">{widget.title}</p>
-                          {isAdded && (
-                            <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded-full">
-                              Added
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-sm text-gray-500">{widget.description}</p>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
-}
-
-function getGreeting() {
-  const hour = new Date().getHours();
-  if (hour < 12) return 'Morning';
-  if (hour < 17) return 'Afternoon';
-  return 'Evening';
-}
-
-function getMoodBadgeClass(mood: string) {
-  const classes: Record<string, string> = {
-    great: 'bg-green-100 text-green-700',
-    good: 'bg-sage-100 text-sage-700',
-    neutral: 'bg-gray-100 text-gray-700',
-    low: 'bg-amber-100 text-amber-700',
-    bad: 'bg-red-100 text-red-700',
-  };
-  return classes[mood] || 'bg-gray-100 text-gray-700';
 }

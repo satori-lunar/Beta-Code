@@ -56,12 +56,19 @@ export default function PathwayDetail() {
 
   // Filter and group classes for this pathway
   const pathwayClasses = useMemo(() => {
-    return (liveClasses || []).filter((classItem) =>
-      pathway.class_titles.some((title) =>
+    // Keep first occurrence per title + scheduled_at to avoid duplicates
+    const seen = new Set<string>();
+    return (liveClasses || []).filter((classItem) => {
+      const matches = pathway.class_titles.some((title) =>
         classItem.title.toLowerCase().includes(title.toLowerCase()) ||
         title.toLowerCase().includes(classItem.title.toLowerCase())
-      )
-    );
+      );
+      if (!matches) return false;
+      const key = `${classItem.title}|${classItem.scheduled_at}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
   }, [liveClasses, pathway.class_titles]);
 
   const classesByWeekday = useMemo(() => {
@@ -194,9 +201,14 @@ export default function PathwayDetail() {
 
       {/* Classes */}
       <div className="space-y-6">
-        <div className="flex items-center gap-2">
-          <Compass className="w-5 h-5 text-coral-600" />
-          <h2 className="text-lg font-semibold text-gray-900">Upcoming Classes</h2>
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-xl bg-coral-50 text-coral-600 flex items-center justify-center">
+            <Compass className="w-5 h-5" />
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">Upcoming Classes</h2>
+            <p className="text-sm text-gray-500">Sessions linked to this pathway</p>
+          </div>
         </div>
 
         {classesLoading ? (
@@ -213,8 +225,13 @@ export default function PathwayDetail() {
             .map(([weekday, classes]) => (
               <div key={weekday} className="space-y-3">
                 <div className="flex items-center gap-2 text-gray-800 font-semibold">
-                  <Calendar className="w-4 h-4 text-coral-600" />
+                  <div className="h-8 w-8 rounded-lg bg-coral-50 text-coral-600 flex items-center justify-center">
+                    <Calendar className="w-4 h-4" />
+                  </div>
                   {weekday}
+                  <span className="ml-auto text-xs font-medium text-gray-500 px-2 py-1 rounded-full bg-gray-100">
+                    {classes.length} {classes.length === 1 ? 'class' : 'classes'}
+                  </span>
                 </div>
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {classes.map((classItem) => {
@@ -223,7 +240,7 @@ export default function PathwayDetail() {
                     return (
                       <div
                         key={classItem.id}
-                        className="p-4 border border-gray-200 rounded-xl hover:shadow-md transition-shadow"
+                        className="p-4 border border-gray-200 rounded-xl hover:shadow-md transition-shadow bg-white/70 backdrop-blur"
                       >
                         <div className="flex items-start justify-between mb-3">
                           <div className="flex-1">

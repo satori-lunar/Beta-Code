@@ -31,6 +31,7 @@ import {
   Compass
 } from 'lucide-react';
 import { useRecordedSessions, useLiveClasses, useFavoriteSessions, useSessionCompletions, useClassReminders } from '../hooks/useSupabaseData';
+import { pathwayDefinitions } from './Pathways';
 import { usePathways } from '../hooks/usePathways';
 import { useReminderChecker } from '../hooks/useReminderChecker';
 import { useTrackVideoView, useTrackFavorite, useTrackReminder } from '../hooks/useActivityTracking';
@@ -93,7 +94,6 @@ export default function Classes() {
   // Get initial tab and optional filters from navigation state (e.g. from HealthDashboard or Pathways)
   const initialState = (location.state as any) || {};
   const initialPathwayTitle: string | undefined = initialState.pathwayTitle;
-  const pathwayFilterTitles: string[] | undefined = initialState.filterClasses;
 
   const [activeTab, setActiveTab] = useState<'live' | 'recorded' | 'favorites' | 'completed'>(
     initialState.activeTab || (initialPathwayTitle ? 'recorded' : 'live')
@@ -166,51 +166,53 @@ export default function Classes() {
     }));
   }, [liveClasses]);
 
-  // Filter functions
-  const filterBySearch = (title: string, description: string) =>
-    title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    description.toLowerCase().includes(searchQuery.toLowerCase());
+  // Get live classes for selected pathway (based on class titles).
+  // Prefer static pathwayDefinitions (they reflect your intentional mapping),
+  // fall back to Supabase pathways if no static match is found.
+  const selectedPathwayConfig = useMemo(() => {
+    if (!selectedPathwayId) return null;
 
-  // Group sessions by pathway based on class titles
-  const sessionsByPathway = useMemo(() => {
-    const grouped: Record<string, typeof mappedRecordedSessions> = {};
-
-    pathways.forEach(pathway => {
-      const pathwaySessions = mappedRecordedSessions.filter(session =>
-        pathway.class_titles.some(classTitle =>
-          session.title.toLowerCase().includes(classTitle.toLowerCase()) ||
-          classTitle.toLowerCase().includes(session.title.toLowerCase())
-        )
+    // Try to match Supabase pathway title to our static definitions
+    const supabasePathway = pathways.find(p => p.id === selectedPathwayId) || null;
+    if (supabasePathway) {
+      const staticMatch = pathwayDefinitions.find(
+        p => p.title.toLowerCase() === supabasePathway.title.toLowerCase()
       );
-      if (pathwaySessions.length > 0) {
-        grouped[pathway.id] = pathwaySessions;
-      }
-    });
-
-    return grouped;
-  }, [mappedRecordedSessions, pathways]);
-
-  // Get sessions for selected pathway (excluding completed ones)
-  const pathwaySessions = selectedPathwayId
-    ? (sessionsByPathway[selectedPathwayId] || []).filter(
-        (s) => !s.isCompleted && filterBySearch(s.title, s.description)
-      )
-    : [];
-
-  // Filtered data - optionally filter live classes by pathway class titles
-  const filteredLiveClasses = useMemo(() => {
-    if (!pathwayFilterTitles || pathwayFilterTitles.length === 0) {
-      return mappedLiveClasses;
+      if (staticMatch) return staticMatch;
+      // If no static match by title, fall back to Supabase class_titles
+      return {
+        id: supabasePathway.id,
+        title: supabasePathway.title,
+        class_titles: supabasePathway.class_titles || [],
+      } as { id: string; title: string; class_titles: string[] };
     }
 
-    const lowerTitles = pathwayFilterTitles.map(t => t.toLowerCase());
-    return mappedLiveClasses.filter(classItem =>
-      lowerTitles.some(title =>
-        classItem.title.toLowerCase().includes(title) ||
-        title.includes(classItem.title.toLowerCase())
+    // If we only have a title from navigation state
+    if (initialPathwayTitle) {
+      const staticMatch = pathwayDefinitions.find(
+        p => p.title.toLowerCase() === initialPathwayTitle.toLowerCase()
+      );
+      if (staticMatch) return staticMatch;
+    }
+
+    return null;
+  }, [selectedPathwayId, pathways, initialPathwayTitle]);
+
+  const pathwayLiveClasses = useMemo(() => {
+    if (!selectedPathwayConfig) return [];
+    const titles = (selectedPathwayConfig.class_titles || []).map(t => t.toLowerCase());
+    if (titles.length === 0) return [];
+
+    return mappedLiveClasses.filter(c =>
+      titles.some(title =>
+        c.title.toLowerCase().includes(title) ||
+        title.includes(c.title.toLowerCase())
       )
     );
-  }, [mappedLiveClasses, pathwayFilterTitles]);
+  }, [selectedPathwayConfig, mappedLiveClasses]);
+
+  // Filtered data - no filters for live classes, just use all classes
+  const filteredLiveClasses = mappedLiveClasses;
 
   // Define class structure matching the SQL file exactly
   // This ensures the same order and grouping as defined in insert-live-classes.sql
@@ -507,7 +509,7 @@ export default function Classes() {
         <div>
           {/* Only show pathways, not all sessions directly */}
           {selectedPathwayId ? (
-            // Show sessions for selected pathway
+            // Show classes for selected pathway
             <div>
               <button
                 onClick={() => setSelectedPathwayId(null)}
@@ -519,40 +521,29 @@ export default function Classes() {
               <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                 <p className="text-sm text-blue-800 flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4" />
-                  <span className="font-medium">Showing incomplete sessions only</span>
-                  <span className="text-blue-600">({pathwaySessions.length} remaining)</span>
+                  <span className="font-medium">Classes in this pathway</span>
+                  <span className="text-blue-600">
+                    ({pathwayLiveClasses.length} matching live class{pathwayLiveClasses.length === 1 ? '' : 'es'})
+                  </span>
                 </p>
               </div>
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {loading ? (
                   <div className="col-span-full card text-center py-12">
-                    <p className="text-gray-500">Loading sessions...</p>
+                    <p className="text-gray-500">Loading classes...</p>
                   </div>
-                ) : pathwaySessions.length > 0 ? (
-                  pathwaySessions.map((session) => (
-                    <RecordedSessionCard
-                      key={session.id}
-                      session={session}
-                      onToggleFavorite={async () => {
-                        const wasFavorite = favoriteIds.has(session.id);
-                        toggleFavorite(session.id);
-                        await trackFavorite(session.id, wasFavorite ? 'favorite_removed' : 'favorite_added', session.title);
-                      }}
-                      onToggleComplete={() => handleToggleComplete(session.id, session.title)}
-                      onClick={() => {
-                        if (session.videoUrl) {
-                          trackView(session.id, session.title);
-                          window.open(session.videoUrl, '_blank', 'noopener,noreferrer');
-                        } else {
-                          console.error('No video URL for session:', session.id);
-                        }
-                      }}
+                ) : pathwayLiveClasses.length > 0 ? (
+                  pathwayLiveClasses.map(classItem => (
+                    <LiveClassCard
+                      key={classItem.id}
+                      classItem={classItem}
+                      isLive={classItem.isLive}
                     />
                   ))
                 ) : (
                   <div className="col-span-full card text-center py-12">
                     <Video className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                    <p className="text-gray-500">No sessions found in this pathway</p>
+                    <p className="text-gray-500">No live classes found for this pathway</p>
                   </div>
                 )}
               </div>

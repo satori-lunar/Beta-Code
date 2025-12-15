@@ -8,8 +8,6 @@ import {
   Droplets,
   Moon,
   Footprints,
-  Scale,
-  Ruler,
   Brain,
   Zap,
   Watch,
@@ -17,7 +15,6 @@ import {
   X,
   Edit3,
   ChevronRight,
-  TrendingDown,
   Play,
   Flame,
   Target,
@@ -172,93 +169,6 @@ export default function HealthDashboard() {
       return `${hrs}h ${remainMins}m`;
     }
     return secs > 0 ? `${mins}m ${secs}s` : `${mins}m`;
-  };
-
-  const getMetricDisplay = (key: MetricKey) => {
-    switch (key) {
-      case 'heartRate': {
-        const m = healthMetrics.heartRate;
-        if (!m) return { value: '--', unit: '', secondary: '' };
-        return { value: m.value.toString(), unit: 'bpm', secondary: '' };
-      }
-      case 'bloodPressure': {
-        const m = healthMetrics.bloodPressure;
-        if (!m) return { value: '--', unit: '', secondary: '' };
-        return { value: `${m.systolic}/${m.diastolic}`, unit: 'mmHg', secondary: '' };
-      }
-      case 'bodyTemperature': {
-        const m = healthMetrics.bodyTemperature;
-        if (!m) return { value: '--', unit: '', secondary: '' };
-        return { value: m.value.toFixed(1), unit: m.unit, secondary: '' };
-      }
-      case 'oxygenSaturation': {
-        const m = healthMetrics.oxygenSaturation;
-        if (!m) return { value: '--', unit: '', secondary: '' };
-        return { value: m.value.toString(), unit: '%', secondary: '' };
-      }
-      case 'respiratoryRate': {
-        const m = healthMetrics.respiratoryRate;
-        if (!m) return { value: '--', unit: '', secondary: '' };
-        return { value: m.value.toString(), unit: '/min', secondary: '' };
-      }
-      case 'bmi': {
-        const m = healthMetrics.bmi;
-        if (!m) return { value: '--', unit: '', secondary: '' };
-        return { value: m.value.toFixed(1), unit: '', secondary: m.category };
-      }
-      case 'bodyFat': {
-        const m = healthMetrics.bodyFat;
-        if (!m) return { value: '--', unit: '', secondary: '' };
-        return { value: m.value.toString(), unit: '%', secondary: '' };
-      }
-      case 'height': {
-        const m = healthMetrics.height;
-        if (!m) return { value: '--', unit: '', secondary: '' };
-        return { value: m.value.toString(), unit: m.unit, secondary: '' };
-      }
-      case 'weight': {
-        const m = healthMetrics.weight;
-        if (!m) return { value: '--', unit: '', secondary: '' };
-        return { value: m.value.toString(), unit: m.unit, secondary: '' };
-      }
-      case 'sleepHours': {
-        const m = healthMetrics.sleepHours;
-        if (!m) return { value: '--', unit: '', secondary: '' };
-        return { value: m.value.toFixed(1), unit: 'hrs', secondary: m.quality };
-      }
-      case 'steps': {
-        const m = healthMetrics.steps;
-        if (!m) return { value: '--', unit: '', secondary: '' };
-        return { value: m.value.toLocaleString(), unit: '', secondary: `/ ${m.goal.toLocaleString()}` };
-      }
-      case 'activeMinutes': {
-        const m = healthMetrics.activeMinutes;
-        if (!m) return { value: '--', unit: '', secondary: '' };
-        return { value: m.value.toString(), unit: 'min', secondary: `/ ${m.goal}` };
-      }
-      case 'caloriesBurned': {
-        const m = healthMetrics.caloriesBurned;
-        if (!m) return { value: '--', unit: '', secondary: '' };
-        return { value: m.value.toLocaleString(), unit: 'cal', secondary: `/ ${m.goal.toLocaleString()}` };
-      }
-      case 'stressLevel': {
-        const m = healthMetrics.stressLevel;
-        if (!m) return { value: '--', unit: '', secondary: '' };
-        return { value: m.value.toString(), unit: '/10', secondary: m.value <= 3 ? 'Low' : m.value <= 6 ? 'Moderate' : 'High' };
-      }
-      case 'energyLevel': {
-        const m = healthMetrics.energyLevel;
-        if (!m) return { value: '--', unit: '', secondary: '' };
-        return { value: m.value.toString(), unit: '/10', secondary: m.value >= 7 ? 'High' : m.value >= 4 ? 'Moderate' : 'Low' };
-      }
-      case 'hydration': {
-        const m = healthMetrics.hydration;
-        if (!m) return { value: '--', unit: '', secondary: '' };
-        return { value: (m.value / 1000).toFixed(1), unit: 'L', secondary: `/ ${(m.goal / 1000).toFixed(1)}L` };
-      }
-      default:
-        return { value: '--', unit: '', secondary: '' };
-    }
   };
 
   const handleSaveMetric = (key: MetricKey) => {
@@ -458,52 +368,6 @@ export default function HealthDashboard() {
     }
     setEditingMetric(key);
   };
-
-
-  // 2D Body Silhouette SVG
-  const BodySilhouette = () => (
-    <svg viewBox="0 0 200 400" className="w-full h-full max-h-[400px]" style={{ filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.1))' }}>
-      {/* Head */}
-      <ellipse cx="100" cy="40" rx="30" ry="35" fill={`${primaryColor}30`} stroke={primaryColor} strokeWidth="2" />
-      {/* Neck */}
-      <rect x="90" y="70" width="20" height="20" fill={`${primaryColor}30`} stroke={primaryColor} strokeWidth="2" />
-      {/* Torso */}
-      <path
-        d="M60 90 L60 200 Q60 220 80 230 L80 280 L120 280 L120 230 Q140 220 140 200 L140 90 Q120 80 100 80 Q80 80 60 90"
-        fill={`${primaryColor}20`}
-        stroke={primaryColor}
-        strokeWidth="2"
-      />
-      {/* Left Arm */}
-      <path
-        d="M60 95 Q30 100 25 150 Q20 180 30 200 L35 200 Q40 180 40 160 Q45 130 60 120"
-        fill={`${primaryColor}20`}
-        stroke={primaryColor}
-        strokeWidth="2"
-      />
-      {/* Right Arm */}
-      <path
-        d="M140 95 Q170 100 175 150 Q180 180 170 200 L165 200 Q160 180 160 160 Q155 130 140 120"
-        fill={`${primaryColor}20`}
-        stroke={primaryColor}
-        strokeWidth="2"
-      />
-      {/* Left Leg */}
-      <path
-        d="M80 280 L75 380 L85 385 L95 280"
-        fill={`${primaryColor}20`}
-        stroke={primaryColor}
-        strokeWidth="2"
-      />
-      {/* Right Leg */}
-      <path
-        d="M105 280 L115 385 L125 380 L120 280"
-        fill={`${primaryColor}20`}
-        stroke={primaryColor}
-        strokeWidth="2"
-      />
-    </svg>
-  );
 
   // Tab Navigation - Workout and Mental Health focused
   const tabs: { id: TabType; label: string; icon: React.ElementType }[] = [

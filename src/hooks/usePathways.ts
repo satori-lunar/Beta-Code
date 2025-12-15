@@ -157,6 +157,27 @@ export function usePathways() {
     if (!user) return;
 
     try {
+      // Check if user is already enrolled in another pathway (that's not completed)
+      const existingProgress = Object.values(userProgress).find(
+        (progress) => !progress.completed && progress.pathway_id !== pathwayId
+      );
+
+      // If enrolled in another pathway, unenroll first
+      if (existingProgress) {
+        await (supabase
+          .from('user_pathway_progress' as any)
+          .delete()
+          .eq('id', existingProgress.id) as any);
+      }
+
+      // Check if user is already enrolled in this pathway
+      const currentProgress = userProgress[pathwayId];
+      if (currentProgress && !currentProgress.completed) {
+        // Already enrolled and not completed, no need to re-enroll
+        return;
+      }
+
+      // Insert new enrollment
       const { error } = await (supabase
         .from('user_pathway_progress' as any)
         .insert({

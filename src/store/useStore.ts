@@ -218,7 +218,7 @@ export const useStore = create<AppState>()(
         { id: '2', title: 'Live Yoga Session starting soon', message: 'Your yoga class with Sarah Mitchell starts in 30 minutes.', type: 'class', read: false, createdAt: new Date(Date.now() - 1800000).toISOString(), link: '/classes' },
         { id: '3', title: 'New badge earned!', message: 'Congratulations! You\'ve earned the "Hydration Hero" badge.', type: 'achievement', read: false, createdAt: new Date(Date.now() - 3600000).toISOString(), link: '/badges' },
         { id: '4', title: 'Weekly weight check-in', message: 'Don\'t forget to log your weight this week.', type: 'reminder', read: true, createdAt: new Date(Date.now() - 86400000).toISOString(), link: '/weight' },
-        { id: '5', title: 'Course progress update', message: 'You\'re 47% through "Finding Calm". Keep going!', type: 'system', read: true, createdAt: new Date(Date.now() - 172800000).toISOString(), link: '/courses' },
+        { id: '5', title: 'Pathway progress update', message: 'You\'re 47% through your pathway. Keep going!', type: 'system', read: true, createdAt: new Date(Date.now() - 172800000).toISOString(), link: '/pathways' },
       ],
       markNotificationRead: (id) => set((state) => ({
         notifications: state.notifications.map(n =>

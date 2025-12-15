@@ -41,7 +41,7 @@ const navigation = [
   { name: 'Weight Log', href: '/weight', icon: Scale },
   { name: 'Journal', href: '/journal', icon: BookOpen },
   { name: 'Goals', href: '/goals', icon: Flag },
-  { name: 'Courses', href: '/courses', icon: GraduationCap },
+  { name: 'Pathways', href: '/pathways', icon: GraduationCap },
   { name: 'Calendar', href: '/calendar', icon: CalendarDays },
   { name: 'Classes', href: '/classes', icon: Video },
 ];
@@ -54,7 +54,7 @@ const pages = [
   { name: 'Weight Log', description: 'Track your weight progress', href: '/weight' },
   { name: 'Journal', description: 'Write and reflect', href: '/journal' },
   { name: 'Goals', description: 'Set and track your wellness goals', href: '/goals' },
-  { name: 'Courses', description: 'Learn and grow', href: '/courses' },
+  { name: 'Pathways', description: 'Choose your wellness journey', href: '/pathways' },
   { name: 'Calendar', description: 'View your schedule', href: '/calendar' },
   { name: 'Classes', description: 'Live and recorded sessions', href: '/classes' },
   { name: 'Badges', description: 'View your achievements', href: '/badges' },
@@ -94,8 +94,8 @@ export default function Layout() {
     markAllRead,
     deleteNotification
   } = useNotifications();
-  // User-specific courses/recorded sessions not yet wired to Supabase, avoid showing demo data
-  const courses: any[] = [];
+    // User-specific pathways not yet wired to Supabase, avoid showing demo data
+    // const pathways: any[] = [];
   const recordedSessions: any[] = [];
 
   const handleSignOut = async () => {
@@ -155,18 +155,18 @@ export default function Layout() {
       }
     });
 
-    // Search courses
-    courses.forEach(course => {
-      if (course.title.toLowerCase().includes(query) || course.description.toLowerCase().includes(query)) {
-        results.push({
-          id: `course-${course.id}`,
-          title: course.title,
-          description: `Course by ${course.instructor}`,
-          type: 'course',
-          link: '/courses'
-        });
-      }
-    });
+    // Search pathways (placeholder - will be implemented when pathways are fully integrated)
+    // pathways.forEach(pathway => {
+    //   if (pathway.title.toLowerCase().includes(query) || pathway.description.toLowerCase().includes(query)) {
+    //     results.push({
+    //       id: `pathway-${pathway.id}`,
+    //       title: pathway.title,
+    //       description: `Pathway - ${pathway.class_titles.length} classes`,
+    //       type: 'pathway',
+    //       link: '/pathways'
+    //     });
+    //   }
+    // });
 
     // Search recordings
     recordedSessions.forEach(session => {

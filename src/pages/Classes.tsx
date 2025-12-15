@@ -12,7 +12,6 @@ import {
   ExternalLink,
   Radio,
   ChevronRight,
-  BookOpen,
   CheckCircle2,
   Moon,
   UtensilsCrossed,
@@ -84,7 +83,7 @@ export default function Classes() {
   const { classes: liveClasses, loading: classesLoading } = useLiveClasses();
   const { favoriteIds, toggleFavorite } = useFavoriteSessions();
   const { completedIds, toggleCompletion } = useSessionCompletions();
-  const { pathways, userProgress, achievements, loading: pathwaysLoading, enrollInPathway, unenrollFromPathway } = usePathways();
+  const { pathways, userProgress, loading: pathwaysLoading, enrollInPathway } = usePathways();
   const { trackView } = useTrackVideoView();
   const { trackFavorite } = useTrackFavorite();
 
@@ -93,7 +92,6 @@ export default function Classes() {
 
   // Get initial tab from navigation state (if coming from HealthDashboard)
   const initialTab = (location.state as any)?.activeTab || 'live';
-  const filterClasses = (location.state as any)?.filterClasses || null;
 
   const [activeTab, setActiveTab] = useState<'live' | 'recorded' | 'favorites' | 'completed'>(initialTab);
   const [selectedWeekday, setSelectedWeekday] = useState<string>('Sunday');
@@ -305,7 +303,7 @@ export default function Classes() {
   const favoriteSessions = mappedRecordedSessions.filter((s) => s.isFavorite);
   const completedSessions = mappedRecordedSessions.filter((s) => s.isCompleted);
 
-  const loading = sessionsLoading || classesLoading || coursesLoading;
+  const loading = sessionsLoading || classesLoading || pathwaysLoading;
 
   const handleToggleComplete = async (sessionId: string, sessionTitle: string) => {
     // Show toast notification
@@ -548,7 +546,6 @@ export default function Classes() {
                     pathway.description.toLowerCase().includes(searchQuery.toLowerCase())
                   )
                   .map((pathway) => {
-                    const sessionCount = sessionsByPathway[pathway.id]?.length || 0;
                     const progress = userProgress[pathway.id];
                     const isEnrolled = !!progress;
                     const progressPercentage = progress

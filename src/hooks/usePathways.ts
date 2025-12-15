@@ -54,13 +54,13 @@ export function usePathways() {
   useEffect(() => {
     async function fetchPathways() {
       try {
-        const { data, error: pathwaysError } = await supabase
-          .from('pathways')
+        const { data, error: pathwaysError } = await (supabase
+          .from('pathways' as any)
           .select('*')
-          .order('created_at', { ascending: true });
+          .order('created_at', { ascending: true }) as any);
 
         if (pathwaysError) throw pathwaysError;
-        setPathways(data || []);
+        setPathways((data || []) as Pathway[]);
       } catch (err) {
         setError(err as Error);
       }
@@ -78,34 +78,36 @@ export function usePathways() {
       return;
     }
 
+    const userId = user.id; // Capture user.id to avoid null check issues
+
     async function fetchUserData() {
       try {
         setLoading(true);
 
         // Fetch user progress
-        const { data: progressData, error: progressError } = await supabase
-          .from('user_pathway_progress')
+        const { data: progressData, error: progressError } = await (supabase
+          .from('user_pathway_progress' as any)
           .select('*')
-          .eq('user_id', user.id);
+          .eq('user_id', userId) as any);
 
         if (progressError) throw progressError;
 
         // Convert to map for easy lookup
         const progressMap: Record<string, UserPathwayProgress> = {};
-        (progressData || []).forEach((progress) => {
+        ((progressData || []) as UserPathwayProgress[]).forEach((progress) => {
           progressMap[progress.pathway_id] = progress;
         });
         setUserProgress(progressMap);
 
         // Fetch achievements
-        const { data: achievementsData, error: achievementsError } = await supabase
-          .from('pathway_achievements')
+        const { data: achievementsData, error: achievementsError } = await (supabase
+          .from('pathway_achievements' as any)
           .select('*')
-          .eq('user_id', user.id)
-          .order('earned_at', { ascending: false });
+          .eq('user_id', userId)
+          .order('earned_at', { ascending: false }) as any);
 
         if (achievementsError) throw achievementsError;
-        setAchievements(achievementsData || []);
+        setAchievements((achievementsData || []) as PathwayAchievement[]);
       } catch (err) {
         setError(err as Error);
       } finally {
@@ -155,8 +157,8 @@ export function usePathways() {
     if (!user) return;
 
     try {
-      const { error } = await supabase
-        .from('user_pathway_progress')
+      const { error } = await (supabase
+        .from('user_pathway_progress' as any)
         .insert({
           user_id: user.id,
           pathway_id: pathwayId,
@@ -164,12 +166,12 @@ export function usePathways() {
           classes_completed: 0,
           current_streak: 0,
           longest_streak: 0,
-        });
+        }) as any);
 
       if (error) throw error;
 
       // Award enrollment achievement
-      await supabase.from('pathway_achievements').insert({
+      await (supabase.from('pathway_achievements' as any).insert({
         user_id: user.id,
         pathway_id: pathwayId,
         achievement_type: 'enrolled',
@@ -177,14 +179,14 @@ export function usePathways() {
         achievement_description: 'Enrolled in a new pathway',
         badge_icon: '🎯',
         badge_color: '#3b82f6',
-      });
+      }) as any);
     } catch (err) {
       console.error('Error enrolling in pathway:', err);
     }
   };
 
   // Update pathway progress (called when a class is completed)
-  const updatePathwayProgress = async (pathwayId: string, classTitle: string) => {
+  const updatePathwayProgress = async (pathwayId: string) => {
     if (!user) return;
 
     try {
@@ -224,8 +226,8 @@ export function usePathways() {
       newLongestStreak = Math.max(newLongestStreak, newCurrentStreak);
 
       // Update progress
-      const { error } = await supabase
-        .from('user_pathway_progress')
+      const { error } = await (supabase
+        .from('user_pathway_progress' as any)
         .update({
           classes_completed: newClassesCompleted,
           current_streak: newCurrentStreak,
@@ -234,7 +236,7 @@ export function usePathways() {
           completed: newCompleted,
           completed_at: newCompleted ? now.toISOString() : null,
         })
-        .eq('id', progress.id);
+        .eq('id', progress.id) as any);
 
       if (error) throw error;
 
@@ -299,7 +301,7 @@ export function usePathways() {
 
       // Insert achievements
       for (const achievement of achievementsToAward) {
-        await supabase.from('pathway_achievements').insert({
+        await (supabase.from('pathway_achievements' as any).insert({
           user_id: user.id,
           pathway_id: pathwayId,
           achievement_type: achievement.type,
@@ -307,7 +309,7 @@ export function usePathways() {
           achievement_description: achievement.description,
           badge_icon: achievement.icon,
           badge_color: achievement.color,
-        });
+        }) as any);
       }
     } catch (err) {
       console.error('Error updating pathway progress:', err);
@@ -322,7 +324,7 @@ export function usePathways() {
       const progress = userProgress[pathwayId];
       if (!progress) return;
 
-      await supabase.from('user_pathway_progress').delete().eq('id', progress.id);
+      await (supabase.from('user_pathway_progress' as any).delete().eq('id', progress.id) as any);
     } catch (err) {
       console.error('Error unenrolling from pathway:', err);
     }

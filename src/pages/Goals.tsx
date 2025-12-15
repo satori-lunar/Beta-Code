@@ -1,20 +1,17 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Plus,
   Target,
   X,
   Trash2,
   Edit3,
-  CheckCircle2,
-  Circle,
   Calendar,
   Flag,
   TrendingUp
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import { useQuery } from '@tanstack/react-query';
-import { format, parseISO, isBefore, isAfter } from 'date-fns';
+import { format, parseISO, isBefore } from 'date-fns';
 
 type GoalStatus = 'not_started' | 'in_progress' | 'completed' | 'paused';
 type GoalCategory = 'health' | 'fitness' | 'wellness' | 'personal' | 'career' | 'relationships';
@@ -65,21 +62,31 @@ export default function Goals() {
   });
 
   // Fetch goals
-  const { data: goals = [], refetch } = useQuery<Goal[]>({
-    queryKey: ['goals', user?.id],
-    queryFn: async () => {
-      if (!user) return [];
+  const [goals, setGoals] = useState<Goal[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchGoals = async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
       const { data, error } = await supabase
-        .from('goals')
+        .from('goals' as any)
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data || [];
-    },
-    enabled: !!user,
-  });
+      setGoals((data as Goal[]) || []);
+    } catch (error) {
+      console.error('Error fetching goals:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchGoals();
+  }, [user]);
 
   // Filter goals
   const filteredGoals = goals.filter((goal) => {
@@ -104,18 +111,18 @@ export default function Goals() {
 
       if (editingGoal) {
         const { error } = await supabase
-          .from('goals')
+          .from('goals' as any)
           .update(goalData)
           .eq('id', editingGoal);
         if (error) throw error;
       } else {
         const { error } = await supabase
-          .from('goals')
+          .from('goals' as any)
           .insert(goalData);
         if (error) throw error;
       }
 
-      refetch();
+      fetchGoals();
       resetForm();
     } catch (error) {
       console.error('Error saving goal:', error);
@@ -151,14 +158,14 @@ export default function Goals() {
 
   const handleDeleteGoal = async (id: string) => {
     if (confirm('Are you sure you want to delete this goal?')) {
-      await supabase.from('goals').delete().eq('id', id);
-      refetch();
+      await supabase.from('goals' as any).delete().eq('id', id);
+      fetchGoals();
     }
   };
 
   const updateProgress = async (id: string, progress: number) => {
-    await supabase.from('goals').update({ progress }).eq('id', id);
-    refetch();
+    await supabase.from('goals' as any).update({ progress }).eq('id', id);
+    fetchGoals();
   };
 
   const getCategoryData = (category: GoalCategory) => {

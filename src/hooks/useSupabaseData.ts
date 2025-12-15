@@ -1330,11 +1330,8 @@ export async function awardBadge(
 // Check and award streak badges
 export async function checkAndAwardStreakBadges(userId: string, streak: number) {
   const streakBadges = [
-    { minStreak: 7, name: '7 Day Streak', description: 'Complete habits for 7 days straight', icon: 'flame' },
-    { minStreak: 14, name: '14 Day Streak', description: 'Complete habits for 14 days straight', icon: 'flame' },
-    { minStreak: 30, name: '30 Day Streak', description: 'Complete habits for 30 days straight', icon: 'crown' },
-    { minStreak: 60, name: '60 Day Streak', description: 'Complete habits for 60 days straight', icon: 'trophy' },
-    { minStreak: 100, name: 'Century Streak', description: 'Complete habits for 100 days straight', icon: 'star' },
+    { minStreak: 7, name: 'Week Warrior', description: 'Maintain a 7-day streak', icon: 'flame', category: 'streak' },
+    { minStreak: 30, name: 'Consistency King', description: 'Maintain a 30-day streak', icon: 'trophy', category: 'streak' },
   ]
 
   for (const badge of streakBadges) {
@@ -1343,7 +1340,7 @@ export async function checkAndAwardStreakBadges(userId: string, streak: number) 
         name: badge.name,
         description: badge.description,
         icon: badge.icon,
-        category: 'streak',
+        category: badge.category,
       })
     }
   }
@@ -1356,16 +1353,16 @@ export async function checkFirstTimeBadges(
 ) {
   const firstTimeBadges: Record<string, { name: string; description: string; icon: string; category: string }> = {
     habit_complete: {
-      name: 'First Habit',
+      name: 'First Steps',
       description: 'Complete your first habit',
       icon: 'target',
       category: 'habit',
     },
     journal_entry: {
-      name: 'Dear Diary',
+      name: 'Journaling Beginner',
       description: 'Write your first journal entry',
-      icon: 'book',
-      category: 'mindfulness',
+      icon: 'star',
+      category: 'journal',
     },
     weight_log: {
       name: 'Track Star',
@@ -1374,9 +1371,9 @@ export async function checkFirstTimeBadges(
       category: 'special',
     },
     workout_complete: {
-      name: 'First Workout',
+      name: 'Fitness Enthusiast',
       description: 'Complete your first workout',
-      icon: 'dumbbell',
+      icon: 'zap',
       category: 'workout',
     },
   }

@@ -866,7 +866,7 @@ export default function HealthDashboard() {
                   </div>
                 </button>
 
-                {/* Coach Recordings */}
+                {/* Live Class Recordings */}
                 <button
                   onClick={() => {
                     setWorkoutMode('indoor');
@@ -880,17 +880,18 @@ export default function HealthDashboard() {
                       <Dumbbell className="w-8 h-8 text-purple-600" />
                     </div>
                     <div>
-                      <h4 className="text-xl font-bold text-gray-900">Coach Recordings</h4>
-                      <p className="text-sm text-gray-500">Pre-recorded sessions</p>
+                      <h4 className="text-xl font-bold text-gray-900">Live Class Recordings</h4>
+                      <p className="text-sm text-gray-500">Recorded coach-led classes</p>
                     </div>
                   </div>
                   <p className="text-gray-600 mb-4">
-                    Watch pre-recorded workout sessions from our certified coaches. Great for structured programs.
+                    Watch recorded live classes from our certified coaches. Follow along with structured, professional-led sessions.
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    <span className="px-3 py-1 bg-purple-50 text-purple-700 rounded-full text-sm font-medium">Strength</span>
-                    <span className="px-3 py-1 bg-purple-50 text-purple-700 rounded-full text-sm font-medium">HIIT</span>
-                    <span className="px-3 py-1 bg-purple-50 text-purple-700 rounded-full text-sm font-medium">Yoga</span>
+                    <span className="px-3 py-1 bg-purple-50 text-purple-700 rounded-full text-sm font-medium">Foundation in Motion</span>
+                    <span className="px-3 py-1 bg-purple-50 text-purple-700 rounded-full text-sm font-medium">Energy in Motion</span>
+                    <span className="px-3 py-1 bg-purple-50 text-purple-700 rounded-full text-sm font-medium">Hatha Yoga</span>
+                    <span className="px-3 py-1 bg-purple-50 text-purple-700 rounded-full text-sm font-medium">Strength in Motion</span>
                   </div>
                 </button>
               </div>

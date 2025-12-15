@@ -142,17 +142,17 @@ export default function Dashboard() {
   const currentStreak = userBadges.length;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 dark:from-gray-900 dark:via-purple-900 dark:to-gray-900 py-8 px-4">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4">
       <div className="max-w-6xl mx-auto space-y-6">
 
         {/* Welcome Header with Streak */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-100 dark:border-gray-700">
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+              <h1 className="text-4xl font-bold text-gray-900 dark:text-white">
                 Welcome back, {user?.user_metadata?.name || 'Friend'}!
               </h1>
-              <p className="text-gray-600 dark:text-gray-300 mt-2 text-lg">
+              <p className="text-gray-600 dark:text-gray-400 mt-2 text-lg">
                 {format(new Date(), 'EEEE, MMMM d, yyyy')}
               </p>
             </div>
@@ -161,15 +161,16 @@ export default function Dashboard() {
             <div className="flex items-center gap-6">
               <button
                 onClick={() => setShowThemeModal(true)}
-                className="p-3 hover:bg-purple-100 dark:hover:bg-purple-900 rounded-xl transition-colors"
+                className="p-3 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors"
                 title="Customize theme"
+                style={{ color: primaryColor }}
               >
-                <Palette className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                <Palette className="w-6 h-6" />
               </button>
               <div className="text-center">
                 <div className="flex items-center gap-2 mb-1">
-                  <Flame className="w-8 h-8 text-orange-500" />
-                  <span className="text-4xl font-bold text-orange-500">{currentStreak}</span>
+                  <Flame className="w-8 h-8" style={{ color: primaryColor }} />
+                  <span className="text-4xl font-bold" style={{ color: primaryColor }}>{currentStreak}</span>
                 </div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Badges Earned</p>
               </div>
@@ -178,12 +179,17 @@ export default function Dashboard() {
         </div>
 
         {/* Daily Quote */}
-        <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl shadow-xl p-8 text-white">
+        <div
+          className="rounded-2xl shadow-xl p-8 text-white"
+          style={{
+            background: `linear-gradient(to right, ${primaryColor}, ${colorPresets[colorPreset].colors[1]})`
+          }}
+        >
           <div className="flex items-start gap-4">
             <Sparkles className="w-8 h-8 flex-shrink-0 mt-1" />
             <div>
               <h2 className="text-xl font-semibold mb-2">Daily Inspiration</h2>
-              <p className="text-lg text-purple-100 italic">"{dailyQuote}"</p>
+              <p className="text-lg opacity-90 italic">"{dailyQuote}"</p>
             </div>
           </div>
         </div>
@@ -192,17 +198,18 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
           {/* Habits Check-in */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-100 dark:border-gray-700">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
-                <Target className="w-8 h-8 text-blue-500" />
-                <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
+                <Target className="w-8 h-8" style={{ color: primaryColor }} />
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
                   Today's Habits
                 </h2>
               </div>
               <Link
                 to="/habits"
-                className="text-blue-500 hover:text-blue-600 text-sm font-medium"
+                className="text-sm font-medium hover:opacity-80 transition-opacity"
+                style={{ color: primaryColor }}
               >
                 View All →
               </Link>
@@ -210,17 +217,20 @@ export default function Dashboard() {
 
             <div className="mb-4">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-gray-600 dark:text-gray-300">
+                <span className="text-gray-600 dark:text-gray-400">
                   {todayCompletedCount} of {totalHabitsToday} completed
                 </span>
-                <span className="text-2xl font-bold text-blue-500">
+                <span className="text-2xl font-bold" style={{ color: primaryColor }}>
                   {totalHabitsToday > 0 ? Math.round((todayCompletedCount / totalHabitsToday) * 100) : 0}%
                 </span>
               </div>
               <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
                 <div
-                  className="bg-gradient-to-r from-blue-500 to-purple-500 h-3 rounded-full transition-all duration-500"
-                  style={{ width: `${totalHabitsToday > 0 ? (todayCompletedCount / totalHabitsToday) * 100 : 0}%` }}
+                  className="h-3 rounded-full transition-all duration-500"
+                  style={{
+                    width: `${totalHabitsToday > 0 ? (todayCompletedCount / totalHabitsToday) * 100 : 0}%`,
+                    background: `linear-gradient(to right, ${primaryColor}, ${colorPresets[colorPreset].colors[1]})`
+                  }}
                 />
               </div>
             </div>
@@ -242,17 +252,18 @@ export default function Dashboard() {
           </div>
 
           {/* Journal Check-in */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-100 dark:border-gray-700">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
-                <BookOpen className="w-8 h-8 text-green-500" />
-                <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
+                <BookOpen className="w-8 h-8" style={{ color: colorPresets[colorPreset].colors[2] }} />
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
                   Journal
                 </h2>
               </div>
               <Link
                 to="/journal"
-                className="text-green-500 hover:text-green-600 text-sm font-medium"
+                className="text-sm font-medium hover:opacity-80 transition-opacity"
+                style={{ color: colorPresets[colorPreset].colors[2] }}
               >
                 {journaledToday ? 'View Entry →' : 'Write Now →'}
               </Link>
@@ -260,16 +271,16 @@ export default function Dashboard() {
 
             {journaledToday ? (
               <div>
-                <div className="flex items-center gap-2 mb-3 text-green-600 dark:text-green-400">
+                <div className="flex items-center gap-2 mb-3" style={{ color: colorPresets[colorPreset].colors[2] }}>
                   <CheckCircle2 className="w-5 h-5" />
                   <span className="font-medium">You journaled today!</span>
                 </div>
                 {latestJournal?.mood && (
-                  <p className="text-gray-600 dark:text-gray-300 text-sm mb-2">
+                  <p className="text-gray-600 dark:text-gray-400 text-sm mb-2">
                     Mood: <span className="font-medium">{latestJournal.mood}</span>
                   </p>
                 )}
-                <p className="text-gray-600 dark:text-gray-300 text-sm line-clamp-2">
+                <p className="text-gray-600 dark:text-gray-400 text-sm line-clamp-2">
                   {latestJournal?.content}
                 </p>
               </div>
@@ -293,13 +304,13 @@ export default function Dashboard() {
           {/* Health Check Reminder */}
           <Link
             to="/health"
-            className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow"
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 hover:shadow-xl transition-all border border-gray-100 dark:border-gray-700 hover:scale-105"
           >
             <div className="flex items-center gap-3 mb-3">
-              <Heart className="w-6 h-6 text-red-500" />
-              <h3 className="font-semibold text-gray-800 dark:text-white">Health Metrics</h3>
+              <Heart className="w-6 h-6" style={{ color: primaryColor }} />
+              <h3 className="font-semibold text-gray-900 dark:text-white">Health Metrics</h3>
             </div>
-            <p className="text-sm text-gray-600 dark:text-gray-300">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
               Track your vitals and stay on top of your health
             </p>
           </Link>
@@ -307,13 +318,13 @@ export default function Dashboard() {
           {/* Weight Tracking Reminder */}
           <Link
             to="/weight"
-            className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow"
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 hover:shadow-xl transition-all border border-gray-100 dark:border-gray-700 hover:scale-105"
           >
             <div className="flex items-center gap-3 mb-3">
-              <TrendingUp className="w-6 h-6 text-pink-500" />
-              <h3 className="font-semibold text-gray-800 dark:text-white">Weight Progress</h3>
+              <TrendingUp className="w-6 h-6" style={{ color: colorPresets[colorPreset].colors[1] }} />
+              <h3 className="font-semibold text-gray-900 dark:text-white">Weight Progress</h3>
             </div>
-            <p className="text-sm text-gray-600 dark:text-gray-300">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
               Monitor your progress toward your goals
             </p>
           </Link>
@@ -321,13 +332,13 @@ export default function Dashboard() {
           {/* Live Classes Reminder */}
           <Link
             to="/live-classes"
-            className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow"
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 hover:shadow-xl transition-all border border-gray-100 dark:border-gray-700 hover:scale-105"
           >
             <div className="flex items-center gap-3 mb-3">
-              <Calendar className="w-6 h-6 text-purple-500" />
-              <h3 className="font-semibold text-gray-800 dark:text-white">Live Classes</h3>
+              <Calendar className="w-6 h-6" style={{ color: colorPresets[colorPreset].colors[2] }} />
+              <h3 className="font-semibold text-gray-900 dark:text-white">Live Classes</h3>
             </div>
-            <p className="text-sm text-gray-600 dark:text-gray-300">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
               Join today's wellness sessions
             </p>
           </Link>
@@ -335,17 +346,18 @@ export default function Dashboard() {
 
         {/* Badges Section */}
         {userBadges.length > 0 && (
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-100 dark:border-gray-700">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
-                <Award className="w-8 h-8 text-yellow-500" />
-                <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
+                <Award className="w-8 h-8" style={{ color: primaryColor }} />
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
                   Your Achievements
                 </h2>
               </div>
               <button
                 onClick={() => setShowBadgeModal(true)}
-                className="text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300 text-sm font-medium flex items-center gap-2"
+                className="text-sm font-medium flex items-center gap-2 hover:opacity-80 transition-opacity"
+                style={{ color: primaryColor }}
               >
                 View All Badges
                 <TrendingUp className="w-4 h-4" />
@@ -358,9 +370,9 @@ export default function Dashboard() {
                 return (
                   <div
                     key={badge.id}
-                    className="flex flex-col items-center p-4 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-gray-700 dark:to-gray-600 rounded-lg"
+                    className="flex flex-col items-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600"
                   >
-                    <IconComponent className="w-12 h-12 text-purple-600 dark:text-purple-400 mb-2" />
+                    <IconComponent className="w-12 h-12 mb-2" style={{ color: primaryColor }} />
                     <p className="text-sm font-semibold text-gray-800 dark:text-white text-center">
                       {badge.name}
                     </p>
@@ -380,16 +392,16 @@ export default function Dashboard() {
         {userBadges.length === 0 && (
           <button
             onClick={() => setShowBadgeModal(true)}
-            className="w-full bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 text-center hover:shadow-2xl transition-shadow"
+            className="w-full bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 text-center hover:shadow-2xl transition-all border border-gray-100 dark:border-gray-700 hover:scale-105"
           >
             <Award className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-600 dark:text-gray-300 mb-2">
+            <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">
               Start Your Journey
             </h3>
-            <p className="text-gray-500 dark:text-gray-400 mb-4">
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
               Complete habits and track your wellness to earn badges!
             </p>
-            <span className="text-purple-600 dark:text-purple-400 font-medium">
+            <span className="font-medium" style={{ color: primaryColor }}>
               Click to see all available badges →
             </span>
           </button>
@@ -400,11 +412,11 @@ export default function Dashboard() {
       {/* Badge Gallery Modal */}
       {showBadgeModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-gray-700">
             <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <Trophy className="w-8 h-8 text-yellow-500" />
-                <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
+                <Trophy className="w-8 h-8" style={{ color: primaryColor }} />
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
                   Badge Collection
                 </h2>
               </div>
@@ -412,12 +424,12 @@ export default function Dashboard() {
                 onClick={() => setShowBadgeModal(false)}
                 className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
               >
-                <X className="w-6 h-6 text-gray-600 dark:text-gray-300" />
+                <X className="w-6 h-6 text-gray-600 dark:text-gray-400" />
               </button>
             </div>
 
             <div className="p-6">
-              <p className="text-gray-600 dark:text-gray-300 mb-6">
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
                 Earn badges by completing habits, tracking your wellness, and achieving your goals.
                 You've earned {userBadges.length} of {allAvailableBadges.length} badges!
               </p>
@@ -434,18 +446,17 @@ export default function Dashboard() {
                       key={badge.id}
                       className={`p-6 rounded-xl border-2 transition-all ${
                         isEarned
-                          ? 'bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900 dark:to-pink-900 border-purple-300 dark:border-purple-600'
+                          ? 'bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600'
                           : 'bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 opacity-60'
                       }`}
                     >
                       <div className="flex items-start gap-4">
                         <div className="relative">
                           <IconComponent
-                            className={`w-12 h-12 ${
-                              isEarned
-                                ? 'text-purple-600 dark:text-purple-400'
-                                : 'text-gray-400 dark:text-gray-500'
-                            }`}
+                            className="w-12 h-12"
+                            style={{
+                              color: isEarned ? primaryColor : undefined
+                            }}
                           />
                           {!isEarned && (
                             <Lock className="w-5 h-5 text-gray-500 absolute -bottom-1 -right-1 bg-white dark:bg-gray-700 rounded-full p-0.5" />
@@ -456,20 +467,20 @@ export default function Dashboard() {
                             <h3
                               className={`font-bold ${
                                 isEarned
-                                  ? 'text-gray-800 dark:text-white'
+                                  ? 'text-gray-900 dark:text-white'
                                   : 'text-gray-600 dark:text-gray-400'
                               }`}
                             >
                               {badge.name}
                             </h3>
                             {isEarned && (
-                              <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
+                              <CheckCircle2 className="w-5 h-5" style={{ color: primaryColor }} />
                             )}
                           </div>
                           <p
                             className={`text-sm ${
                               isEarned
-                                ? 'text-gray-600 dark:text-gray-300'
+                                ? 'text-gray-600 dark:text-gray-400'
                                 : 'text-gray-500 dark:text-gray-500'
                             }`}
                           >
@@ -492,11 +503,11 @@ export default function Dashboard() {
       {/* Theme Customization Modal */}
       {showThemeModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full border border-gray-200 dark:border-gray-700">
             <div className="border-b border-gray-200 dark:border-gray-700 p-6 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <Palette className="w-8 h-8 text-purple-500" />
-                <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
+                <Palette className="w-8 h-8" style={{ color: primaryColor }} />
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
                   Customize Your Theme
                 </h2>
               </div>
@@ -504,14 +515,14 @@ export default function Dashboard() {
                 onClick={() => setShowThemeModal(false)}
                 className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
               >
-                <X className="w-6 h-6 text-gray-600 dark:text-gray-300" />
+                <X className="w-6 h-6 text-gray-600 dark:text-gray-400" />
               </button>
             </div>
 
             <div className="p-6 space-y-6">
               {/* Dark/Light Mode Toggle */}
               <div>
-                <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                   Appearance
                 </h3>
                 <div className="flex items-center gap-4">
@@ -519,13 +530,16 @@ export default function Dashboard() {
                     onClick={toggleDark}
                     className={`flex items-center gap-3 px-6 py-4 rounded-xl border-2 transition-all flex-1 ${
                       !isDark
-                        ? 'border-purple-500 bg-purple-50 dark:bg-purple-900'
-                        : 'border-gray-200 dark:border-gray-600 hover:border-purple-300'
+                        ? 'bg-gray-100 dark:bg-gray-700'
+                        : 'border-gray-200 dark:border-gray-600 hover:border-gray-400'
                     }`}
+                    style={{
+                      borderColor: !isDark ? primaryColor : undefined
+                    }}
                   >
-                    <Sun className={`w-6 h-6 ${!isDark ? 'text-purple-600' : 'text-gray-400'}`} />
+                    <Sun className="w-6 h-6" style={{ color: !isDark ? primaryColor : '#9CA3AF' }} />
                     <div className="text-left">
-                      <p className={`font-semibold ${!isDark ? 'text-purple-900 dark:text-purple-100' : 'text-gray-700 dark:text-gray-300'}`}>
+                      <p className={`font-semibold ${!isDark ? 'text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-400'}`}>
                         Light Mode
                       </p>
                       <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -538,13 +552,16 @@ export default function Dashboard() {
                     onClick={toggleDark}
                     className={`flex items-center gap-3 px-6 py-4 rounded-xl border-2 transition-all flex-1 ${
                       isDark
-                        ? 'border-purple-500 bg-purple-50 dark:bg-purple-900'
-                        : 'border-gray-200 dark:border-gray-600 hover:border-purple-300'
+                        ? 'bg-gray-100 dark:bg-gray-700'
+                        : 'border-gray-200 dark:border-gray-600 hover:border-gray-400'
                     }`}
+                    style={{
+                      borderColor: isDark ? primaryColor : undefined
+                    }}
                   >
-                    <Moon className={`w-6 h-6 ${isDark ? 'text-purple-600 dark:text-purple-400' : 'text-gray-400'}`} />
+                    <Moon className="w-6 h-6" style={{ color: isDark ? primaryColor : '#9CA3AF' }} />
                     <div className="text-left">
-                      <p className={`font-semibold ${isDark ? 'text-purple-900 dark:text-purple-100' : 'text-gray-700 dark:text-gray-300'}`}>
+                      <p className={`font-semibold ${isDark ? 'text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-400'}`}>
                         Dark Mode
                       </p>
                       <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -557,7 +574,7 @@ export default function Dashboard() {
 
               {/* Color Preset Selection */}
               <div>
-                <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                   Color Theme
                 </h3>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -567,28 +584,31 @@ export default function Dashboard() {
                       onClick={() => setColorPreset(key)}
                       className={`p-4 rounded-xl border-2 transition-all ${
                         colorPreset === key
-                          ? 'border-purple-500 bg-purple-50 dark:bg-purple-900'
-                          : 'border-gray-200 dark:border-gray-600 hover:border-purple-300'
+                          ? 'bg-gray-100 dark:bg-gray-700'
+                          : 'border-gray-200 dark:border-gray-600 hover:border-gray-400'
                       }`}
+                      style={{
+                        borderColor: colorPreset === key ? preset.colors[0] : undefined
+                      }}
                     >
                       <div className="flex items-center gap-3 mb-2">
                         <div className="flex gap-1">
                           {preset.colors.map((color, idx) => (
                             <div
                               key={idx}
-                              className="w-6 h-6 rounded-full"
+                              className="w-6 h-6 rounded-full border border-gray-200 dark:border-gray-600"
                               style={{ backgroundColor: color }}
                             />
                           ))}
                         </div>
                         {colorPreset === key && (
-                          <CheckCircle2 className="w-5 h-5 text-purple-600 dark:text-purple-400 ml-auto" />
+                          <CheckCircle2 className="w-5 h-5 ml-auto" style={{ color: preset.colors[0] }} />
                         )}
                       </div>
                       <p className={`text-sm font-medium ${
                         colorPreset === key
-                          ? 'text-purple-900 dark:text-purple-100'
-                          : 'text-gray-700 dark:text-gray-300'
+                          ? 'text-gray-900 dark:text-white'
+                          : 'text-gray-700 dark:text-gray-400'
                       }`}>
                         {preset.name}
                       </p>
@@ -598,8 +618,8 @@ export default function Dashboard() {
               </div>
 
               {/* Preview */}
-              <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4">
-                <p className="text-sm text-gray-600 dark:text-gray-300 text-center">
+              <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4 border border-gray-200 dark:border-gray-600">
+                <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
                   Theme changes apply instantly across the entire app
                 </p>
               </div>

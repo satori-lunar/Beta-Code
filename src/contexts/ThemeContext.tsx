@@ -92,8 +92,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    console.log('isDark changed to:', isDark);
     localStorage.setItem('isDark', String(isDark));
     document.documentElement.classList.toggle('dark', isDark);
+    console.log('HTML element classes after toggle:', document.documentElement.className);
+    console.log('localStorage isDark:', localStorage.getItem('isDark'));
   }, [isDark]);
 
   const setColorPreset = (preset: string) => {
@@ -103,7 +106,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   };
 
   const toggleDark = () => {
-    setIsDark(prev => !prev);
+    console.log('toggleDark called - current isDark:', isDark);
+    setIsDark(prev => {
+      console.log('Setting isDark from', prev, 'to', !prev);
+      return !prev;
+    });
   };
 
   const primaryColor = colorPresets[colorPreset]?.colors[0] || '#f97316';

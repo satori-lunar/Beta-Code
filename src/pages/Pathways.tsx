@@ -1,17 +1,14 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+// import { useNavigate } from 'react-router-dom';
 import {
   Search,
   Clock,
-  ChevronRight,
   Compass,
   Target,
   CheckCircle2,
   PlayCircle,
-  Flame,
-  Star,
 } from 'lucide-react';
-import { usePathways } from '../hooks/usePathways';
+// import { usePathways } from '../hooks/usePathways';
 
 // Define the pathways with their classes
 export const pathwayDefinitions = [
@@ -95,14 +92,7 @@ export const pathwayDefinitions = [
 ];
 
 export default function Pathways() {
-  const navigate = useNavigate();
-  const { userProgress, loading, enrollInPathway, unenrollFromPathway } = usePathways();
   const [searchQuery, setSearchQuery] = useState('');
-
-  // Get the current enrolled pathway
-  const enrolledPathwayId = Object.keys(userProgress).find(
-    (id) => !userProgress[id].completed
-  );
 
   // Filter pathways based on search
   const filteredPathways = pathwayDefinitions.filter((pathway) =>
@@ -113,42 +103,7 @@ export default function Pathways() {
     )
   );
 
-  const handleEnroll = async (pathwayId: string) => {
-    const pathway = pathwayDefinitions.find((p) => p.id === pathwayId);
-    if (!pathway) return;
-
-    // If user is already enrolled in another pathway, unenroll first
-    if (enrolledPathwayId && enrolledPathwayId !== pathwayId) {
-      await unenrollFromPathway(enrolledPathwayId);
-    }
-
-    await enrollInPathway(pathwayId, pathway.class_titles.length);
-  };
-
-  const handleViewClasses = (pathwayId: string) => {
-    const pathway = pathwayDefinitions.find(p => p.id === pathwayId);
-    if (!pathway) return;
-
-    navigate('/classes', {
-      state: {
-        activeTab: 'recorded',
-        pathwayTitle: pathway.title,
-      },
-    });
-  };
-
-  const handleEnrollAndView = async (pathwayId: string) => {
-    await handleEnroll(pathwayId);
-    const pathway = pathwayDefinitions.find(p => p.id === pathwayId);
-    if (!pathway) return;
-
-    navigate('/classes', {
-      state: {
-        activeTab: 'recorded',
-        pathwayTitle: pathway.title,
-      },
-    });
-  };
+  // NOTE: Pathways are currently static (no enrollment actions)
 
   return (
     <div className="space-y-8 pb-20 lg:pb-0">
@@ -162,20 +117,6 @@ export default function Pathways() {
         </p>
       </div>
 
-      {/* Info Banner */}
-      {enrolledPathwayId && (
-        <div className="card p-4 bg-blue-50 border border-blue-200">
-          <div className="flex items-start gap-3">
-            <Compass className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
-            <div className="flex-1">
-              <p className="text-sm text-blue-900 font-medium">
-                You're currently enrolled in a pathway. You can only be enrolled in one pathway at a time.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Search */}
       <div className="flex-1 relative">
         <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -188,21 +129,9 @@ export default function Pathways() {
         />
       </div>
 
-      {/* Pathways Grid */}
-      {loading ? (
-        <div className="card text-center py-12">
-          <p className="text-gray-500">Loading pathways...</p>
-        </div>
-      ) : (
-        <div className="grid sm:grid-cols-2 gap-6">
+      {/* Pathways Grid (static display) */}
+      <div className="grid sm:grid-cols-2 gap-6">
           {filteredPathways.map((pathway) => {
-            const progress = userProgress[pathway.id];
-            const isEnrolled = !!progress;
-            const isCurrentPathway = enrolledPathwayId === pathway.id;
-            const progressPercentage = progress
-              ? Math.round((progress.classes_completed / pathway.class_titles.length) * 100)
-              : 0;
-
             return (
               <div
                 key={pathway.id}
@@ -217,17 +146,6 @@ export default function Pathways() {
                   <div className="absolute inset-0 opacity-10">
                     <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.3),transparent_50%)]"></div>
                   </div>
-                  {isEnrolled && (
-                    <div className="absolute top-3 right-3 px-2 py-1 bg-white/90 backdrop-blur-sm rounded-full text-xs font-medium text-gray-700">
-                      {progressPercentage}% Complete
-                    </div>
-                  )}
-                  {isCurrentPathway && (
-                    <div className="absolute top-3 left-3 px-2 py-1 bg-white/90 backdrop-blur-sm rounded-full text-xs font-medium text-blue-700 flex items-center gap-1">
-                      <Star className="w-3 h-3" />
-                      Active
-                    </div>
-                  )}
                 </div>
 
                 {/* Pathway Content */}
@@ -279,83 +197,13 @@ export default function Pathways() {
                       <Clock className="w-4 h-4" />
                       Self-paced
                     </span>
-                    {progress && progress.current_streak > 0 && (
-                      <span className="flex items-center gap-1 text-orange-600">
-                        <Flame className="w-4 h-4" />
-                        {progress.current_streak} day streak
-                      </span>
-                    )}
                   </div>
-
-                  {/* Progress Bar (if enrolled) */}
-                  {isEnrolled && progress && (
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-xs text-gray-500">
-                        <span>{progress.classes_completed} / {pathway.class_titles.length} completed</span>
-                        <span>{progressPercentage}%</span>
-                      </div>
-                      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-coral-400 to-coral-600 rounded-full transition-all duration-500"
-                          style={{ width: `${progressPercentage}%` }}
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Action Buttons */}
-                  <div className="pt-4 border-t border-gray-100 space-y-2">
-                    {isCurrentPathway ? (
-                      <>
-                        <button
-                          onClick={() => handleViewClasses(pathway.id)}
-                          className="w-full py-2 px-4 bg-coral-500 hover:bg-coral-600 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
-                        >
-                        <span>View Classes</span>
-                        <ChevronRight className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => unenrollFromPathway(pathway.id)}
-                          className="w-full py-2 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors text-sm"
-                        >
-                          Unenroll
-                        </button>
-                      </>
-                    ) : isEnrolled ? (
-                      <div className="space-y-2">
-                        <p className="text-xs text-gray-500 text-center">
-                          You completed this pathway
-                        </p>
-                        <button
-                          onClick={() => handleViewClasses(pathway.id)}
-                          className="w-full py-2 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
-                        >
-                          <span>Review Classes</span>
-                          <ChevronRight className="w-4 h-4" />
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => handleEnrollAndView(pathway.id)}
-                        disabled={!!enrolledPathwayId}
-                        className={`w-full py-2 px-4 rounded-lg font-medium transition-colors ${
-                          enrolledPathwayId
-                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                            : 'bg-coral-500 hover:bg-coral-600 text-white'
-                        }`}
-                      >
-                        {enrolledPathwayId
-                          ? 'Enroll in another pathway to start'
-                          : 'Start Pathway'}
-                      </button>
-                    )}
-                  </div>
+                  {/* No action buttons while pathways are static */}
                 </div>
               </div>
             );
           })}
         </div>
-      )}
 
       {filteredPathways.length === 0 && (
         <div className="card text-center py-12">

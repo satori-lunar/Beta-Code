@@ -509,17 +509,32 @@ export default function Classes() {
                 </div>
               ) : filteredCourses.length > 0 ? (
                 filteredCourses.map((course) => {
-                  const gradientClass = courseStyles[course.title] || 'from-coral-400 to-coral-600';
+                  const courseStyle = courseStyles[course.title] || {
+                    gradient: 'from-coral-400 to-coral-600',
+                    icon: PlayCircle,
+                  };
+                  const IconComponent = courseStyle.icon;
+
                   return (
                     <div
                       key={course.id}
                       className="card overflow-hidden hover:shadow-elevated transition-shadow cursor-pointer group"
                       onClick={() => setSelectedCourseId(course.id)}
                     >
-                      <div className={`h-36 bg-gradient-to-br ${gradientClass} -mx-6 -mt-6 mb-4 relative`}>
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <PlayCircle className="w-16 h-16 text-white" />
+                      <div
+                        className={`h-32 bg-gradient-to-br ${courseStyle.gradient} -mx-6 -mt-6 mb-4 relative overflow-hidden`}
+                      >
+                        {/* Icon with hover glow, matching live classes style */}
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <IconComponent className="w-12 h-12 text-white/90 group-hover:text-white transition-all duration-300 group-hover:scale-110 group-hover:drop-shadow-[0_0_20px_rgba(255,255,255,0.8)] group-hover:filter group-hover:brightness-110" />
                         </div>
+                        {/* Decorative gradient pattern */}
+                        <div className="absolute inset-0 opacity-10">
+                          <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.3),transparent_50%)]" />
+                          <div className="absolute bottom-0 right-0 w-full h-full bg-[radial-gradient(circle_at_70%_70%,rgba(255,255,255,0.2),transparent_50%)]" />
+                        </div>
+                        {/* Subtle overlay on hover */}
+                        <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                       </div>
 
                       <h3 className="font-semibold text-gray-900 mb-2 group-hover:text-coral-600 transition-colors">

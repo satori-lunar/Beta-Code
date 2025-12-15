@@ -312,8 +312,7 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
   const [showSavePreset, setShowSavePreset] = useState(false);
   const [presetName, setPresetName] = useState('');
   
-  // Video display state for indoor workouts
-  const [showVideo, setShowVideo] = useState(false);
+  // Video display state (no longer needed after simplifying indoor workouts)
   
   // Workout state
   const [isWorkoutActive, setIsWorkoutActive] = useState(false);
@@ -335,16 +334,16 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
   const [lastCoachingTime, setLastCoachingTime] = useState(0);
   const [coachingInterval, setCoachingInterval] = useState(45); // seconds between coaching
 
-  // For specific activities we want a simpler, fixed experience (e.g. indoor walking).
-  // When walking-indoor is selected, force a 29-minute time goal and disable milestones.
+  // For indoor YouTube workouts we want a simpler, fixed experience:
+  // - 30 minute time goal
+  // - no milestones configuration
   useEffect(() => {
-    if (selectedActivity.id !== 'walking-indoor') return;
+    if (mode !== 'indoor') return;
     setConfig(prev => {
-      const targetTime = 29 * 60; // 29 minutes in seconds
+      const targetTime = 30 * 60; // 30 minutes in seconds
       if (
         prev.goalType === 'time' &&
         prev.targetTime === targetTime &&
-        prev.milestoneMode === 'manual' &&
         !prev.targetMilestones &&
         !prev.autoMilestoneInterval
       ) {
@@ -359,7 +358,7 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
         autoMilestoneInterval: undefined,
       };
     });
-  }, [selectedActivity.id]);
+  }, [mode]);
   
   // GPS tracking state (enabled by default for outdoor workouts)
   const [gpsEnabled, setGpsEnabled] = useState(mode === 'outdoor');
@@ -1137,7 +1136,7 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
                     <div className="font-semibold text-lg">{selectedActivity.name}</div>
                     <div className="text-sm text-gray-400">
                       {selectedActivity.description}
-                      {selectedActivity.id !== 'walking-indoor' && (
+                      {mode !== 'indoor' && (
                         <> • ~{selectedActivity.caloriesPerMinute} cal/min</>
                       )}
                     </div>
@@ -1178,19 +1177,19 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
           </div>
 
           {/* Workout Tips & Video Preview */}
-          {selectedActivity.id === 'walking-indoor' ? (
-            // For indoor walking, show only the follow-along video (no tips / guide toggle).
+          {mode === 'indoor' ? (
+            // For all indoor YouTube workouts, show only the embedded follow-along video (no guide toggle or tips).
             <div className="bg-gray-800/50 rounded-xl p-4">
               <h4 className="font-medium text-white mb-3 flex items-center gap-2">
                 <Play className="w-4 h-4 text-green-400" />
-                Indoor Walking Follow-Along
+                Follow-Along Video
               </h4>
-              {mode === 'indoor' && selectedActivity.videoId && (
+              {selectedActivity.videoId && (
                 <div className="relative w-full pt-[56.25%] bg-gray-900 rounded-lg overflow-hidden">
                   <iframe
                     className="absolute inset-0 w-full h-full"
                     src={`https://www.youtube.com/embed/${selectedActivity.videoId}?modestbranding=1&rel=0`}
-                    title="Indoor Walking Workout"
+                    title="Indoor Workout"
                     frameBorder="0"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
@@ -1205,15 +1204,6 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
                   <Sparkles className="w-4 h-4 text-yellow-500" />
                   {selectedActivity.name} Tips
                 </h4>
-                {mode === 'indoor' && selectedActivity.videoId && (
-                  <button
-                    onClick={() => setShowVideo(!showVideo)}
-                    className="text-sm text-cyan-400 hover:text-cyan-300 flex items-center gap-1"
-                  >
-                    {showVideo ? 'Hide' : 'Watch'} Video Guide
-                    <Play className="w-4 h-4" />
-                  </button>
-                )}
               </div>
               
               {/* Tips List */}
@@ -1225,25 +1215,6 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
                   </div>
                 ))}
               </div>
-
-              {/* Video Embed - Indoor workouts only */}
-              {mode === 'indoor' && showVideo && selectedActivity.videoId && (
-                <div className="mt-4">
-                  <div className="relative w-full pt-[56.25%] bg-gray-900 rounded-lg overflow-hidden">
-                    <iframe
-                      className="absolute inset-0 w-full h-full"
-                      src={`https://www.youtube.com/embed/${selectedActivity.videoId}?modestbranding=1&rel=0`}
-                      title="Workout Guide"
-                      frameBorder="0"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                    />
-                  </div>
-                  <p className="text-xs text-gray-500 mt-2 text-center">
-                    Watch for form tips, then start your workout when ready!
-                  </p>
-                </div>
-              )}
             </div>
           )}
           
@@ -1816,7 +1787,7 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
             )}
             
             {/* Checkpoints */}
-            {selectedActivity.id !== 'walking-indoor' && (
+            {mode !== 'indoor' && (
               <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-4 text-center border border-gray-700">
                 <div className="text-2xl sm:text-3xl font-bold" style={{ color: selectedActivity.color }}>
                   {milestones}
@@ -1828,7 +1799,7 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
             )}
             
             {/* Calories */}
-            {selectedActivity.id !== 'walking-indoor' && (
+            {mode !== 'indoor' && (
               <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-4 text-center border border-gray-700">
                 <div className="text-2xl sm:text-3xl font-bold text-orange-400">
                   {Math.round(calories)}
@@ -1937,8 +1908,8 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
             </div>
           )}
           
-          {/* Milestone Button - Only show for manual mode and non-walking indoor */}
-          {config.milestoneMode === 'manual' && selectedActivity.id !== 'walking-indoor' && (
+          {/* Milestone Button - Only show for manual mode (outdoor only) */}
+          {config.milestoneMode === 'manual' && mode !== 'indoor' && (
             <button
               onClick={completeMilestone}
               disabled={isPaused}
@@ -1950,7 +1921,7 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
           )}
           
           {/* Auto mode indicator */}
-          {config.milestoneMode === 'auto' && selectedActivity.id !== 'walking-indoor' && (
+          {config.milestoneMode === 'auto' && mode !== 'indoor' && (
             <div className="w-full py-4 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border-2 border-cyan-500/30 text-cyan-400 rounded-xl font-medium text-center mb-4">
               <Timer className="w-5 h-5 inline mr-2" />
               Auto-checkpoints every {Math.floor((config.autoMilestoneInterval || 180) / 60)} min

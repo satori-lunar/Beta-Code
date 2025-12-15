@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Flame,
@@ -86,14 +86,30 @@ export default function Dashboard() {
   const { metrics: healthMetrics, loading: metricsLoading } = useHealthMetrics();
   const { classes: liveClasses = [], loading: classesLoading, error: classesError } = useLiveClasses();
   
-  // Log errors for debugging
+  // Log errors for debugging (using refs to avoid dependency issues)
+  const prevErrorsRef = useRef({ habits: null, weight: null, journal: null, badges: null, classes: null });
   useEffect(() => {
-    if (habitsError) console.error('Error loading habits:', habitsError);
-    if (weightError) console.error('Error loading weight entries:', weightError);
-    if (journalError) console.error('Error loading journal entries:', journalError);
-    if (badgesError) console.error('Error loading badges:', badgesError);
-    if (classesError) console.error('Error loading live classes:', classesError);
-  }, [habitsError?.message, weightError?.message, journalError?.message, badgesError?.message, classesError?.message]);
+    if (habitsError && habitsError !== prevErrorsRef.current.habits) {
+      console.error('Error loading habits:', habitsError);
+      prevErrorsRef.current.habits = habitsError;
+    }
+    if (weightError && weightError !== prevErrorsRef.current.weight) {
+      console.error('Error loading weight entries:', weightError);
+      prevErrorsRef.current.weight = weightError;
+    }
+    if (journalError && journalError !== prevErrorsRef.current.journal) {
+      console.error('Error loading journal entries:', journalError);
+      prevErrorsRef.current.journal = journalError;
+    }
+    if (badgesError && badgesError !== prevErrorsRef.current.badges) {
+      console.error('Error loading badges:', badgesError);
+      prevErrorsRef.current.badges = badgesError;
+    }
+    if (classesError && classesError !== prevErrorsRef.current.classes) {
+      console.error('Error loading live classes:', classesError);
+      prevErrorsRef.current.classes = classesError;
+    }
+  });
   
   // Test Supabase connection on mount (with error handling for mobile)
   useEffect(() => {

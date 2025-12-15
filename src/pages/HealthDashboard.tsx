@@ -62,7 +62,7 @@ interface MetricConfig {
   position?: { top?: string; left?: string; right?: string; bottom?: string };
 }
 
-type TabType = 'workout' | 'mind' | 'body' | 'overview';
+type TabType = 'workout' | 'mind' | 'overview';
 
 const metricConfigs: MetricConfig[] = [
   { key: 'heartRate', label: 'Heart Rate', icon: Heart, color: '#ef4444', position: { top: '25%', left: '15%' } },
@@ -509,7 +509,6 @@ export default function HealthDashboard() {
   const tabs: { id: TabType; label: string; icon: React.ElementType }[] = [
     { id: 'workout', label: 'Workout', icon: Dumbbell },
     { id: 'mind', label: 'Mind', icon: Brain },
-    { id: 'body', label: 'Body', icon: PersonStanding },
     { id: 'overview', label: 'Metrics', icon: Activity },
   ];
 
@@ -828,6 +827,7 @@ export default function HealthDashboard() {
                   "What's one small thing you can do today to take care of yourself?"
                 </p>
                 <button
+                  onClick={() => navigate('/journal')}
                   className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg font-medium transition-colors"
                 >
                   Write in Journal
@@ -1171,127 +1171,6 @@ export default function HealthDashboard() {
               </div>
             </>
           )}
-        </div>
-      )}
-
-
-      {activeTab === 'body' && (
-        <div className="grid grid-cols-12 gap-6">
-          {/* Body Visualization */}
-          <div className="col-span-12 lg:col-span-7 xl:col-span-8">
-            <div className="card p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-gray-900">Body Overview</h2>
-                <span className="text-sm text-gray-500">Tap any metric to update</span>
-              </div>
-
-              <div className="relative min-h-[500px] flex items-center justify-center">
-                <div className="w-48 sm:w-56 lg:w-64">
-                  <BodySilhouette />
-                </div>
-
-                {metricConfigs.map((config) => {
-                  const display = getMetricDisplay(config.key);
-                  return (
-                    <button
-                      key={config.key}
-                      onClick={() => openEditModal(config.key)}
-                      className="absolute p-3 bg-white rounded-xl shadow-lg border border-gray-100 hover:shadow-xl transition-all hover:scale-105 min-w-[100px]"
-                      style={{ ...config.position, borderLeftColor: config.color, borderLeftWidth: '3px' }}
-                    >
-                      <div className="flex items-center gap-2 mb-1">
-                        <config.icon className="w-4 h-4" style={{ color: config.color }} />
-                        <span className="text-xs text-gray-500">{config.label}</span>
-                      </div>
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-lg font-bold text-gray-900">{display.value}</span>
-                        <span className="text-xs text-gray-500">{display.unit}</span>
-                      </div>
-                      {display.secondary && (
-                        <span className="text-xs text-gray-400">{display.secondary}</span>
-                      )}
-                      <Edit3 className="absolute top-2 right-2 w-3 h-3 text-gray-300" />
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-
-          {/* Body Stats */}
-          <div className="col-span-12 lg:col-span-5 xl:col-span-4 space-y-6">
-            <div className="card p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Measurements</h3>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  onClick={() => openEditModal('weight')}
-                  className="p-4 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors text-left"
-                >
-                  <div className="flex items-center gap-2 mb-2">
-                    <Scale className="w-4 h-4 text-blue-500" />
-                    <span className="text-xs text-gray-500">Weight</span>
-                  </div>
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-xl font-bold text-gray-900">{getMetricDisplay('weight').value}</span>
-                    <span className="text-sm text-gray-500">{getMetricDisplay('weight').unit}</span>
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => openEditModal('height')}
-                  className="p-4 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors text-left"
-                >
-                  <div className="flex items-center gap-2 mb-2">
-                    <Ruler className="w-4 h-4 text-purple-500" />
-                    <span className="text-xs text-gray-500">Height</span>
-                  </div>
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-xl font-bold text-gray-900">{getMetricDisplay('height').value}</span>
-                    <span className="text-sm text-gray-500">{getMetricDisplay('height').unit}</span>
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => openEditModal('weight')}
-                  className="p-4 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors text-left"
-                >
-                  <div className="flex items-center gap-2 mb-2">
-                    <Activity className="w-4 h-4 text-green-500" />
-                    <span className="text-xs text-gray-500">BMI</span>
-                  </div>
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-xl font-bold text-gray-900">{getMetricDisplay('bmi').value}</span>
-                  </div>
-                  <span className="text-xs" style={{ color: primaryColor }}>{getMetricDisplay('bmi').secondary}</span>
-                </button>
-
-                <button
-                  onClick={() => openEditModal('bodyFat')}
-                  className="p-4 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors text-left"
-                >
-                  <div className="flex items-center gap-2 mb-2">
-                    <TrendingDown className="w-4 h-4 text-orange-500" />
-                    <span className="text-xs text-gray-500">Body Fat</span>
-                  </div>
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-xl font-bold text-gray-900">{getMetricDisplay('bodyFat').value}</span>
-                    <span className="text-sm text-gray-500">%</span>
-                  </div>
-                </button>
-              </div>
-            </div>
-
-            {/* Body Goals */}
-            <div className="card p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Your Goals</h3>
-              <div className="space-y-3">
-                <div className="p-4 rounded-xl border-2 border-dashed border-gray-200 text-center">
-                  <Plus className="w-6 h-6 mx-auto text-gray-400 mb-2" />
-                  <p className="text-sm text-gray-500">Set a body goal</p>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       )}
 

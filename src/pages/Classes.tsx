@@ -38,15 +38,6 @@ import { useTrackVideoView, useTrackFavorite, useTrackReminder } from '../hooks/
 import { format, parseISO, isAfter, isBefore, addHours } from 'date-fns';
 import ReminderModal from '../components/ReminderModal';
 
-const categories = [
-  'All',
-  'Yoga',
-  'Meditation',
-  'Fitness',
-  'Nutrition',
-  'Sleep',
-  'Wellness',
-];
 
 const classImages: Record<string, string> = {
   'Yoga': 'from-pink-400 to-rose-500',
@@ -107,7 +98,6 @@ export default function Classes() {
   const [activeTab, setActiveTab] = useState<'live' | 'recorded' | 'favorites' | 'completed'>(initialTab);
   const [selectedWeekday, setSelectedWeekday] = useState<string>('Sunday');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -170,9 +160,6 @@ export default function Classes() {
     title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     description.toLowerCase().includes(searchQuery.toLowerCase());
 
-  const filterByCategory = (category: string) =>
-    selectedCategory === 'All' || category === selectedCategory;
-
   // Group sessions by course
   const sessionsByCourse = useMemo(() => {
     const grouped: Record<string, typeof mappedRecordedSessions> = {};
@@ -191,9 +178,9 @@ export default function Classes() {
   }, [mappedRecordedSessions]);
 
   // Get sessions for selected course (excluding completed ones)
-  const courseSessions = selectedCourseId 
+  const courseSessions = selectedCourseId
     ? (sessionsByCourse[selectedCourseId] || []).filter(
-        (s) => !s.isCompleted && filterBySearch(s.title, s.description) && filterByCategory(s.category)
+        (s) => !s.isCompleted && filterBySearch(s.title, s.description)
       )
     : [];
 
@@ -387,39 +374,20 @@ export default function Classes() {
         ))}
       </div>
 
-      {/* Search and Filter - Only show for recorded courses (not live classes) */}
+      {/* Search - Only show for recorded courses (not live classes) */}
       {activeTab === 'recorded' && !selectedCourseId && (
-        <>
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search courses..."
-                className="input pl-12"
-              />
-            </div>
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex-1 relative">
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search courses..."
+              className="input pl-12"
+            />
           </div>
-
-          {/* Category filter - Only show for courses */}
-            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-              {categories.map((category) => (
-                <button
-                  key={category}
-                  onClick={() => setSelectedCategory(category)}
-                  className={`px-4 py-2 rounded-xl whitespace-nowrap transition-colors ${
-                    selectedCategory === category
-                      ? 'bg-coral-500 text-white'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  {category}
-                </button>
-              ))}
-            </div>
-        </>
+        </div>
       )}
 
       {/* Search for sessions when viewing a course */}
@@ -576,7 +544,6 @@ export default function Classes() {
                     course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                     course.description.toLowerCase().includes(searchQuery.toLowerCase())
                   )
-                  .filter(course => selectedCategory === 'All' || course.category === selectedCategory)
                   .filter(course => {
                     // If filterClasses is provided (from HealthDashboard), only show those specific courses
                     if (filterClasses && Array.isArray(filterClasses)) {

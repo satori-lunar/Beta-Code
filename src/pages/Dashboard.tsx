@@ -10,7 +10,12 @@ import {
   CheckCircle2,
   Circle,
   Sparkles,
-  Calendar
+  Calendar,
+  X,
+  Lock,
+  Star,
+  Zap,
+  Trophy
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useHabits, useJournalEntries, useUserBadges } from '../hooks/useSupabaseData';
@@ -21,7 +26,70 @@ const badgeIcons: Record<string, React.ElementType> = {
   target: Target,
   heart: Heart,
   award: Award,
+  star: Star,
+  zap: Zap,
+  trophy: Trophy,
 };
+
+// All available badges in the system
+const allAvailableBadges = [
+  {
+    id: 'first-steps',
+    name: 'First Steps',
+    description: 'Complete your first habit',
+    icon: 'target',
+    category: 'habit'
+  },
+  {
+    id: 'week-warrior',
+    name: 'Week Warrior',
+    description: 'Maintain a 7-day streak',
+    icon: 'flame',
+    category: 'streak'
+  },
+  {
+    id: 'journaling-beginner',
+    name: 'Journaling Beginner',
+    description: 'Write your first journal entry',
+    icon: 'star',
+    category: 'journal'
+  },
+  {
+    id: 'wellness-champion',
+    name: 'Wellness Champion',
+    description: 'Track health metrics for 7 days',
+    icon: 'heart',
+    category: 'health'
+  },
+  {
+    id: 'fitness-enthusiast',
+    name: 'Fitness Enthusiast',
+    description: 'Complete 10 workouts',
+    icon: 'zap',
+    category: 'workout'
+  },
+  {
+    id: 'consistency-king',
+    name: 'Consistency King',
+    description: 'Maintain a 30-day streak',
+    icon: 'trophy',
+    category: 'streak'
+  },
+  {
+    id: 'habit-master',
+    name: 'Habit Master',
+    description: 'Complete all habits for 7 days straight',
+    icon: 'award',
+    category: 'habit'
+  },
+  {
+    id: 'mindful-soul',
+    name: 'Mindful Soul',
+    description: 'Complete 5 mindfulness sessions',
+    icon: 'sparkles',
+    category: 'mindfulness'
+  },
+];
 
 const wellnessQuotes = [
   "Your health is an investment, not an expense.",
@@ -43,6 +111,7 @@ export default function Dashboard() {
   const { data: userBadges = [] } = useUserBadges();
 
   const [dailyQuote, setDailyQuote] = useState('');
+  const [showBadgeModal, setShowBadgeModal] = useState(false);
 
   // Set daily quote (changes each day)
   useEffect(() => {
@@ -254,11 +323,20 @@ export default function Dashboard() {
         {/* Badges Section */}
         {userBadges.length > 0 && (
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <Award className="w-8 h-8 text-yellow-500" />
-              <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
-                Your Achievements
-              </h2>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <Award className="w-8 h-8 text-yellow-500" />
+                <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
+                  Your Achievements
+                </h2>
+              </div>
+              <button
+                onClick={() => setShowBadgeModal(true)}
+                className="text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300 text-sm font-medium flex items-center gap-2"
+              >
+                View All Badges
+                <TrendingUp className="w-4 h-4" />
+              </button>
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
@@ -287,18 +365,116 @@ export default function Dashboard() {
 
         {/* No Badges Yet Message */}
         {userBadges.length === 0 && (
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 text-center">
+          <button
+            onClick={() => setShowBadgeModal(true)}
+            className="w-full bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 text-center hover:shadow-2xl transition-shadow"
+          >
             <Award className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-gray-600 dark:text-gray-300 mb-2">
               Start Your Journey
             </h3>
-            <p className="text-gray-500 dark:text-gray-400">
+            <p className="text-gray-500 dark:text-gray-400 mb-4">
               Complete habits and track your wellness to earn badges!
             </p>
-          </div>
+            <span className="text-purple-600 dark:text-purple-400 font-medium">
+              Click to see all available badges →
+            </span>
+          </button>
         )}
 
       </div>
+
+      {/* Badge Gallery Modal */}
+      {showBadgeModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Trophy className="w-8 h-8 text-yellow-500" />
+                <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
+                  Badge Collection
+                </h2>
+              </div>
+              <button
+                onClick={() => setShowBadgeModal(false)}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                <X className="w-6 h-6 text-gray-600 dark:text-gray-300" />
+              </button>
+            </div>
+
+            <div className="p-6">
+              <p className="text-gray-600 dark:text-gray-300 mb-6">
+                Earn badges by completing habits, tracking your wellness, and achieving your goals.
+                You've earned {userBadges.length} of {allAvailableBadges.length} badges!
+              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {allAvailableBadges.map((badge) => {
+                  const isEarned = userBadges.some(
+                    (earnedBadge) => earnedBadge.name === badge.name
+                  );
+                  const IconComponent = badgeIcons[badge.icon] || Award;
+
+                  return (
+                    <div
+                      key={badge.id}
+                      className={`p-6 rounded-xl border-2 transition-all ${
+                        isEarned
+                          ? 'bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900 dark:to-pink-900 border-purple-300 dark:border-purple-600'
+                          : 'bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 opacity-60'
+                      }`}
+                    >
+                      <div className="flex items-start gap-4">
+                        <div className="relative">
+                          <IconComponent
+                            className={`w-12 h-12 ${
+                              isEarned
+                                ? 'text-purple-600 dark:text-purple-400'
+                                : 'text-gray-400 dark:text-gray-500'
+                            }`}
+                          />
+                          {!isEarned && (
+                            <Lock className="w-5 h-5 text-gray-500 absolute -bottom-1 -right-1 bg-white dark:bg-gray-700 rounded-full p-0.5" />
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3
+                              className={`font-bold ${
+                                isEarned
+                                  ? 'text-gray-800 dark:text-white'
+                                  : 'text-gray-600 dark:text-gray-400'
+                              }`}
+                            >
+                              {badge.name}
+                            </h3>
+                            {isEarned && (
+                              <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
+                            )}
+                          </div>
+                          <p
+                            className={`text-sm ${
+                              isEarned
+                                ? 'text-gray-600 dark:text-gray-300'
+                                : 'text-gray-500 dark:text-gray-500'
+                            }`}
+                          >
+                            {badge.description}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 capitalize">
+                            {badge.category}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

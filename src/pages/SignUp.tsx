@@ -40,6 +40,14 @@ export default function SignUp() {
             <p className="text-gray-600">Start your wellness journey today</p>
           </div>
 
+          {/* Birch & Stone member notice */}
+          <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            <p className="font-semibold">Birch &amp; Stone members</p>
+            <p className="mt-1">
+              If this is your first time using this login, you&apos;re in the right place — please complete the form below to finish setting up your account.
+            </p>
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-1">

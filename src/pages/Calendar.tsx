@@ -39,6 +39,10 @@ export default function Calendar() {
   const { addCalendarEvent } = useStore();
   const [selectedDate] = useState(new Date());
   const [showAddModal, setShowAddModal] = useState(false);
+  const [isMobile, setIsMobile] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return window.innerWidth < 768;
+  });
   const [timezone, setTimezone] = useState<string>(() => {
     // Get timezone from localStorage or default to Eastern Time
     const saved = localStorage.getItem('calendar_timezone');
@@ -50,6 +54,18 @@ export default function Calendar() {
     time: '',
     description: '',
   });
+
+  // Track viewport size to switch calendar view on mobile
+  useEffect(() => {
+    const handleResize = () => {
+      if (typeof window === 'undefined') return;
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Save timezone to localStorage when it changes
   useEffect(() => {
@@ -111,18 +127,20 @@ export default function Calendar() {
         </div>
       </div>
 
-          {/* Embedded Google Calendar */}
-          <div className="card">
-            <h2 className="text-xl font-display font-semibold text-gray-900 mb-4">
-              Calendar
-            </h2>
-            <div className="w-full" style={{ height: '600px' }}>
-              <iframe
-                src={`https://calendar.google.com/calendar/embed?height=600&wkst=1&ctz=${encodeURIComponent(timezone)}&showPrint=0&mode=WEEK&src=ZW1pbHlicm93ZXJsaWZlY29hY2hAZ21haWwuY29t&color=%237986cb`}
-                style={{ border: 'solid 1px #777', width: '100%', height: '100%', borderWidth: 0 }}
-                frameBorder="0"
-                scrolling="no"
-              />
+      {/* Embedded Google Calendar */}
+      <div className="card">
+        <h2 className="text-xl font-display font-semibold text-gray-900 mb-4">
+          Calendar
+        </h2>
+        <div className="w-full" style={{ height: isMobile ? '500px' : '600px' }}>
+          <iframe
+            src={`https://calendar.google.com/calendar/embed?height=600&wkst=1&ctz=${encodeURIComponent(
+              timezone
+            )}&showPrint=0&mode=${isMobile ? 'AGENDA' : 'WEEK'}&src=ZW1pbHlicm93ZXJsaWZlY29hY2hAZ21haWwuY29t&color=%237986cb`}
+            style={{ border: 'solid 1px #777', width: '100%', height: '100%', borderWidth: 0 }}
+            frameBorder="0"
+            scrolling="no"
+          />
         </div>
       </div>
 

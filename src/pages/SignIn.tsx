@@ -60,6 +60,15 @@ export default function SignIn() {
             <p className="text-gray-600">Sign in to continue your wellness journey</p>
           </div>
 
+          {/* Birch & Stone member notice */}
+          <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            <p className="font-semibold">Birch &amp; Stone members</p>
+            <p className="mt-1">
+              If this is your first time using this login, please click the{' '}
+              <span className="font-semibold">Sign Up</span> button and fill out your information to activate your account.
+            </p>
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">

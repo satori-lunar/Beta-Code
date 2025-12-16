@@ -1198,69 +1198,69 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
               )}
             </div>
           ) : (
-            <div className="bg-gray-800/50 rounded-xl p-4">
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="font-medium text-white flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-yellow-500" />
-                  {selectedActivity.name} Tips
-                </h4>
-              </div>
-              
-              {/* Tips List */}
-              <div className="space-y-2 mb-3">
-                {selectedActivity.tips.map((tip, i) => (
-                  <div key={i} className="flex items-center gap-2 text-sm text-gray-400">
-                    <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: selectedActivity.color }} />
-                    {tip}
-                  </div>
-                ))}
-              </div>
+          <div className="bg-gray-800/50 rounded-xl p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="font-medium text-white flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-yellow-500" />
+                {selectedActivity.name} Tips
+              </h4>
             </div>
-          )}
+            
+            {/* Tips List */}
+            <div className="space-y-2 mb-3">
+              {selectedActivity.tips.map((tip, i) => (
+                <div key={i} className="flex items-center gap-2 text-sm text-gray-400">
+                  <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: selectedActivity.color }} />
+                  {tip}
+                </div>
+              ))}
+            </div>
+              </div>
+            )}
           
           {/* Goal Type */}
           {selectedActivity.id !== 'walking-indoor' ? (
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-3">Workout Goal</label>
-              <div className="grid grid-cols-3 gap-3">
-                <button
-                  onClick={() => setConfig({ ...config, goalType: 'free' })}
-                  className={`p-4 rounded-xl transition-all ${
-                    config.goalType === 'free'
-                      ? 'bg-cyan-500/20 border-2 border-cyan-500 text-white'
-                      : 'bg-gray-700 border-2 border-transparent text-gray-300 hover:bg-gray-600'
-                  }`}
-                >
-                  <Sparkles className="w-6 h-6 mx-auto mb-2" />
-                  <div className="font-medium">Free</div>
-                  <div className="text-xs text-gray-400">No goal</div>
-                </button>
-                <button
-                  onClick={() => setConfig({ ...config, goalType: 'time' })}
-                  className={`p-4 rounded-xl transition-all ${
-                    config.goalType === 'time'
-                      ? 'bg-blue-500/20 border-2 border-blue-500 text-white'
-                      : 'bg-gray-700 border-2 border-transparent text-gray-300 hover:bg-gray-600'
-                  }`}
-                >
-                  <Clock className="w-6 h-6 mx-auto mb-2" />
-                  <div className="font-medium">Time</div>
-                  <div className="text-xs text-gray-400">Set duration</div>
-                </button>
-                <button
-                  onClick={() => setConfig({ ...config, goalType: 'milestones' })}
-                  className={`p-4 rounded-xl transition-all ${
-                    config.goalType === 'milestones'
-                      ? 'bg-purple-500/20 border-2 border-purple-500 text-white'
-                      : 'bg-gray-700 border-2 border-transparent text-gray-300 hover:bg-gray-600'
-                  }`}
-                >
-                  <MapPin className="w-6 h-6 mx-auto mb-2" />
-                  <div className="font-medium">Milestones</div>
-                  <div className="text-xs text-gray-400">Mark points</div>
-                </button>
-              </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-3">Workout Goal</label>
+            <div className="grid grid-cols-3 gap-3">
+              <button
+                onClick={() => setConfig({ ...config, goalType: 'free' })}
+                className={`p-4 rounded-xl transition-all ${
+                  config.goalType === 'free'
+                    ? 'bg-cyan-500/20 border-2 border-cyan-500 text-white'
+                    : 'bg-gray-700 border-2 border-transparent text-gray-300 hover:bg-gray-600'
+                }`}
+              >
+                <Sparkles className="w-6 h-6 mx-auto mb-2" />
+                <div className="font-medium">Free</div>
+                <div className="text-xs text-gray-400">No goal</div>
+              </button>
+              <button
+                onClick={() => setConfig({ ...config, goalType: 'time' })}
+                className={`p-4 rounded-xl transition-all ${
+                  config.goalType === 'time'
+                    ? 'bg-blue-500/20 border-2 border-blue-500 text-white'
+                    : 'bg-gray-700 border-2 border-transparent text-gray-300 hover:bg-gray-600'
+                }`}
+              >
+                <Clock className="w-6 h-6 mx-auto mb-2" />
+                <div className="font-medium">Time</div>
+                <div className="text-xs text-gray-400">Set duration</div>
+              </button>
+              <button
+                onClick={() => setConfig({ ...config, goalType: 'milestones' })}
+                className={`p-4 rounded-xl transition-all ${
+                  config.goalType === 'milestones'
+                    ? 'bg-purple-500/20 border-2 border-purple-500 text-white'
+                    : 'bg-gray-700 border-2 border-transparent text-gray-300 hover:bg-gray-600'
+                }`}
+              >
+                <MapPin className="w-6 h-6 mx-auto mb-2" />
+                <div className="font-medium">Milestones</div>
+                <div className="text-xs text-gray-400">Mark points</div>
+              </button>
             </div>
+          </div>
           ) : (
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -1788,24 +1788,24 @@ export default function GuidedCardio({ onClose, onWorkoutComplete, onSavePreset,
             
             {/* Checkpoints */}
             {mode !== 'indoor' && (
-              <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-4 text-center border border-gray-700">
-                <div className="text-2xl sm:text-3xl font-bold" style={{ color: selectedActivity.color }}>
-                  {milestones}
-                </div>
-                <div className="text-xs text-gray-400">
-                  {config.goalType === 'milestones' ? `/ ${config.targetMilestones}` : ''} Checkpoints
-                </div>
+            <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-4 text-center border border-gray-700">
+              <div className="text-2xl sm:text-3xl font-bold" style={{ color: selectedActivity.color }}>
+                {milestones}
               </div>
+              <div className="text-xs text-gray-400">
+                {config.goalType === 'milestones' ? `/ ${config.targetMilestones}` : ''} Checkpoints
+              </div>
+            </div>
             )}
             
             {/* Calories */}
             {mode !== 'indoor' && (
-              <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-4 text-center border border-gray-700">
-                <div className="text-2xl sm:text-3xl font-bold text-orange-400">
-                  {Math.round(calories)}
-                </div>
-                <div className="text-xs text-gray-400">🔥 Calories</div>
+            <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-4 text-center border border-gray-700">
+              <div className="text-2xl sm:text-3xl font-bold text-orange-400">
+                {Math.round(calories)}
               </div>
+              <div className="text-xs text-gray-400">🔥 Calories</div>
+            </div>
             )}
             
             {/* Progress/Streak/Goal */}

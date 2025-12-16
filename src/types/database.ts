@@ -400,6 +400,7 @@ export type Database = {
           goal_weight_unit: string | null
           id: string
           join_date: string | null
+          has_completed_dashboard_tour: boolean | null
           streak: number | null
           updated_at: string | null
         }
@@ -413,6 +414,7 @@ export type Database = {
           goal_weight_unit?: string | null
           id: string
           join_date?: string | null
+          has_completed_dashboard_tour?: boolean | null
           streak?: number | null
           updated_at?: string | null
         }
@@ -426,6 +428,7 @@ export type Database = {
           goal_weight_unit?: string | null
           id?: string
           join_date?: string | null
+          has_completed_dashboard_tour?: boolean | null
           streak?: number | null
           updated_at?: string | null
         }

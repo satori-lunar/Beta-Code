@@ -14,7 +14,7 @@ import {
   BookOpen
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
-import { useUserBadges, useUserProfile } from '../hooks/useSupabaseData';
+import { useHabits, useUserBadges } from '../hooks/useSupabaseData';
 
 const badgeIcons: Record<string, React.ElementType> = {
   flame: Flame,
@@ -51,8 +51,9 @@ const lockedBadges = [
 
 export default function Badges() {
   const { data: earnedBadges = [], loading: badgesLoading } = useUserBadges();
-  const { profile, loading: profileLoading } = useUserProfile();
-  const streak = profile?.streak || 0;
+  const { data: habits = [] } = useHabits();
+  const bestStreak = Math.max(...habits.map((h) => h.streak || 0), 0);
+  const streak = bestStreak;
 
   return (
     <div className="space-y-8 pb-20 lg:pb-0">
@@ -102,7 +103,7 @@ export default function Badges() {
         <h2 className="text-xl font-display font-semibold text-gray-900 mb-6">
           Earned Badges
         </h2>
-        {badgesLoading || profileLoading ? (
+        {badgesLoading ? (
           <div className="text-center py-12 text-gray-500">Loading your badges...</div>
         ) : earnedBadges.length > 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">

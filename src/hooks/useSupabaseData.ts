@@ -200,7 +200,7 @@ export function useUserBadges() {
         setLoading(true)
         const { data: result, error } = await supabase
           .from('user_badges')
-          .select('id, badge_id, earned_date, badges:badge_id (name, description, icon, category), name, description, icon, category')
+          .select('id, name, description, icon, category, earned_date')
           .eq('user_id', user.id)
           .order('earned_date', { ascending: false })
 
@@ -210,11 +210,11 @@ export function useUserBadges() {
 
         const mapped: UserBadge[] = (result || []).map((badge: any) => ({
           id: badge.id,
-          badgeId: badge.badge_id ?? null,
-          name: badge.badges?.name ?? badge.name ?? 'Badge',
-          description: badge.badges?.description ?? badge.description ?? null,
-          icon: badge.badges?.icon ?? badge.icon ?? null,
-          category: badge.badges?.category ?? badge.category ?? null,
+          badgeId: null,
+          name: badge.name ?? 'Badge',
+          description: badge.description ?? null,
+          icon: badge.icon ?? null,
+          category: badge.category ?? null,
           earnedDate: badge.earned_date ?? null,
         }))
 

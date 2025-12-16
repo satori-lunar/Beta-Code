@@ -58,7 +58,8 @@ export default function WeightLog() {
     ? (latestWeight.weight - startWeight.weight).toFixed(1)
     : null;
 
-  const goalWeight = 65;
+  // Default goal weight in lbs
+  const goalWeight = 150;
   const toGoal = latestWeight ? (latestWeight.weight - goalWeight).toFixed(1) : null;
 
   const handleAddEntry = async () => {
@@ -72,7 +73,7 @@ export default function WeightLog() {
         user_id: user.id,
         date: newEntry.date,
         weight: weightValue,
-        unit: 'kg',
+        unit: 'lbs',
         notes: newEntry.notes || null,
       }).select().single();
 
@@ -80,7 +81,7 @@ export default function WeightLog() {
 
       // Track weight log activity (fire and forget - don't block on tracking)
       if (newWeightEntry) {
-        trackWeightLog(newWeightEntry.id, weightValue, 'kg').catch(err => {
+        trackWeightLog(newWeightEntry.id, weightValue, 'lbs').catch(err => {
           console.error('Failed to track weight log:', err);
         });
       }
@@ -133,7 +134,7 @@ export default function WeightLog() {
             </div>
           </div>
           <p className="text-2xl font-bold text-gray-900">
-            {latestWeight?.weight || '--'} kg
+            {latestWeight?.weight || '--'} lbs
           </p>
           <p className="text-sm text-gray-500">Current Weight</p>
         </div>
@@ -153,7 +154,7 @@ export default function WeightLog() {
           <p className={`text-2xl font-bold ${
             weeklyChange && Number(weeklyChange) < 0 ? 'text-green-600' : 'text-amber-600'
           }`}>
-            {weeklyChange ? `${Number(weeklyChange) > 0 ? '+' : ''}${weeklyChange}` : '--'} kg
+            {weeklyChange ? `${Number(weeklyChange) > 0 ? '+' : ''}${weeklyChange}` : '--'} lbs
           </p>
           <p className="text-sm text-gray-500">This Week</p>
         </div>
@@ -173,7 +174,7 @@ export default function WeightLog() {
           <p className={`text-2xl font-bold ${
             totalChange && Number(totalChange) < 0 ? 'text-green-600' : 'text-blue-600'
           }`}>
-            {totalChange ? `${Number(totalChange) > 0 ? '+' : ''}${totalChange}` : '--'} kg
+            {totalChange ? `${Number(totalChange) > 0 ? '+' : ''}${totalChange}` : '--'} lbs
           </p>
           <p className="text-sm text-gray-500">Total Change</p>
         </div>
@@ -185,9 +186,9 @@ export default function WeightLog() {
             </div>
           </div>
           <p className="text-2xl font-bold text-gray-900">
-            {toGoal || '--'} kg
+            {toGoal || '--'} lbs
           </p>
-          <p className="text-sm text-gray-500">To Goal ({goalWeight}kg)</p>
+          <p className="text-sm text-gray-500">To Goal ({goalWeight} lbs)</p>
         </div>
       </div>
 
@@ -205,7 +206,7 @@ export default function WeightLog() {
                 domain={['dataMin - 2', 'dataMax + 2']}
                 tick={{ fontSize: 12 }}
                 stroke="#9ca3af"
-                tickFormatter={(value) => `${value}kg`}
+                tickFormatter={(value) => `${value} lbs`}
               />
               <Tooltip
                 contentStyle={{
@@ -214,13 +215,13 @@ export default function WeightLog() {
                   borderRadius: '12px',
                   boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
                 }}
-                formatter={(value: number) => [`${value} kg`, 'Weight']}
+                formatter={(value: number) => [`${value} lbs`, 'Weight']}
               />
               <ReferenceLine
                 y={goalWeight}
                 stroke="#9333ea"
                 strokeDasharray="5 5"
-                label={{ value: `Goal: ${goalWeight}kg`, position: 'right', fontSize: 12 }}
+                label={{ value: `Goal: ${goalWeight} lbs`, position: 'right', fontSize: 12 }}
               />
               <Line
                 type="monotone"
@@ -262,12 +263,12 @@ export default function WeightLog() {
                   )}
                 </div>
                 <div className="text-right">
-                  <p className="text-xl font-bold text-gray-900">{entry.weight} kg</p>
+                  <p className="text-xl font-bold text-gray-900">{entry.weight} lbs</p>
                   {change !== null && (
                     <p className={`text-sm ${
                       change < 0 ? 'text-green-600' : change > 0 ? 'text-amber-600' : 'text-gray-500'
                     }`}>
-                      {change > 0 ? '+' : ''}{change.toFixed(1)} kg
+                      {change > 0 ? '+' : ''}{change.toFixed(1)} lbs
                     </p>
                   )}
                 </div>
@@ -310,7 +311,7 @@ export default function WeightLog() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Weight (kg)
+                  Weight (lbs)
                 </label>
                 <input
                   type="number"

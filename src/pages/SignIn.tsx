@@ -1,23 +1,20 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { Heart, Loader2, Mail } from 'lucide-react'
+import { Heart, Loader2 } from 'lucide-react'
 
 export default function SignIn() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
-  const [magicLinkLoading, setMagicLinkLoading] = useState(false)
   const [error, setError] = useState('')
-  const [magicLinkMessage, setMagicLinkMessage] = useState('')
-  const { signIn, signInWithMagicLink } = useAuth()
+  const { signIn } = useAuth()
   const navigate = useNavigate()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError('')
-    setMagicLinkMessage('')
 
     const { error: signInError } = await signIn(email, password)
     if (signInError) {
@@ -25,26 +22,6 @@ export default function SignIn() {
       setLoading(false)
     } else {
       navigate('/')
-    }
-  }
-
-  const handleMagicLink = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!email.trim()) {
-      setError('Please enter your email address')
-      return
-    }
-    setMagicLinkLoading(true)
-    setError('')
-    setMagicLinkMessage('')
-
-    const { error: magicLinkError, message } = await signInWithMagicLink(email)
-    if (magicLinkError) {
-      setError(magicLinkError.message)
-      setMagicLinkLoading(false)
-    } else {
-      setMagicLinkMessage(message || 'Check your email for the magic link!')
-      setMagicLinkLoading(false)
     }
   }
 
@@ -94,12 +71,10 @@ export default function SignIn() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                required
                 className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-rose-400 focus:border-transparent outline-none transition"
                 placeholder="••••••••"
               />
-              <p className="mt-1 text-xs text-gray-500">
-                Leave blank to sign in with email link instead
-              </p>
             </div>
 
             {error && (
@@ -108,47 +83,20 @@ export default function SignIn() {
               </div>
             )}
 
-            {magicLinkMessage && (
-              <div className="bg-green-50 border border-green-200 text-green-600 px-4 py-3 rounded-lg text-sm">
-                {magicLinkMessage}
-              </div>
-            )}
-
-            {password ? (
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-gradient-to-r from-rose-400 to-teal-400 text-white font-semibold py-3 rounded-lg hover:from-rose-500 hover:to-teal-500 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    Signing in...
-                  </>
-                ) : (
-                  'Sign In with Password'
-                )}
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={handleMagicLink}
-                disabled={magicLinkLoading || !email.trim()}
-                className="w-full bg-gradient-to-r from-rose-400 to-teal-400 text-white font-semibold py-3 rounded-lg hover:from-rose-500 hover:to-teal-500 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                {magicLinkLoading ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    Sending link...
-                  </>
-                ) : (
-                  <>
-                    <Mail className="w-5 h-5" />
-                    Send Magic Link to Email
-                  </>
-                )}
-              </button>
-            )}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-rose-400 to-teal-400 text-white font-semibold py-3 rounded-lg hover:from-rose-500 hover:to-teal-500 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Signing in...
+                </>
+              ) : (
+                'Sign In'
+              )}
+            </button>
           </form>
 
           <p className="mt-6 text-center text-gray-600 text-sm">

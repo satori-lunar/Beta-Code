@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Flame,
@@ -22,11 +22,9 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { useHabits, useJournalEntries, useUserBadges, useUserProfile } from '../hooks/useSupabaseData';
+import { useHabits, useJournalEntries, useUserBadges } from '../hooks/useSupabaseData';
 import { supabase } from '../lib/supabase';
 import { format, isToday, parseISO } from 'date-fns';
-import DashboardTour from '../components/DashboardTour';
-
 const badgeIcons: Record<string, React.ElementType> = {
   flame: Flame,
   target: Target,
@@ -110,48 +108,12 @@ const wellnessQuotes = [
   "You are stronger than you think."
 ];
 
-const DASHBOARD_TOUR_STORAGE_KEY = 'wellness_dashboard_tour_done';
-
-const dashboardTourSteps = [
-  {
-    id: 'habits',
-    selector: '[data-tour="habits"]',
-    title: "Today's Habits",
-    description: 'Track and complete your daily habits here to build consistent routines.',
-  },
-  {
-    id: 'journal',
-    selector: '[data-tour="journal"]',
-    title: 'Journal',
-    description: 'Capture reflections and check in with how you are feeling.',
-  },
-  {
-    id: 'classes',
-    selector: '[data-tour="classes"]',
-    title: 'Live Classes',
-    description: 'See upcoming classes and join live wellness sessions from your calendar.',
-  },
-  {
-    id: 'suggestion-jar',
-    selector: '[data-tour="suggestion-jar"]',
-    title: 'Suggestion Jar',
-    description: 'Share ideas, questions, or feature requests so we can keep improving your experience.',
-  },
-  {
-    id: 'badges',
-    selector: '[data-tour="badges"]',
-    title: 'Badges & Achievements',
-    description: 'Earn badges as you make progress and celebrate your wins over time.',
-  },
-];
-
 export default function Dashboard() {
   const { user } = useAuth();
   const { isDark, toggleDark, colorPreset, setColorPreset, colorPresets, primaryColor } = useTheme();
   const { data: habits = [] } = useHabits();
   const { data: journalEntries = [] } = useJournalEntries();
   const { data: userBadges = [] } = useUserBadges();
-  const { profile, loading: profileLoading } = useUserProfile();
 
   const [dailyQuote, setDailyQuote] = useState('');
   const [showBadgeModal, setShowBadgeModal] = useState(false);
@@ -161,26 +123,6 @@ export default function Dashboard() {
   const [suggestionSubmitting, setSuggestionSubmitting] = useState(false);
   const [suggestionSuccess, setSuggestionSuccess] = useState('');
   const [suggestionError, setSuggestionError] = useState('');
-
-  const [isTourOpen, setIsTourOpen] = useState(false);
-  const [currentTourStepIndex, setCurrentTourStepIndex] = useState(0);
-
-  const hasCompletedTour = useMemo(() => {
-    if (!user) return true;
-    if (typeof window !== 'undefined') {
-      const stored = window.localStorage.getItem(DASHBOARD_TOUR_STORAGE_KEY);
-      if (stored === 'true') return true;
-    }
-    return Boolean((profile as any)?.has_completed_dashboard_tour);
-  }, [user, profile]);
-
-  // Auto-open tour for first-time users once profile is loaded
-  useEffect(() => {
-    if (!user || profileLoading) return;
-    if (hasCompletedTour) return;
-    setCurrentTourStepIndex(0);
-    setIsTourOpen(true);
-  }, [user, profileLoading, hasCompletedTour]);
 
   // Set daily quote (changes each day)
   useEffect(() => {
@@ -203,42 +145,6 @@ export default function Dashboard() {
 
   // Get current streak (simplified - just show total badges as motivation)
   const currentStreak = userBadges.length;
-
-  const markTourCompleted = async () => {
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem(DASHBOARD_TOUR_STORAGE_KEY, 'true');
-    }
-    if (user) {
-      try {
-        await supabase
-          .from('user_profiles')
-          .update({ has_completed_dashboard_tour: true } as any)
-          .eq('id', user.id);
-      } catch (err) {
-        console.error('Error updating dashboard tour completion flag:', err);
-      }
-    }
-  };
-
-  const handleTourNext = () => {
-    setCurrentTourStepIndex((prev) =>
-      prev < dashboardTourSteps.length - 1 ? prev + 1 : prev
-    );
-  };
-
-  const handleTourBack = () => {
-    setCurrentTourStepIndex((prev) => (prev > 0 ? prev - 1 : prev));
-  };
-
-  const handleTourSkip = () => {
-    setIsTourOpen(false);
-    markTourCompleted();
-  };
-
-  const handleTourFinish = () => {
-    setIsTourOpen(false);
-    markTourCompleted();
-  };
 
   const handleSubmitSuggestion = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -301,18 +207,6 @@ export default function Dashboard() {
               <p className="text-gray-600 dark:text-gray-400 mt-2 text-lg">
                 {format(new Date(), 'EEEE, MMMM d, yyyy')}
               </p>
-              {!hasCompletedTour && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCurrentTourStepIndex(0);
-                    setIsTourOpen(true);
-                  }}
-                  className="mt-3 text-sm text-coral-600 hover:text-coral-700 font-medium"
-                >
-                  Take a quick tour
-                </button>
-              )}
             </div>
 
             {/* Streak Badge and Theme Button */}

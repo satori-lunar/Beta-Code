@@ -141,13 +141,10 @@ export const DashboardTour: React.FC<Props> = ({
 
   return (
     <>
-      {/* Backdrop */}
-      <div className="fixed inset-0 bg-black bg-opacity-50 z-40 pointer-events-auto" />
-
-      {/* Highlight box */}
+      {/* Highlight box with dimmed surroundings */}
       {targetRect && !useCenteredCard && (
         <div
-          className="absolute border-2 border-coral-400 rounded-xl shadow-[0_0_0_9999px_rgba(0,0,0,0.5)] pointer-events-none transition-all duration-200"
+          className="absolute border-2 border-coral-400 rounded-xl shadow-[0_0_0_9999px_rgba(0,0,0,0.35)] pointer-events-none transition-all duration-200"
           style={{
             top: targetRect.top - 8,
             left: targetRect.left - 8,

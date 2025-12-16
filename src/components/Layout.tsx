@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -28,10 +28,14 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { useHabits, useJournalEntries, useNotifications } from '../hooks/useSupabaseData';
+import { useHabits, useJournalEntries, useNotifications, useUserProfile } from '../hooks/useSupabaseData';
 import { useIsAdmin } from '../hooks/useAdmin';
 import { formatDistanceToNow } from 'date-fns';
 import HelpDesk from './HelpDesk';
+import DashboardTour from './DashboardTour';
+import { supabase } from '../lib/supabase';
+
+const DASHBOARD_TOUR_STORAGE_KEY = 'wellness_dashboard_tour_done';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
@@ -97,6 +101,135 @@ export default function Layout() {
     // User-specific pathways not yet wired to Supabase, avoid showing demo data
     // const pathways: any[] = [];
   const recordedSessions: any[] = [];
+
+  const { profile, loading: profileLoading } = useUserProfile();
+
+  const [isTourOpen, setIsTourOpen] = useState(false);
+  const [currentTourStepIndex, setCurrentTourStepIndex] = useState(0);
+
+  const appTourSteps = useMemo(
+    () => [
+      {
+        id: 'nav-dashboard',
+        selector: '[data-tour="nav-dashboard"]',
+        title: 'Dashboard',
+        description: 'This is your home base where you can see your overall wellness snapshot.',
+      },
+      {
+        id: 'nav-habits',
+        selector: '[data-tour="nav-habits"]',
+        title: 'Habits',
+        description: 'Use the Habits page to track the daily routines you want to build.',
+      },
+      {
+        id: 'nav-classes',
+        selector: '[data-tour="nav-classes"]',
+        title: 'Live & Recorded Classes',
+        description: 'Browse and join live classes or revisit recordings to support your wellness journey.',
+      },
+      {
+        id: 'search',
+        selector: '[data-tour="search"]',
+        title: 'Search the app',
+        description: 'Quickly jump to pages, habits, and entries using the smart search bar.',
+      },
+      {
+        id: 'notifications',
+        selector: '[data-tour="notifications"]',
+        title: 'Notifications',
+        description: 'See reminders, class updates, and achievement alerts in your notification center.',
+      },
+      {
+        id: 'profile',
+        selector: '[data-tour="profile"]',
+        title: 'Profile & Settings',
+        description: 'Access your profile, badges, and account settings from here.',
+      },
+      {
+        id: 'habits-card',
+        selector: '[data-tour="habits"]',
+        title: "Today's Habits",
+        description: 'From the dashboard, quickly review and complete your daily habits.',
+      },
+      {
+        id: 'journal-card',
+        selector: '[data-tour="journal"]',
+        title: 'Journal',
+        description: 'Use the journal card to reflect on your day and capture how you feel.',
+      },
+      {
+        id: 'classes-card',
+        selector: '[data-tour="classes"]',
+        title: 'Today’s Classes',
+        description: 'See what’s coming up and jump into live sessions from your dashboard.',
+      },
+      {
+        id: 'suggestion-jar',
+        selector: '[data-tour="suggestion-jar"]',
+        title: 'Suggestion Jar',
+        description: 'Share ideas, questions, or feature requests directly with the team.',
+      },
+      {
+        id: 'badges-card',
+        selector: '[data-tour="badges"]',
+        title: 'Badges & Achievements',
+        description: 'Celebrate your progress with badges you earn over time.',
+      },
+    ],
+    []
+  );
+
+  const hasCompletedTour = useMemo(() => {
+    if (!user) return true;
+    if (typeof window !== 'undefined') {
+      const stored = window.localStorage.getItem(DASHBOARD_TOUR_STORAGE_KEY);
+      if (stored === 'true') return true;
+    }
+    return Boolean((profile as any)?.has_completed_dashboard_tour);
+  }, [user, profile]);
+
+  useEffect(() => {
+    if (!user || profileLoading) return;
+    if (hasCompletedTour) return;
+    setCurrentTourStepIndex(0);
+    setIsTourOpen(true);
+  }, [user, profileLoading, hasCompletedTour]);
+
+  const markTourCompleted = async () => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(DASHBOARD_TOUR_STORAGE_KEY, 'true');
+    }
+    if (user) {
+      try {
+        await supabase
+          .from('user_profiles')
+          .update({ has_completed_dashboard_tour: true } as any)
+          .eq('id', user.id);
+      } catch (err) {
+        console.error('Error updating app tour completion flag:', err);
+      }
+    }
+  };
+
+  const handleTourNext = () => {
+    setCurrentTourStepIndex((prev) =>
+      prev < appTourSteps.length - 1 ? prev + 1 : prev
+    );
+  };
+
+  const handleTourBack = () => {
+    setCurrentTourStepIndex((prev) => (prev > 0 ? prev - 1 : prev));
+  };
+
+  const handleTourSkip = () => {
+    setIsTourOpen(false);
+    markTourCompleted();
+  };
+
+  const handleTourFinish = () => {
+    setIsTourOpen(false);
+    markTourCompleted();
+  };
 
   const handleSignOut = async () => {
     await signOut();
@@ -283,6 +416,15 @@ export default function Layout() {
                 className={({ isActive }) =>
                   `nav-item ${isActive ? 'nav-item-active' : ''}`
                 }
+                data-tour={
+                  item.name === 'Dashboard'
+                    ? 'nav-dashboard'
+                    : item.name === 'Habits'
+                    ? 'nav-habits'
+                    : item.name === 'Classes'
+                    ? 'nav-classes'
+                    : undefined
+                }
               >
                 <item.icon className="w-5 h-5" />
                 <span>{item.name}</span>
@@ -334,7 +476,7 @@ export default function Layout() {
               </button>
 
               {/* Search */}
-              <div ref={searchRef} className="relative flex-1 sm:flex-initial">
+              <div ref={searchRef} className="relative flex-1 sm:flex-initial" data-tour="search">
                 <div className="flex items-center gap-2 bg-gray-50 rounded-xl px-3 sm:px-4 py-2.5 w-full sm:w-64 lg:w-80 max-w-full">
                   <Search className="w-5 h-5 text-gray-400" />
                   <input
@@ -404,7 +546,7 @@ export default function Layout() {
 
             <div className="flex items-center gap-3">
               {/* Notifications */}
-              <div ref={notificationsRef} className="relative">
+              <div ref={notificationsRef} className="relative" data-tour="notifications">
                 <button
                   onClick={() => {
                     setNotificationsOpen(!notificationsOpen);
@@ -513,7 +655,7 @@ export default function Layout() {
               </div>
 
               {/* Profile */}
-              <div ref={profileRef} className="relative">
+              <div ref={profileRef} className="relative" data-tour="profile">
                 <button
                   onClick={() => {
                     setProfileOpen(!profileOpen);

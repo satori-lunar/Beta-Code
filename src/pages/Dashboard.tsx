@@ -767,16 +767,6 @@ export default function Dashboard() {
           </div>
         </div>
       )}
-
-      <DashboardTour
-        steps={dashboardTourSteps}
-        currentStepIndex={currentTourStepIndex}
-        isOpen={isTourOpen}
-        onNext={handleTourNext}
-        onBack={handleTourBack}
-        onSkip={handleTourSkip}
-        onFinish={handleTourFinish}
-      />
     </div>
   );
 }

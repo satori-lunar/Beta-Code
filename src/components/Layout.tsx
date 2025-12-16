@@ -761,6 +761,17 @@ export default function Layout() {
         </div>
       </nav>
 
+      {/* App-wide Guided Tour */}
+      <DashboardTour
+        steps={appTourSteps}
+        currentStepIndex={currentTourStepIndex}
+        isOpen={isTourOpen}
+        onNext={handleTourNext}
+        onBack={handleTourBack}
+        onSkip={handleTourSkip}
+        onFinish={handleTourFinish}
+      />
+
       {/* Help Desk Floating Button */}
       <HelpDesk userName={user?.user_metadata?.name || user?.email?.split('@')[0] || 'there'} />
     </div>

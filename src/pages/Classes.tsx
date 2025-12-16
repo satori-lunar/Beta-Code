@@ -263,15 +263,39 @@ export default function Classes() {
   const completedSessions = mappedRecordedSessions.filter((s) => s.isCompleted);
 
   const filteredRecordedSessions = useMemo(
-    () =>
-      mappedRecordedSessions.filter((s) => {
+    () => {
+      const selectedCourse = selectedCourseId
+        ? courseList.find((c) => c.id === selectedCourseId)
+        : null;
+
+      const normalizedCourseTitle = selectedCourse
+        ? selectedCourse.title.toLowerCase().replace(/^the\s+/, '').trim()
+        : null;
+
+      return mappedRecordedSessions.filter((s) => {
         const matchesSearch =
           s.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
           s.description.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesCourse = selectedCourseId ? s.courseId === selectedCourseId : true;
+
+        let matchesCourse = true;
+        if (selectedCourseId) {
+          const byId = s.courseId === selectedCourseId;
+
+          // Fuzzy title match for recordings missing course_id or with slightly different names
+          const normalizedSessionTitle = s.title.toLowerCase().replace(/^the\s+/, '').trim();
+          const byTitle =
+            !!normalizedCourseTitle &&
+            (normalizedSessionTitle === normalizedCourseTitle ||
+              normalizedSessionTitle.includes(normalizedCourseTitle) ||
+              normalizedCourseTitle.includes(normalizedSessionTitle));
+
+          matchesCourse = byId || byTitle;
+        }
+
         return matchesSearch && matchesCourse;
-      }),
-    [mappedRecordedSessions, searchQuery, selectedCourseId]
+      });
+    },
+    [mappedRecordedSessions, searchQuery, selectedCourseId, courseList]
   );
 
   const filteredCourses = useMemo(

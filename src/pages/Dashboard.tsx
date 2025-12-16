@@ -23,6 +23,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useHabits, useJournalEntries, useUserBadges } from '../hooks/useSupabaseData';
+import { supabase } from '../lib/supabase';
 import { format, isToday, parseISO } from 'date-fns';
 
 const badgeIcons: Record<string, React.ElementType> = {
@@ -118,6 +119,11 @@ export default function Dashboard() {
   const [dailyQuote, setDailyQuote] = useState('');
   const [showBadgeModal, setShowBadgeModal] = useState(false);
   const [showThemeModal, setShowThemeModal] = useState(false);
+  const [suggestionType, setSuggestionType] = useState<'suggestion' | 'question' | 'feature'>('suggestion');
+  const [suggestionText, setSuggestionText] = useState('');
+  const [suggestionSubmitting, setSuggestionSubmitting] = useState(false);
+  const [suggestionSuccess, setSuggestionSuccess] = useState('');
+  const [suggestionError, setSuggestionError] = useState('');
 
   // Set daily quote (changes each day)
   useEffect(() => {
@@ -140,6 +146,53 @@ export default function Dashboard() {
 
   // Get current streak (simplified - just show total badges as motivation)
   const currentStreak = userBadges.length;
+
+  const handleSubmitSuggestion = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) {
+      setSuggestionError('You need to be signed in to submit a suggestion.');
+      return;
+    }
+    if (!suggestionText.trim()) {
+      setSuggestionError('Please enter your suggestion, question, or feature idea.');
+      return;
+    }
+
+    setSuggestionSubmitting(true);
+    setSuggestionError('');
+    setSuggestionSuccess('');
+
+    try {
+      const typeLabel =
+        suggestionType === 'suggestion'
+          ? 'Suggestion'
+          : suggestionType === 'question'
+          ? 'Question'
+          : 'Feature Request';
+
+      const subject = `${typeLabel} from Dashboard`;
+      const message = suggestionText.trim();
+
+      const { error } = await (supabase as any).from('help_tickets').insert({
+        user_id: user.id,
+        subject,
+        message,
+      } as any);
+
+      if (error) {
+        throw error;
+      }
+
+      setSuggestionSuccess('Thank you! Your feedback has been submitted.');
+      setSuggestionText('');
+      // Reset success message after a short delay
+      setTimeout(() => setSuggestionSuccess(''), 5000);
+    } catch (err: any) {
+      setSuggestionError(err.message || 'Something went wrong. Please try again.');
+    } finally {
+      setSuggestionSubmitting(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4">
@@ -342,6 +395,80 @@ export default function Dashboard() {
               Join today's wellness sessions
             </p>
           </Link>
+        </div>
+
+        {/* Suggestion Jar */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-100 dark:border-gray-700">
+          <div className="flex items-start justify-between gap-4 mb-4">
+            <div className="flex items-center gap-3">
+              <Sparkles className="w-6 h-6" style={{ color: primaryColor }} />
+              <div>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                  Suggestion Jar
+                </h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Share a suggestion, question, or feature idea to help improve your experience.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmitSuggestion} className="space-y-4">
+            <div className="flex flex-wrap gap-2">
+              {[
+                { id: 'suggestion', label: 'Suggestion' },
+                { id: 'question', label: 'Question' },
+                { id: 'feature', label: 'Feature request' },
+              ].map((option) => (
+                <button
+                  key={option.id}
+                  type="button"
+                  onClick={() => setSuggestionType(option.id as 'suggestion' | 'question' | 'feature')}
+                  className={`px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium border transition-colors ${
+                    suggestionType === option.id
+                      ? 'bg-coral-500 text-white border-coral-500'
+                      : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+
+            <div>
+              <textarea
+                value={suggestionText}
+                onChange={(e) => setSuggestionText(e.target.value)}
+                rows={3}
+                className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-coral-500 focus:border-transparent outline-none transition"
+                placeholder="Tell us what would make this app more helpful for you..."
+              />
+              <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                Your feedback goes directly to the team. We read every note.
+              </p>
+            </div>
+
+            {suggestionError && (
+              <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-2 rounded-lg text-sm">
+                {suggestionError}
+              </div>
+            )}
+            {suggestionSuccess && (
+              <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-2 rounded-lg text-sm">
+                {suggestionSuccess}
+              </div>
+            )}
+
+            <div className="flex justify-end">
+              <button
+                type="submit"
+                disabled={suggestionSubmitting || !suggestionText.trim()}
+                className="px-4 py-2 rounded-lg text-sm font-medium bg-coral-500 text-white hover:bg-coral-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {suggestionSubmitting ? 'Sending...' : 'Submit feedback'}
+              </button>
+            </div>
+          </form>
         </div>
 
         {/* Badges Section */}

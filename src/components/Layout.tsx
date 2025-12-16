@@ -35,6 +35,8 @@ import HelpDesk from './HelpDesk';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
+  { name: 'Calendar', href: '/calendar', icon: CalendarDays },
+  { name: 'Classes', href: '/classes', icon: Video },
   { name: 'Health', href: '/health', icon: Activity },
   { name: 'Habits', href: '/habits', icon: Target },
   { name: 'Nutrition', href: '/nutrition', icon: Apple },
@@ -42,8 +44,6 @@ const navigation = [
   { name: 'Journal', href: '/journal', icon: BookOpen },
   { name: 'Goals', href: '/goals', icon: Flag },
   { name: 'Pathways', href: '/pathways', icon: GraduationCap },
-  { name: 'Calendar', href: '/calendar', icon: CalendarDays },
-  { name: 'Classes', href: '/classes', icon: Video },
 ];
 
 const pages = [

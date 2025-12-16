@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MessageCircle, X, Send, Headphones, MessageSquare, FileQuestion, ChevronRight } from 'lucide-react';
+import { MessageCircle, X, Send, Headphones, MessageSquare, ChevronRight } from 'lucide-react';
 
 interface HelpDeskProps {
   userName?: string;
@@ -7,19 +7,11 @@ interface HelpDeskProps {
 
 export default function HelpDesk({ userName = 'there' }: HelpDeskProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [activeView, setActiveView] = useState<'menu' | 'chat' | 'faq'>('menu');
+  const [activeView, setActiveView] = useState<'menu' | 'chat'>('menu');
   const [message, setMessage] = useState('');
   const [chatMessages, setChatMessages] = useState<Array<{ text: string; isUser: boolean; time: string }>>([
     { text: `Hi ${userName}! How can we help you today?`, isUser: false, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }
   ]);
-
-  const faqs = [
-    { question: 'How do I track my habits?', answer: 'Go to the Habits page from the sidebar. Click the "+" button to add a new habit, then check them off daily to build your streak!' },
-    { question: 'How do I join a live class?', answer: 'Visit the Classes page and look for upcoming live sessions. Click "Join" when the class is about to start to open the Zoom link.' },
-    { question: 'How do I log my meals?', answer: 'Navigate to the Nutrition page. Click "Add Meal" and enter your meal details including calories and macros.' },
-    { question: 'How do I earn badges?', answer: 'Badges are earned automatically as you reach milestones! Check the Badges page to see what you\'ve earned and what\'s available.' },
-    { question: 'How do I update my profile?', answer: 'Click on your profile picture in the top right corner and select "Settings" to update your personal information.' },
-  ];
 
   const handleSendMessage = () => {
     if (!message.trim()) return;
@@ -93,36 +85,6 @@ export default function HelpDesk({ userName = 'there' }: HelpDeskProps) {
                   </div>
                   <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-gray-600 transition-colors" />
                 </button>
-
-                <button
-                  onClick={() => setActiveView('faq')}
-                  className="w-full p-4 bg-gray-50 hover:bg-gray-100 rounded-xl flex items-center gap-4 transition-colors group"
-                >
-                  <div className="w-12 h-12 bg-sage-100 rounded-full flex items-center justify-center text-sage-600">
-                    <FileQuestion className="w-6 h-6" />
-                  </div>
-                  <div className="flex-1 text-left">
-                    <h4 className="font-medium text-gray-900">FAQ</h4>
-                    <p className="text-sm text-gray-500">Find quick answers</p>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-gray-600 transition-colors" />
-                </button>
-
-                <a
-                  href="mailto:support@wellnessdashboard.com"
-                  className="w-full p-4 bg-gray-50 hover:bg-gray-100 rounded-xl flex items-center gap-4 transition-colors group"
-                >
-                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">
-                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                    </svg>
-                  </div>
-                  <div className="flex-1 text-left">
-                    <h4 className="font-medium text-gray-900">Email Us</h4>
-                    <p className="text-sm text-gray-500">support@wellnessdashboard.com</p>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-gray-600 transition-colors" />
-                </a>
               </div>
             )}
 
@@ -182,35 +144,7 @@ export default function HelpDesk({ userName = 'there' }: HelpDeskProps) {
               </div>
             )}
 
-            {activeView === 'faq' && (
-              <div className="flex flex-col h-full">
-                {/* Back button */}
-                <button
-                  onClick={() => setActiveView('menu')}
-                  className="p-3 text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1 border-b"
-                >
-                  <ChevronRight className="w-4 h-4 rotate-180" />
-                  Back to menu
-                </button>
-
-                {/* FAQ List */}
-                <div className="flex-1 overflow-y-auto p-4">
-                  <div className="space-y-3">
-                    {faqs.map((faq, index) => (
-                      <details key={index} className="group bg-gray-50 rounded-xl">
-                        <summary className="p-4 cursor-pointer font-medium text-gray-900 flex items-center justify-between list-none">
-                          {faq.question}
-                          <ChevronRight className="w-4 h-4 text-gray-400 transition-transform group-open:rotate-90" />
-                        </summary>
-                        <div className="px-4 pb-4 text-sm text-gray-600">
-                          {faq.answer}
-                        </div>
-                      </details>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
+            {/* FAQ view removed – chat only */}
           </div>
         </div>
       )}

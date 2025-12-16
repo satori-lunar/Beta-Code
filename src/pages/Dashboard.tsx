@@ -331,7 +331,7 @@ export default function Dashboard() {
 
           {/* Live Classes Reminder */}
           <Link
-            to="/live-classes"
+            to="/calendar"
             className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 hover:shadow-xl transition-all border border-gray-100 dark:border-gray-700 hover:scale-105"
           >
             <div className="flex items-center gap-3 mb-3">

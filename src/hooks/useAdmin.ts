@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 
 // Update this list with the email(s) you want to treat as admins
 const ADMIN_EMAILS = [
-  'YOUR_ADMIN_EMAIL_HERE'
+  'elliotmccormick@satori-lunar.com'
 ];
 
 // Check if current user is admin

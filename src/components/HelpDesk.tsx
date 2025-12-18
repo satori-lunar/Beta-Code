@@ -23,12 +23,11 @@ export default function HelpDesk({ userName = 'there' }: HelpDeskProps) {
 
       setLoading(true);
       try {
-        // Try to reuse an existing open ticket for this user
+        // Always load the most recent ticket for this user (any status)
         const { data: existingTickets, error: ticketError } = await (supabase as any)
           .from('help_tickets')
           .select('id, created_at')
           .eq('user_id', user.id)
-          .in('status', ['open', 'in_progress'])
           .order('created_at', { ascending: false })
           .limit(1);
 
@@ -37,8 +36,6 @@ export default function HelpDesk({ userName = 'there' }: HelpDeskProps) {
         }
 
         let activeTicketId = existingTickets && existingTickets.length > 0 ? existingTickets[0].id : null;
-
-        // If no open ticket, create one when the user sends the first message
         setTicketId(activeTicketId);
 
         // Load existing messages for this ticket if we have one

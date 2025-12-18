@@ -24,7 +24,7 @@ export default function HelpDesk({ userName = 'there' }: HelpDeskProps) {
       setLoading(true);
       try {
         // Try to reuse an existing open ticket for this user
-        const { data: existingTickets, error: ticketError } = await supabase
+        const { data: existingTickets, error: ticketError } = await (supabase as any)
           .from('help_tickets')
           .select('id, created_at')
           .eq('user_id', user.id)
@@ -43,7 +43,7 @@ export default function HelpDesk({ userName = 'there' }: HelpDeskProps) {
 
         // Load existing messages for this ticket if we have one
         if (activeTicketId) {
-          const { data: messages, error: messagesError } = await supabase
+          const { data: messages, error: messagesError } = await (supabase as any)
             .from('help_messages')
             .select('message, sender_id, sender_role, created_at')
             .eq('ticket_id', activeTicketId)
@@ -102,7 +102,7 @@ export default function HelpDesk({ userName = 'there' }: HelpDeskProps) {
 
       // If we don't yet have a ticket, create one now
       if (!activeTicketId) {
-        const { data: newTicket, error: ticketError } = await supabase
+        const { data: newTicket, error: ticketError } = await (supabase as any)
           .from('help_tickets')
           .insert({
             user_id: user.id,
@@ -125,7 +125,7 @@ export default function HelpDesk({ userName = 'there' }: HelpDeskProps) {
       if (!activeTicketId) return;
 
       // Store the message in help_messages
-      const { error: msgError } = await supabase
+      const { error: msgError } = await (supabase as any)
         .from('help_messages')
         .insert({
           ticket_id: activeTicketId,

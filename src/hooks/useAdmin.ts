@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabase';
 
 // Update this list with the email(s) you want to treat as admins
 const ADMIN_EMAILS = [

@@ -54,7 +54,7 @@ export default function AdminDashboard() {
     if (!isAdmin) return;
     setTicketsLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('help_tickets')
         .select('id, user_id, subject, message, status, created_at, updated_at, users(email, name)')
         .order('created_at', { ascending: false });
@@ -74,7 +74,7 @@ export default function AdminDashboard() {
     if (!ticket) return;
     setMessagesLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('help_messages')
         .select('id, message, sender_role, created_at')
         .eq('ticket_id', ticket.id)
@@ -103,7 +103,7 @@ export default function AdminDashboard() {
 
     try {
       setMessagesLoading(true);
-      const { data: currentUser, error: currentUserError } = await supabase
+      const { data: currentUser, error: currentUserError } = await (supabase as any)
         .from('users')
         .select('id, role')
         .eq('id', selectedTicket.user_id)
@@ -115,7 +115,7 @@ export default function AdminDashboard() {
       }
 
       // Insert admin reply
-      const { error: msgError } = await supabase
+      const { error: msgError } = await (supabase as any)
         .from('help_messages')
         .insert({
           ticket_id: selectedTicket.id,
@@ -130,7 +130,7 @@ export default function AdminDashboard() {
       }
 
       // Mark ticket as in_progress by default when admin replies
-      const { error: ticketError } = await supabase
+      const { error: ticketError } = await (supabase as any)
         .from('help_tickets')
         .update({ status: 'in_progress' } as any)
         .eq('id', selectedTicket.id);

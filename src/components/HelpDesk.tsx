@@ -83,6 +83,44 @@ export default function HelpDesk({ userName = 'there' }: HelpDeskProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, user?.id]);
 
+  // Live updates: subscribe to new help_messages for this ticket
+  useEffect(() => {
+    if (!ticketId || !isOpen || !user) return;
+
+    const channel = (supabase as any)
+      .channel(`help-messages-${ticketId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'help_messages',
+          filter: `ticket_id=eq.${ticketId}`,
+        },
+        (payload: any) => {
+          const m = payload.new;
+          // We already append the user's own messages optimistically
+          if (m.sender_id === user.id) return;
+
+          setChatMessages(prev => [
+            ...prev,
+            {
+              text: m.message as string,
+              isUser: m.sender_role === 'member',
+              time: m.created_at
+                ? new Date(m.created_at as string).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                : '',
+            },
+          ]);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      (supabase as any).removeChannel(channel);
+    };
+  }, [ticketId, isOpen, user?.id]);
+
   const handleSendMessage = async () => {
     if (!message.trim()) return;
     if (!user) {

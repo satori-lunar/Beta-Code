@@ -103,16 +103,6 @@ export default function AdminDashboard() {
 
     try {
       setMessagesLoading(true);
-      const { data: currentUser, error: currentUserError } = await (supabase as any)
-        .from('users')
-        .select('id, role')
-        .eq('id', selectedTicket.user_id)
-        .single();
-
-      if (currentUserError) {
-        // We only need the admin id from auth, not the ticket owner
-        console.error('Error fetching current user for reply (non-fatal):', currentUserError);
-      }
 
       // Insert admin reply
       const { error: msgError } = await (supabase as any)

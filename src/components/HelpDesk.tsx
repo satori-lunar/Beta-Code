@@ -54,7 +54,7 @@ export default function HelpDesk({ userName = 'there' }: HelpDeskProps) {
           } else {
             setChatMessages([
               { text: `Hi ${userName}! How can we help you today?`, isUser: false, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) },
-              ...(messages || []).map((m) => ({
+              ...(messages || []).map((m: any) => ({
                 text: m.message as string,
                 isUser: m.sender_role === 'member',
                 time: m.created_at

@@ -38,6 +38,12 @@ export default function HelpDesk({ userName = 'there' }: HelpDeskProps) {
         let activeTicketId = existingTickets && existingTickets.length > 0 ? existingTickets[0].id : null;
         setTicketId(activeTicketId);
 
+        const greeting = {
+          text: `Hi ${userName}! How can we help you today?`,
+          isUser: false,
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        };
+
         // Load existing messages for this ticket if we have one
         if (activeTicketId) {
           const { data: messages, error: messagesError } = await (supabase as any)
@@ -48,30 +54,24 @@ export default function HelpDesk({ userName = 'there' }: HelpDeskProps) {
 
           if (messagesError) {
             console.error('Error loading help messages:', messagesError);
+            setChatMessages([greeting]);
           } else {
             setChatMessages([
-              { text: `Hi ${userName}! How can we help you today?`, isUser: false, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) },
+              greeting,
               ...(messages || []).map((m: any) => ({
                 text: m.message as string,
                 isUser: m.sender_role === 'member',
                 time: m.created_at
                   ? new Date(m.created_at as string).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                  : ''
-              }))
+                  : '',
+              })),
             ]);
-            return;
           }
+        } else {
+          // No previous ticket – just show greeting
+          setChatMessages([greeting]);
         }
       } finally {
-        if (chatMessages.length === 0) {
-          setChatMessages([
-            {
-              text: `Hi ${userName}! How can we help you today?`,
-              isUser: false,
-              time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-            }
-          ]);
-        }
         setLoading(false);
       }
     };

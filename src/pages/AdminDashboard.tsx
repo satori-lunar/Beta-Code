@@ -452,23 +452,30 @@ export default function AdminDashboard() {
             <p className="text-gray-500">Loading streaks...</p>
           ) : (
             <div className="space-y-4">
-              {analytics?.userStreaks
-                ?.sort((a: any, b: any) => (b.streak || 0) - (a.streak || 0))
+              {analytics?.activityStreaks
+                ?.sort((a: any, b: any) => (b.activityStreak || 0) - (a.activityStreak || 0))
                 .map((user: any) => (
                   <div key={user.id} className="border-b border-gray-100 pb-4 last:border-0">
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="font-medium text-gray-900">{user.name || user.email}</p>
-                        <p className="text-sm text-gray-500 mt-1">{user.email}</p>
+                        <p className="text-sm text-gray-500 mt-1">
+                          {user.email}
+                          {user.lastActive && (
+                            <span className="ml-1 text-xs text-gray-400">
+                              • Last active {user.lastActive}
+                            </span>
+                          )}
+                        </p>
                       </div>
                       <div className="text-right">
-                        <p className="text-2xl font-bold text-coral-600">{user.streak || 0}</p>
-                        <p className="text-xs text-gray-500">day streak</p>
+                        <p className="text-2xl font-bold text-coral-600">{user.activityStreak || 0}</p>
+                        <p className="text-xs text-gray-500">day streak (any activity)</p>
                       </div>
                     </div>
                   </div>
                 ))}
-              {(!analytics?.userStreaks || analytics.userStreaks.length === 0) && (
+              {(!analytics?.activityStreaks || analytics.activityStreaks.length === 0) && (
                 <p className="text-gray-500 text-center py-8">No streak data yet</p>
               )}
             </div>

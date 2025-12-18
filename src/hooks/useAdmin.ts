@@ -124,6 +124,12 @@ export function useAdminAnalytics() {
           .order('streak', { ascending: false })
           .limit(50);
 
+        // Get recent user activity to compute activity-based streaks and last active
+        const { data: activityRows } = await (supabase as any)
+          .from('user_activity')
+          .select('user_id, created_at')
+          .gte('created_at', new Date(Date.now() - 1000 * 60 * 60 * 24 * 90).toISOString()); // last 90 days
+
         // Get user info for enrichment
         const userIds = new Set<string>();
         videoViews?.forEach((v: any) => userIds.add(v.user_id));
@@ -131,6 +137,7 @@ export function useAdminAnalytics() {
         reminders?.forEach((r: any) => userIds.add(r.user_id));
         weightLogs?.forEach((w: any) => userIds.add(w.user_id));
         logins?.forEach((l: any) => userIds.add(l.user_id));
+        activityRows?.forEach((a: any) => userIds.add(a.user_id));
 
         const { data: allUsers } = userIds.size > 0 ? await supabase
           .from('users')
@@ -138,6 +145,63 @@ export function useAdminAnalytics() {
           .in('id', Array.from(userIds)) : { data: [] };
 
         const userMap = new Map((allUsers || []).map((u: any) => [u.id, u]));
+
+        // Compute activity-based streaks and last active per user
+        const activityByUser = new Map<string, Set<string>>();
+        (activityRows || []).forEach((row: any) => {
+          if (!row.user_id || !row.created_at) return;
+          const date = new Date(row.created_at as string);
+          const day = date.toISOString().slice(0, 10); // YYYY-MM-DD
+          if (!activityByUser.has(row.user_id)) {
+            activityByUser.set(row.user_id, new Set<string>());
+          }
+          activityByUser.get(row.user_id)!.add(day);
+        });
+
+        const today = new Date();
+        const todayStr = today.toISOString().slice(0, 10);
+
+        const computeActivityStreak = (days: Set<string>): number => {
+          if (!days.size) return 0;
+          // Sort days descending
+          const sorted = Array.from(days).sort((a, b) => (a < b ? 1 : a > b ? -1 : 0));
+          let streak = 0;
+          let cursor = new Date(todayStr);
+
+          for (const dayStr of sorted) {
+            const dayDate = new Date(dayStr);
+            // Skip future dates, just in case
+            if (dayDate > cursor) continue;
+
+            if (
+              dayDate.getUTCFullYear() === cursor.getUTCFullYear() &&
+              dayDate.getUTCMonth() === cursor.getUTCMonth() &&
+              dayDate.getUTCDate() === cursor.getUTCDate()
+            ) {
+              streak += 1;
+              // Move cursor back one day
+              cursor.setUTCDate(cursor.getUTCDate() - 1);
+            } else if (dayDate < cursor) {
+              // Gap detected – streak ends
+              break;
+            }
+          }
+
+          return streak;
+        };
+
+        const activityStreaks = Array.from(activityByUser.entries()).map(([userId, days]) => {
+          const userInfo = userMap.get(userId);
+          const streak = computeActivityStreak(days);
+          const lastActive = Array.from(days).sort().at(-1) || null;
+          return {
+            id: userId,
+            email: userInfo?.email || null,
+            name: userInfo?.name || null,
+            activityStreak: streak,
+            lastActive,
+          };
+        });
 
         // Get session info
         const sessionIds = new Set<string>();
@@ -198,7 +262,8 @@ export function useAdminAnalytics() {
           reminders: enrichedReminders,
           weightLogs: enrichedWeightLogs,
           logins: enrichedLogins,
-          userStreaks: userStreaks || []
+          userStreaks: userStreaks || [],
+          activityStreaks,
         });
       } catch (error) {
         console.error('Error fetching analytics:', error);

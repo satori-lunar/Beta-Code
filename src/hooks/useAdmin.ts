@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+
+// Update this list with the email(s) you want to treat as admins
+const ADMIN_EMAILS = [
+  'YOUR_ADMIN_EMAIL_HERE'
+];
 
 // Check if current user is admin
 export function useIsAdmin() {
@@ -15,29 +19,10 @@ export function useIsAdmin() {
       return;
     }
 
-    const checkAdmin = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('users')
-          .select('role')
-          .eq('id', user.id)
-          .single();
-
-        if (error) {
-          console.error('Error checking admin status:', error);
-          setIsAdmin(false);
-        } else {
-          setIsAdmin(data?.role === 'admin');
-        }
-      } catch (error) {
-        console.error('Error checking admin status:', error);
-        setIsAdmin(false);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    checkAdmin();
+    // Simple check: user email is one of the configured admin emails
+    const email = user.email || (user.user_metadata as any)?.email || '';
+    setIsAdmin(ADMIN_EMAILS.includes(email));
+    setLoading(false);
   }, [user]);
 
   return { isAdmin, loading };

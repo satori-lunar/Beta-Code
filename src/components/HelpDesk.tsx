@@ -1,34 +1,145 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { MessageCircle, X, Send, Headphones, MessageSquare, ChevronRight } from 'lucide-react';
+import { supabase } from '../lib/supabase';
+import { useAuth } from '../contexts/AuthContext';
 
 interface HelpDeskProps {
   userName?: string;
 }
 
 export default function HelpDesk({ userName = 'there' }: HelpDeskProps) {
+  const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [activeView, setActiveView] = useState<'menu' | 'chat'>('menu');
   const [message, setMessage] = useState('');
-  const [chatMessages, setChatMessages] = useState<Array<{ text: string; isUser: boolean; time: string }>>([
-    { text: `Hi ${userName}! How can we help you today?`, isUser: false, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }
-  ]);
+  const [chatMessages, setChatMessages] = useState<Array<{ text: string; isUser: boolean; time: string }>>([]);
+  const [ticketId, setTicketId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const handleSendMessage = () => {
+  // Load or create a ticket for this user when chat opens
+  useEffect(() => {
+    const initChat = async () => {
+      if (!isOpen || !user) return;
+
+      setLoading(true);
+      try {
+        // Try to reuse an existing open ticket for this user
+        const { data: existingTickets, error: ticketError } = await supabase
+          .from('help_tickets')
+          .select('id, created_at')
+          .eq('user_id', user.id)
+          .in('status', ['open', 'in_progress'])
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+        if (ticketError) {
+          console.error('Error loading existing help ticket:', ticketError);
+        }
+
+        let activeTicketId = existingTickets && existingTickets.length > 0 ? existingTickets[0].id : null;
+
+        // If no open ticket, create one when the user sends the first message
+        setTicketId(activeTicketId);
+
+        // Load existing messages for this ticket if we have one
+        if (activeTicketId) {
+          const { data: messages, error: messagesError } = await supabase
+            .from('help_messages')
+            .select('message, sender_id, sender_role, created_at')
+            .eq('ticket_id', activeTicketId)
+            .order('created_at', { ascending: true });
+
+          if (messagesError) {
+            console.error('Error loading help messages:', messagesError);
+          } else {
+            setChatMessages([
+              { text: `Hi ${userName}! How can we help you today?`, isUser: false, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) },
+              ...(messages || []).map((m) => ({
+                text: m.message as string,
+                isUser: m.sender_role === 'member',
+                time: m.created_at
+                  ? new Date(m.created_at as string).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                  : ''
+              }))
+            ]);
+            return;
+          }
+        }
+      } finally {
+        if (chatMessages.length === 0) {
+          setChatMessages([
+            {
+              text: `Hi ${userName}! How can we help you today?`,
+              isUser: false,
+              time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            }
+          ]);
+        }
+        setLoading(false);
+      }
+    };
+
+    void initChat();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, user?.id]);
+
+  const handleSendMessage = async () => {
     if (!message.trim()) return;
+    if (!user) {
+      alert('Please sign in to contact support.');
+      return;
+    }
 
     const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    setChatMessages(prev => [...prev, { text: message, isUser: true, time }]);
+    const outgoingText = message;
+    setChatMessages(prev => [...prev, { text: outgoingText, isUser: true, time }]);
     setMessage('');
 
-    // Simulate response
-    setTimeout(() => {
-      const responseTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      setChatMessages(prev => [...prev, {
-        text: "Thank you for your message! Our support team typically responds within 24 hours. For urgent matters, please check our FAQ section.",
-        isUser: false,
-        time: responseTime
-      }]);
-    }, 1000);
+    try {
+      setLoading(true);
+
+      let activeTicketId = ticketId;
+
+      // If we don't yet have a ticket, create one now
+      if (!activeTicketId) {
+        const { data: newTicket, error: ticketError } = await supabase
+          .from('help_tickets')
+          .insert({
+            user_id: user.id,
+            subject: 'Help Desk Chat',
+            message: outgoingText,
+            status: 'open'
+          } as any)
+          .select('id')
+          .single();
+
+        if (ticketError) {
+          console.error('Error creating help ticket:', ticketError);
+          return;
+        }
+
+        activeTicketId = newTicket?.id;
+        setTicketId(activeTicketId || null);
+      }
+
+      if (!activeTicketId) return;
+
+      // Store the message in help_messages
+      const { error: msgError } = await supabase
+        .from('help_messages')
+        .insert({
+          ticket_id: activeTicketId,
+          sender_id: user.id,
+          sender_role: 'member',
+          message: outgoingText
+        } as any);
+
+      if (msgError) {
+        console.error('Error saving help message:', msgError);
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -101,6 +212,9 @@ export default function HelpDesk({ userName = 'there' }: HelpDeskProps) {
 
                 {/* Messages */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                  {loading && (
+                    <p className="text-xs text-gray-400 mb-2">Syncing with support...</p>
+                  )}
                   {chatMessages.map((msg, index) => (
                     <div
                       key={index}

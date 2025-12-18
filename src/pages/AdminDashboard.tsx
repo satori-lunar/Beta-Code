@@ -9,16 +9,24 @@ import {
   BarChart3,
   Mail,
   Clock,
-  Eye
+  Eye,
+  MessageCircle
 } from 'lucide-react';
 import { useIsAdmin, useAllUsers, useAdminAnalytics } from '../hooks/useAdmin';
+import { supabase } from '../lib/supabase';
 import { format, parseISO } from 'date-fns';
 
 export default function AdminDashboard() {
   const { isAdmin, loading: adminLoading } = useIsAdmin();
   const { users, loading: usersLoading } = useAllUsers();
   const { analytics, loading: analyticsLoading } = useAdminAnalytics();
-  const [selectedTab, setSelectedTab] = useState<'overview' | 'users' | 'videos' | 'reminders' | 'weight' | 'streaks' | 'logins'>('overview');
+  const [selectedTab, setSelectedTab] = useState<'overview' | 'users' | 'videos' | 'reminders' | 'weight' | 'streaks' | 'logins' | 'support'>('overview');
+  const [tickets, setTickets] = useState<any[]>([]);
+  const [ticketsLoading, setTicketsLoading] = useState(false);
+  const [selectedTicket, setSelectedTicket] = useState<any | null>(null);
+  const [ticketMessages, setTicketMessages] = useState<any[]>([]);
+  const [messagesLoading, setMessagesLoading] = useState(false);
+  const [replyText, setReplyText] = useState('');
 
   if (adminLoading) {
     return (
@@ -41,6 +49,109 @@ export default function AdminDashboard() {
 
   const loading = usersLoading || analyticsLoading;
 
+  // Load help tickets for the Support tab
+  const loadTickets = async () => {
+    if (!isAdmin) return;
+    setTicketsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('help_tickets')
+        .select('id, user_id, subject, message, status, created_at, updated_at, users(email, name)')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error loading help tickets:', error);
+        return;
+      }
+
+      setTickets(data || []);
+    } finally {
+      setTicketsLoading(false);
+    }
+  };
+
+  const loadMessagesForTicket = async (ticket: any) => {
+    if (!ticket) return;
+    setMessagesLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('help_messages')
+        .select('id, message, sender_role, created_at')
+        .eq('ticket_id', ticket.id)
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error('Error loading ticket messages:', error);
+        setTicketMessages([]);
+        return;
+      }
+
+      setTicketMessages(data || []);
+    } finally {
+      setMessagesLoading(false);
+    }
+  };
+
+  const handleSelectTicket = async (ticket: any) => {
+    setSelectedTicket(ticket);
+    setReplyText('');
+    await loadMessagesForTicket(ticket);
+  };
+
+  const handleSendReply = async () => {
+    if (!selectedTicket || !replyText.trim()) return;
+
+    try {
+      setMessagesLoading(true);
+      const { data: currentUser, error: currentUserError } = await supabase
+        .from('users')
+        .select('id, role')
+        .eq('id', selectedTicket.user_id)
+        .single();
+
+      if (currentUserError) {
+        // We only need the admin id from auth, not the ticket owner
+        console.error('Error fetching current user for reply (non-fatal):', currentUserError);
+      }
+
+      // Insert admin reply
+      const { error: msgError } = await supabase
+        .from('help_messages')
+        .insert({
+          ticket_id: selectedTicket.id,
+          sender_id: (await supabase.auth.getUser()).data.user?.id,
+          sender_role: 'admin',
+          message: replyText.trim()
+        } as any);
+
+      if (msgError) {
+        console.error('Error sending reply:', msgError);
+        return;
+      }
+
+      // Mark ticket as in_progress by default when admin replies
+      const { error: ticketError } = await supabase
+        .from('help_tickets')
+        .update({ status: 'in_progress' } as any)
+        .eq('id', selectedTicket.id);
+
+      if (ticketError) {
+        console.error('Error updating ticket status:', ticketError);
+      }
+
+      setReplyText('');
+      await loadMessagesForTicket(selectedTicket);
+      await loadTickets();
+    } finally {
+      setMessagesLoading(false);
+    }
+  };
+
+  // Auto-load tickets when switching to Support tab
+  if (selectedTab === 'support' && tickets.length === 0 && !ticketsLoading && isAdmin) {
+    void loadTickets();
+  }
+
   return (
     <div className="space-y-8 pb-20 lg:pb-0">
       {/* Header */}
@@ -60,6 +171,7 @@ export default function AdminDashboard() {
           { id: 'reminders', label: 'Reminders', icon: Bell },
           { id: 'weight', label: 'Weight Logs', icon: Scale },
           { id: 'streaks', label: 'Streaks', icon: TrendingUp },
+          { id: 'support', label: 'Support', icon: MessageCircle },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -344,6 +456,166 @@ export default function AdminDashboard() {
               )}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Support / Help Desk Tab */}
+      {selectedTab === 'support' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Ticket list */}
+          <div className="card lg:col-span-1">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <MessageCircle className="w-5 h-5 text-coral-500" />
+                Help Tickets
+              </h2>
+              <button
+                onClick={() => void loadTickets()}
+                className="text-xs text-gray-500 hover:text-gray-700"
+              >
+                Refresh
+              </button>
+            </div>
+            {ticketsLoading ? (
+              <p className="text-gray-500 text-sm">Loading tickets...</p>
+            ) : tickets.length === 0 ? (
+              <p className="text-gray-500 text-sm">No support tickets yet.</p>
+            ) : (
+              <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+                {tickets.map((ticket) => (
+                  <button
+                    key={ticket.id}
+                    onClick={() => void handleSelectTicket(ticket)}
+                    className={`w-full text-left p-3 rounded-xl border transition-colors ${
+                      selectedTicket?.id === ticket.id
+                        ? 'border-coral-500 bg-coral-50/60'
+                        : 'border-gray-100 hover:border-gray-200 hover:bg-gray-50'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900">
+                          {ticket.users?.name || ticket.users?.email || 'Unknown User'}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {ticket.subject || 'Help Desk Chat'}
+                        </p>
+                      </div>
+                      <span
+                        className={`px-2 py-1 rounded-full text-[11px] font-medium ${
+                          ticket.status === 'open'
+                            ? 'bg-red-50 text-red-600'
+                            : ticket.status === 'in_progress'
+                            ? 'bg-amber-50 text-amber-700'
+                            : 'bg-emerald-50 text-emerald-700'
+                        }`}
+                      >
+                        {ticket.status}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-xs text-gray-500 line-clamp-2">
+                      {ticket.message}
+                    </p>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Ticket detail & chat */}
+          <div className="card lg:col-span-2">
+            {selectedTicket ? (
+              <div className="flex flex-col h-full">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <p className="text-sm text-gray-500">Chat with</p>
+                    <p className="text-lg font-semibold text-gray-900">
+                      {selectedTicket.users?.name || selectedTicket.users?.email || 'Unknown User'}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`px-2 py-1 rounded-full text-[11px] font-medium ${
+                        selectedTicket.status === 'open'
+                          ? 'bg-red-50 text-red-600'
+                          : selectedTicket.status === 'in_progress'
+                          ? 'bg-amber-50 text-amber-700'
+                          : 'bg-emerald-50 text-emerald-700'
+                      }`}
+                    >
+                      {selectedTicket.status}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex-1 border border-gray-100 rounded-xl p-3 mb-3 max-h-[45vh] overflow-y-auto bg-gray-50">
+                  {messagesLoading ? (
+                    <p className="text-sm text-gray-500">Loading messages...</p>
+                  ) : ticketMessages.length === 0 ? (
+                    <p className="text-sm text-gray-500">
+                      No messages yet. You can send a reply to start the conversation.
+                    </p>
+                  ) : (
+                    <div className="space-y-3">
+                      {ticketMessages.map((msg) => (
+                        <div
+                          key={msg.id}
+                          className={`flex ${
+                            msg.sender_role === 'admin' ? 'justify-end' : 'justify-start'
+                          }`}
+                        >
+                          <div
+                            className={`max-w-[75%] rounded-2xl px-3 py-2 text-sm ${
+                              msg.sender_role === 'admin'
+                                ? 'bg-coral-500 text-white rounded-br-md'
+                                : 'bg-white text-gray-800 border border-gray-200 rounded-bl-md'
+                            }`}
+                          >
+                            <p>{msg.message}</p>
+                            <p className="mt-1 text-[10px] opacity-70">
+                              {msg.created_at
+                                ? new Date(msg.created_at).toLocaleTimeString([], {
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  })
+                                : ''}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-auto">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Your Reply
+                  </label>
+                  <textarea
+                    value={replyText}
+                    onChange={(e) => setReplyText(e.target.value)}
+                    rows={3}
+                    className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-coral-500 focus:border-transparent resize-none"
+                    placeholder="Type your response to this member..."
+                  />
+                  <div className="mt-2 flex justify-end">
+                    <button
+                      onClick={() => void handleSendReply()}
+                      disabled={!replyText.trim() || messagesLoading}
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white bg-coral-500 hover:bg-coral-600 disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      <Mail className="w-4 h-4" />
+                      Send Reply
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center h-full min-h-[200px] text-center text-gray-500 text-sm">
+                Select a ticket from the left to view the conversation and reply.
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

@@ -27,6 +27,7 @@ export default function AdminDashboard() {
   const [ticketMessages, setTicketMessages] = useState<any[]>([]);
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [replyText, setReplyText] = useState('');
+  const [newConversationUserId, setNewConversationUserId] = useState<string>('');
 
   if (adminLoading) {
     return (
@@ -54,9 +55,9 @@ export default function AdminDashboard() {
     if (!isAdmin) return;
     setTicketsLoading(true);
     try {
-      const { data, error } = await (supabase as any)
+      const { data: rawTickets, error } = await (supabase as any)
         .from('help_tickets')
-        .select('id, user_id, subject, message, status, created_at, updated_at, users(email, name)')
+        .select('id, user_id, subject, message, status, created_at, updated_at')
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -64,7 +65,33 @@ export default function AdminDashboard() {
         return;
       }
 
-      setTickets(data || []);
+      const ticketsData = rawTickets || [];
+
+      // Enrich tickets with user info for nicer display
+      const userIds = Array.from(
+        new Set<string>(ticketsData.map((t: any) => t.user_id).filter(Boolean))
+      );
+
+      let userMap = new Map<string, any>();
+      if (userIds.length > 0) {
+        const { data: ticketUsers, error: usersError } = await (supabase as any)
+          .from('users')
+          .select('id, name, email')
+          .in('id', userIds);
+
+        if (usersError) {
+          console.error('Error loading users for tickets:', usersError);
+        } else {
+          userMap = new Map((ticketUsers || []).map((u: any) => [u.id, u]));
+        }
+      }
+
+      const enrichedTickets = ticketsData.map((t: any) => ({
+        ...t,
+        user: userMap.get(t.user_id)
+      }));
+
+      setTickets(enrichedTickets);
     } finally {
       setTicketsLoading(false);
     }
@@ -134,6 +161,38 @@ export default function AdminDashboard() {
       await loadTickets();
     } finally {
       setMessagesLoading(false);
+    }
+  };
+
+  const startConversationWithUser = async () => {
+    if (!newConversationUserId) return;
+    try {
+      setTicketsLoading(true);
+
+      const { data: newTicket, error } = await (supabase as any)
+        .from('help_tickets')
+        .insert({
+          user_id: newConversationUserId,
+          subject: 'Help Desk Chat',
+          message: 'Conversation started by admin',
+          status: 'open'
+        } as any)
+        .select('*')
+        .single();
+
+      if (error || !newTicket) {
+        console.error('Error starting new conversation:', error);
+        return;
+      }
+
+      const userForTicket = users.find((u: any) => u.id === newConversationUserId);
+      const enrichedTicket = { ...newTicket, user: userForTicket };
+
+      setTickets((prev) => [enrichedTicket, ...prev]);
+      setNewConversationUserId('');
+      await handleSelectTicket(enrichedTicket);
+    } finally {
+      setTicketsLoading(false);
     }
   };
 
@@ -454,17 +513,42 @@ export default function AdminDashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Ticket list */}
           <div className="card lg:col-span-1">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <MessageCircle className="w-5 h-5 text-coral-500" />
-                Help Tickets
-              </h2>
-              <button
-                onClick={() => void loadTickets()}
-                className="text-xs text-gray-500 hover:text-gray-700"
-              >
-                Refresh
-              </button>
+            <div className="flex flex-col gap-3 mb-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <MessageCircle className="w-5 h-5 text-coral-500" />
+                  Help Tickets
+                </h2>
+                <button
+                  onClick={() => void loadTickets()}
+                  className="text-xs text-gray-500 hover:text-gray-700"
+                >
+                  Refresh
+                </button>
+              </div>
+
+              {/* Start new conversation */}
+              <div className="flex items-center gap-2">
+                <select
+                  value={newConversationUserId}
+                  onChange={(e) => setNewConversationUserId(e.target.value)}
+                  className="flex-1 border border-gray-200 rounded-lg px-2 py-1 text-xs text-gray-700"
+                >
+                  <option value="">Start conversation with...</option>
+                  {users.map((u: any) => (
+                    <option key={u.id} value={u.id}>
+                      {u.name || u.email}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  onClick={() => void startConversationWithUser()}
+                  disabled={!newConversationUserId}
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium text-white bg-coral-500 hover:bg-coral-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Start
+                </button>
+              </div>
             </div>
             {ticketsLoading ? (
               <p className="text-gray-500 text-sm">Loading tickets...</p>
@@ -485,7 +569,7 @@ export default function AdminDashboard() {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm font-semibold text-gray-900">
-                          {ticket.users?.name || ticket.users?.email || 'Unknown User'}
+                          {ticket.user?.name || ticket.user?.email || 'Unknown User'}
                         </p>
                         <p className="text-xs text-gray-500">
                           {ticket.subject || 'Help Desk Chat'}

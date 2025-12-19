@@ -198,7 +198,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { error: new Error('Supabase configuration is missing. Please check your environment variables.'), requiresPassword: false };
       }
 
-      const response = await fetch(`${supabaseUrl}/functions/v1/passwordless-auth`, {
+      const functionUrl = `${supabaseUrl}/functions/v1/passwordless-auth`;
+      
+      // Log for debugging (only in development)
+      if (import.meta.env.DEV) {
+        console.log('🔐 Attempting passwordless auth:', { email, functionUrl: functionUrl.replace(/\/\/.*@/, '//***@') });
+      }
+
+      const response = await fetch(functionUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -210,7 +217,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!response.ok) {
         // Handle HTTP errors
         if (response.status === 404) {
-          return { error: new Error('Authentication service is not available. Please contact support.'), requiresPassword: false };
+          return { 
+            error: new Error(
+              'The passwordless authentication service is not deployed. ' +
+              'Please deploy the Edge Function "passwordless-auth" to your Supabase project. ' +
+              'Run: supabase functions deploy passwordless-auth'
+            ), 
+            requiresPassword: false 
+          };
         }
         const errorText = await response.text();
         try {
@@ -249,8 +263,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { error: null, requiresPassword: false };
     } catch (err: any) {
       // Handle network errors (failed to fetch)
-      if (err?.message?.includes('fetch') || err?.name === 'TypeError') {
-        return { error: new Error('Unable to connect to authentication service. Please check your internet connection and try again.'), requiresPassword: false };
+      if (err?.message?.includes('fetch') || err?.name === 'TypeError' || err?.message?.includes('Failed to fetch')) {
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+        return { 
+          error: new Error(
+            `Unable to connect to authentication service at ${supabaseUrl}/functions/v1/passwordless-auth. ` +
+            'The Edge Function may not be deployed. Please deploy it using: supabase functions deploy passwordless-auth'
+          ), 
+          requiresPassword: false 
+        };
       }
       return { error: new Error(err?.message || 'Failed to authenticate'), requiresPassword: false };
     }

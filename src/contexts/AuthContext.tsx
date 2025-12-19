@@ -190,36 +190,68 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      // Use Supabase's built-in OTP authentication
-      // This will automatically create the user if they don't exist
-      // Note: This sends an email with a magic link that the user must click
-      // For truly automatic auth without email interaction, you need the Edge Function
-      const { error } = await supabase.auth.signInWithOtp({
+      // Try to sign up with a random password (user never sees it)
+      // If email confirmation is disabled in Supabase, this will immediately sign them in
+      // Generate a secure random password that the user never sees
+      const randomPassword = crypto.getRandomValues(new Uint32Array(16)).join('') + 'Aa1!';
+      
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
+        password: randomPassword,
         options: {
-          shouldCreateUser: true, // Auto-create user if they don't exist
-          emailRedirectTo: `${window.location.origin}/auth/callback`
+          emailRedirectTo: `${window.location.origin}/`,
+          data: {
+            name: email.split('@')[0] // Use email prefix as default name
+          }
         }
       });
 
-      if (error) {
-        // Check if error indicates user has password
-        // Some Supabase configurations return specific errors for password accounts
-        const errorMsg = error.message?.toLowerCase() || '';
-        if (errorMsg.includes('password') || 
-            errorMsg.includes('user already registered') ||
-            errorMsg.includes('email already registered')) {
-          // Try to check if user exists with password by attempting a different method
-          return { error: null, requiresPassword: true };
-        }
-        return { error, requiresPassword: false };
+      // If sign up succeeds and we have a session, user was created and signed in
+      if (signUpData?.session) {
+        // User was created and signed in immediately (email confirmation disabled)
+        return { error: null, requiresPassword: false };
       }
 
-      // OTP email was sent successfully
-      // User needs to check their email and click the magic link
-      // The link will redirect to /auth/callback which will complete the sign-in
-      // This is the standard Supabase flow - for automatic auth without email,
-      // you would need to deploy the Edge Function
+      // If sign up fails because user already exists, try to sign in
+      if (signUpError) {
+        const errorMsg = signUpError.message?.toLowerCase() || '';
+        
+        // Check if user already exists
+        if (errorMsg.includes('user already registered') || 
+            errorMsg.includes('email already registered') ||
+            errorMsg.includes('already registered')) {
+          
+          // User exists - try to sign in with OTP (but this requires email click)
+          // Since we can't auto-sign in existing users without password or email verification,
+          // we'll use OTP as fallback
+          const { error: otpError } = await supabase.auth.signInWithOtp({
+            email,
+            options: {
+              emailRedirectTo: `${window.location.origin}/auth/callback`
+            }
+          });
+
+          if (otpError) {
+            // Check if it's a password account
+            if (otpError.message?.toLowerCase().includes('password')) {
+              return { error: null, requiresPassword: true };
+            }
+            return { error: otpError, requiresPassword: false };
+          }
+
+          // OTP email sent - user needs to click link
+          // Note: This is a limitation - we can't auto-sign in existing users without
+          // password or email verification from client side
+          return { error: null, requiresPassword: false };
+        }
+
+        // Other sign up error
+        return { error: signUpError, requiresPassword: false };
+      }
+
+      // Sign up succeeded but no session (email confirmation required)
+      // In this case, user needs to verify email
+      // But we'll return success since account was created
       return { error: null, requiresPassword: false };
     } catch (err: any) {
       return { error: new Error(err?.message || 'Failed to authenticate'), requiresPassword: false };

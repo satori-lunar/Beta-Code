@@ -1,19 +1,29 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { supabase } from '../lib/supabase'
 import { Heart, Loader2 } from 'lucide-react'
 
 export default function SignIn() {
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [emailSent, setEmailSent] = useState(false)
   const { signInPasswordless } = useAuth()
+  const navigate = useNavigate()
+
+  // Check if user is already signed in (from automatic sign-in)
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        navigate('/')
+      }
+    })
+  }, [navigate])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError('')
-    setEmailSent(false)
 
     const { error: pwdlessError, requiresPassword } = await signInPasswordless(email)
     
@@ -28,10 +38,17 @@ export default function SignIn() {
       setError(pwdlessError.message)
       setLoading(false)
     } else {
-      // Email was sent - show success message
-      setEmailSent(true)
-      setLoading(false)
-      // Don't navigate yet - wait for user to click email link
+      // Check if we have a session (automatic sign-in worked)
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session) {
+        // Automatic sign-in succeeded - navigate to dashboard
+        navigate('/')
+      } else {
+        // No session - might need email verification or user already exists
+        // For existing users, we can't auto-sign them in from client side
+        setError('Unable to sign in automatically. If you have an existing account, please check your email for a sign-in link.')
+        setLoading(false)
+      }
     }
   }
 
@@ -71,36 +88,25 @@ export default function SignIn() {
               </div>
             )}
 
-            {emailSent && (
-              <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
-                <p className="font-semibold mb-1">Check your email!</p>
-                <p>We've sent a sign-in link to <strong>{email}</strong>. Click the link in the email to complete sign in.</p>
-              </div>
-            )}
-
-            {!emailSent && (
-              <button
-                type="submit"
-                disabled={loading || !email.trim()}
-                className="w-full bg-gradient-to-r from-rose-400 to-teal-400 text-white font-semibold py-3 rounded-lg hover:from-rose-500 hover:to-teal-500 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    Sending...
-                  </>
-                ) : (
-                  'Continue'
-                )}
-              </button>
-            )}
+            <button
+              type="submit"
+              disabled={loading || !email.trim()}
+              className="w-full bg-gradient-to-r from-rose-400 to-teal-400 text-white font-semibold py-3 rounded-lg hover:from-rose-500 hover:to-teal-500 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Signing in...
+                </>
+              ) : (
+                'Continue'
+              )}
+            </button>
           </form>
 
-          {!emailSent && (
-            <p className="mt-4 text-center text-gray-500 text-xs">
-              Enter your email to sign in. If you're new, we'll create an account for you automatically.
-            </p>
-          )}
+          <p className="mt-4 text-center text-gray-500 text-xs">
+            Enter your email to sign in. If you're new, we'll create an account for you automatically.
+          </p>
         </div>
       </div>
     </div>

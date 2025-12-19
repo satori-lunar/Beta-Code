@@ -41,22 +41,8 @@ serve(async (req) => {
     let isNewUser = false
 
     if (existingUser?.user) {
-      // User exists - check if they have a password
-      const hasPassword = existingUser.user.encrypted_password !== null && existingUser.user.encrypted_password !== undefined
-      
-      if (hasPassword) {
-        // User has password - they need to use password auth
-        return new Response(
-          JSON.stringify({ 
-            error: null,
-            requiresPassword: true,
-            message: 'This account requires a password.'
-          }),
-          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-      }
-
-      // User exists but no password - generate sign-in link
+      // User exists - sign them in (regardless of password status)
+      // We'll remove password requirement and just sign them in by email
       userId = existingUser.user.id
     } else {
       // User doesn't exist - create them

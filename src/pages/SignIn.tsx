@@ -25,14 +25,7 @@ export default function SignIn() {
     setLoading(true)
     setError('')
 
-    const { error: pwdlessError, requiresPassword } = await signInPasswordless(email)
-    
-    if (requiresPassword) {
-      // User has password - direct them to reset it
-      setError('This account was created with a password. Please use the "Forgot Password" option to reset it, or contact support.')
-      setLoading(false)
-      return
-    }
+    const { error: pwdlessError } = await signInPasswordless(email)
 
     if (pwdlessError) {
       setError(pwdlessError.message)
@@ -44,10 +37,16 @@ export default function SignIn() {
         // Automatic sign-in succeeded - navigate to dashboard
         navigate('/')
       } else {
-        // No session - might need email verification or user already exists
-        // For existing users, we can't auto-sign them in from client side
-        setError('Unable to sign in automatically. If you have an existing account, please check your email for a sign-in link.')
-        setLoading(false)
+        // Wait a moment for session to be established
+        setTimeout(async () => {
+          const { data: { session: retrySession } } = await supabase.auth.getSession()
+          if (retrySession) {
+            navigate('/')
+          } else {
+            setError('Sign in completed. Redirecting...')
+            // Session should be established via auth state change
+          }
+        }, 500)
       }
     }
   }

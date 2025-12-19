@@ -224,10 +224,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Handle HTTP errors
         const errorText = await response.text();
         
-        // Log error for debugging
-        if (import.meta.env.DEV) {
-          console.error('❌ Edge Function error:', response.status, errorText);
-        }
+        // Log error for debugging (always log)
+        console.error('❌ Edge Function error:', {
+          status: response.status,
+          statusText: response.statusText,
+          errorText: errorText,
+          url: functionUrl
+        });
         
         if (response.status === 404) {
           return { 
@@ -251,10 +254,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (data?.error) {
         return { error: new Error(data.error || 'Authentication failed'), requiresPassword: false };
-      }
-
-      if (data?.requiresPassword) {
-        return { error: null, requiresPassword: true };
       }
 
       if (!data?.token) {

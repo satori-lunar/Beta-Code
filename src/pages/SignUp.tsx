@@ -17,15 +17,7 @@ export default function SignUp() {
     setError('')
 
     // Use passwordless auth (will create account if new, sign in if exists)
-    const { error: authError, requiresPassword } = await signInPasswordless(email)
-
-    if (requiresPassword) {
-      // User already exists with password - redirect to sign in
-      setError('An account with this email already exists. Please sign in instead.')
-      setLoading(false)
-      setTimeout(() => navigate('/signin'), 2000)
-      return
-    }
+    const { error: authError } = await signInPasswordless(email)
 
     if (authError) {
       setError(authError.message)

@@ -4,12 +4,17 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Max-Age': '86400',
 }
 
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response(null, { 
+      status: 204,
+      headers: corsHeaders 
+    })
   }
 
   try {
@@ -41,8 +46,7 @@ serve(async (req) => {
     let isNewUser = false
 
     if (existingUser?.user) {
-      // User exists - sign them in (regardless of password status)
-      // We'll remove password requirement and just sign them in by email
+      // User exists - sign them in (no password check, just use email)
       userId = existingUser.user.id
     } else {
       // User doesn't exist - create them

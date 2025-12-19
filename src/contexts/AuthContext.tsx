@@ -192,17 +192,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       // Call Edge Function for passwordless auth
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-      const { data, error } = await fetch(`${supabaseUrl}/functions/v1/passwordless-auth`, {
+      const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+
+      if (!supabaseUrl || !anonKey) {
+        return { error: new Error('Supabase configuration is missing. Please check your environment variables.'), requiresPassword: false };
+      }
+
+      const response = await fetch(`${supabaseUrl}/functions/v1/passwordless-auth`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY || ''}`
+          'Authorization': `Bearer ${anonKey}`
         },
         body: JSON.stringify({ email })
-      }).then(res => res.json());
+      });
 
-      if (error || data?.error) {
-        return { error: new Error(error || data?.error || 'Authentication failed'), requiresPassword: false };
+      if (!response.ok) {
+        // Handle HTTP errors
+        if (response.status === 404) {
+          return { error: new Error('Authentication service is not available. Please contact support.'), requiresPassword: false };
+        }
+        const errorText = await response.text();
+        try {
+          const errorData = JSON.parse(errorText);
+          return { error: new Error(errorData.error || errorData.message || 'Authentication failed'), requiresPassword: false };
+        } catch {
+          return { error: new Error(`Authentication failed: ${response.status} ${response.statusText}`), requiresPassword: false };
+        }
+      }
+
+      const data = await response.json();
+
+      if (data?.error) {
+        return { error: new Error(data.error || 'Authentication failed'), requiresPassword: false };
       }
 
       if (data?.requiresPassword) {
@@ -226,6 +248,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       return { error: null, requiresPassword: false };
     } catch (err: any) {
+      // Handle network errors (failed to fetch)
+      if (err?.message?.includes('fetch') || err?.name === 'TypeError') {
+        return { error: new Error('Unable to connect to authentication service. Please check your internet connection and try again.'), requiresPassword: false };
+      }
       return { error: new Error(err?.message || 'Failed to authenticate'), requiresPassword: false };
     }
   };

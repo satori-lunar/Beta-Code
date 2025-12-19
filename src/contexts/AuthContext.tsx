@@ -191,13 +191,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     try {
       // Call Edge Function for passwordless auth
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+      let supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
       const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
       if (!supabaseUrl || !anonKey) {
         return { error: new Error('Supabase configuration is missing. Please check your environment variables.'), requiresPassword: false };
       }
 
+      // Ensure URL doesn't end with a slash to avoid double slashes
+      supabaseUrl = supabaseUrl.replace(/\/$/, '');
       const functionUrl = `${supabaseUrl}/functions/v1/passwordless-auth`;
       
       // Log for debugging (only in development)

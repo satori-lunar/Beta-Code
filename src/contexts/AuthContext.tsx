@@ -271,27 +271,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { error: new Error(data.error || 'Authentication failed'), requiresPassword: false };
       }
 
-      // The Edge Function now returns access_token and refresh_token from the magic link
-      if (data?.access_token && data?.refresh_token) {
-        // Use setSession to establish the session directly
-        const { error: sessionError } = await supabase.auth.setSession({
-          access_token: data.access_token,
-          refresh_token: data.refresh_token
-        });
-
-        if (sessionError) {
-          return { error: sessionError, requiresPassword: false };
-        }
-
-        return { error: null, requiresPassword: false };
-      }
-
-      // Fallback: if we still get a token field, try verifyOtp (for backward compatibility)
-      if (data?.token) {
+      // Method 1: Use token_hash if available (preferred)
+      if (data?.token_hash) {
         const { error: signInError } = await supabase.auth.verifyOtp({
           email,
-          token: data.token,
-          type: 'email'
+          token_hash: data.token_hash,
+          type: 'magiclink'
         });
 
         if (signInError) {
@@ -301,7 +286,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { error: null, requiresPassword: false };
       }
 
-      return { error: new Error('No authentication tokens received'), requiresPassword: false };
+      // Method 2: Fallback - if we have action_link, parse it to extract tokens
+      if (data?.action_link) {
+        const actionLink = data.action_link;
+        
+        // Try to extract access_token and refresh_token from the link
+        const accessTokenMatch = actionLink.match(/[#&?]access_token=([^&]+)/);
+        const refreshTokenMatch = actionLink.match(/[#&?]refresh_token=([^&]+)/);
+        
+        if (accessTokenMatch && refreshTokenMatch) {
+          const accessToken = decodeURIComponent(accessTokenMatch[1]);
+          const refreshToken = decodeURIComponent(refreshTokenMatch[1]);
+          
+          const { error: sessionError } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken
+          });
+
+          if (sessionError) {
+            return { error: sessionError, requiresPassword: false };
+          }
+
+          return { error: null, requiresPassword: false };
+        }
+        
+        // If we can't extract tokens, try using the full URL with getSessionFromUrl
+        // This is a Supabase helper that can parse magic link URLs
+        try {
+          const { data: sessionData, error: urlError } = await supabase.auth.getSession();
+          if (!urlError && sessionData?.session) {
+            return { error: null, requiresPassword: false };
+          }
+        } catch (e) {
+          // Ignore
+        }
+      }
+
+      // If we have debug info, include it in the error
+      const debugInfo = data?.debug ? ` (${JSON.stringify(data.debug)})` : '';
+      return { error: new Error(`No authentication token hash received${debugInfo}`), requiresPassword: false };
     } catch (err: any) {
       // Handle network errors (failed to fetch)
       if (err?.message?.includes('fetch') || err?.name === 'TypeError' || err?.message?.includes('Failed to fetch')) {

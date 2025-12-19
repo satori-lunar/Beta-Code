@@ -65,73 +65,69 @@ serve(async (req) => {
       )
     }
 
-    // generateLink returns a magic link with tokens we can use
-    // We need to extract the access_token and refresh_token from the action_link
-    const actionLink = otpData.properties?.action_link || ''
+    // Debug: Log what we received (remove in production if needed)
+    console.log('generateLink response:', JSON.stringify({
+      hasProperties: !!otpData.properties,
+      propertiesKeys: otpData.properties ? Object.keys(otpData.properties) : [],
+      actionLink: otpData.properties?.action_link?.substring(0, 100) || 'none'
+    }))
+
+    // generateLink returns properties with action_link and potentially hashed_token
+    // Try multiple ways to extract the token hash
+    const properties = otpData.properties || {}
+    const actionLink = properties.action_link || ''
     
-    // Parse the URL to extract tokens
-    // Magic links typically have format: https://...?token=XXX#access_token=YYY&refresh_token=ZZZ
-    // or: https://...#access_token=YYY&refresh_token=ZZZ&type=magiclink
-    try {
-      const url = new URL(actionLink)
-      const hashParams = new URLSearchParams(url.hash.substring(1)) // Remove the #
-      const queryParams = new URLSearchParams(url.search.substring(1)) // Remove the ?
-      
-      // Try to get tokens from hash first, then query params
-      let accessToken = hashParams.get('access_token') || queryParams.get('access_token') || ''
-      let refreshToken = hashParams.get('refresh_token') || queryParams.get('refresh_token') || ''
-      const tokenType = hashParams.get('type') || queryParams.get('type') || 'magiclink'
+    // Method 1: Direct property access
+    let tokenHash = (properties as any)?.hashed_token || 
+                    (properties as any)?.token_hash ||
+                    (otpData as any)?.hashed_token ||
+                    (otpData as any)?.token_hash ||
+                    null
 
-      if (!accessToken || !refreshToken) {
-        // Fallback: try regex extraction
-        const accessTokenMatch = actionLink.match(/[#&?]access_token=([^&]+)/)
-        const refreshTokenMatch = actionLink.match(/[#&?]refresh_token=([^&]+)/)
-        
-        accessToken = accessTokenMatch ? decodeURIComponent(accessTokenMatch[1]) : ''
-        refreshToken = refreshTokenMatch ? decodeURIComponent(refreshTokenMatch[1]) : ''
+    // Method 2: Extract from action_link URL if it contains token_hash parameter
+    if (!tokenHash && actionLink) {
+      const tokenHashMatch = actionLink.match(/[?&#]token_hash=([^&]+)/)
+      if (tokenHashMatch) {
+        tokenHash = decodeURIComponent(tokenHashMatch[1])
       }
-      
-      if (!accessToken || !refreshToken) {
-        return new Response(
-          JSON.stringify({ error: 'Failed to extract tokens from authentication link' }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-      }
+    }
 
+    // Method 3: If we have action_link, we can extract the full URL and return it
+    // The client can then use it to set the session
+    if (!tokenHash && actionLink) {
+      // Return the action_link so client can parse it
       return new Response(
         JSON.stringify({ 
           success: true,
-          access_token: accessToken,
-          refresh_token: refreshToken,
-          type: tokenType
-        }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    } catch (urlError) {
-      // If URL parsing fails, try regex extraction
-      const accessTokenMatch = actionLink.match(/[#&?]access_token=([^&]+)/)
-      const refreshTokenMatch = actionLink.match(/[#&?]refresh_token=([^&]+)/)
-      
-      const accessToken = accessTokenMatch ? decodeURIComponent(accessTokenMatch[1]) : ''
-      const refreshToken = refreshTokenMatch ? decodeURIComponent(refreshTokenMatch[1]) : ''
-      
-      if (!accessToken || !refreshToken) {
-        return new Response(
-          JSON.stringify({ error: 'Failed to extract tokens from authentication link' }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-      }
-
-      return new Response(
-        JSON.stringify({ 
-          success: true,
-          access_token: accessToken,
-          refresh_token: refreshToken,
-          type: 'magiclink'
+          action_link: actionLink,
+          // Also try to extract access_token and refresh_token from the link
+          debug: 'Using action_link fallback'
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
+
+    if (!tokenHash) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Failed to extract token hash from authentication link',
+          debug: {
+            hasProperties: !!properties,
+            propertiesKeys: Object.keys(properties),
+            actionLinkPreview: actionLink.substring(0, 150)
+          }
+        }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    return new Response(
+      JSON.stringify({ 
+        success: true,
+        token_hash: tokenHash
+      }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
 
   } catch (error: any) {
     return new Response(

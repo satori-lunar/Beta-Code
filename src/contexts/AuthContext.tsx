@@ -207,18 +207,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         url: functionUrl,
         hasUrl: !!supabaseUrl,
         hasKey: !!anonKey,
-        keyLength: anonKey.length
+        keyLength: anonKey.length,
+        email: email
       });
 
-      const response = await fetch(functionUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${anonKey}`,
-          'apikey': anonKey
-        },
-        body: JSON.stringify({ email })
-      });
+      let response: Response;
+      try {
+        response = await fetch(functionUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${anonKey}`,
+            'apikey': anonKey
+          },
+          body: JSON.stringify({ email })
+        });
+      } catch (fetchError: any) {
+        console.error('❌ Fetch error details:', {
+          error: fetchError,
+          message: fetchError?.message,
+          name: fetchError?.name,
+          stack: fetchError?.stack,
+          url: functionUrl
+        });
+        throw fetchError;
+      }
 
       if (!response.ok) {
         // Handle HTTP errors

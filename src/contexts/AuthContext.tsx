@@ -188,11 +188,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(DEMO_USER);
       return { error: null, requiresPassword: false };
     }
+    
+    // Read env vars outside try so they're available in catch as well
+    let supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+    let anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
     try {
       // Call Edge Function for passwordless auth
-      let supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-      const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
       if (!supabaseUrl || !anonKey) {
         return { error: new Error('Supabase configuration is missing. Please check your environment variables.'), requiresPassword: false };

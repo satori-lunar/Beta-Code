@@ -7,7 +7,9 @@ import {
   Target,
   Calendar,
   X,
-  Trash2
+  Trash2,
+  Edit2,
+  Check
 } from 'lucide-react';
 import {
   LineChart,
@@ -20,7 +22,7 @@ import {
   ReferenceLine
 } from 'recharts';
 import { useAuth } from '../contexts/AuthContext';
-import { useWeightEntries, checkFirstTimeBadges } from '../hooks/useSupabaseData';
+import { useWeightEntries, checkFirstTimeBadges, useUserProfile } from '../hooks/useSupabaseData';
 import { useTrackWeightLog } from '../hooks/useActivityTracking';
 import { supabase } from '../lib/supabase';
 import { format, parseISO } from 'date-fns';
@@ -58,9 +60,12 @@ export default function WeightLog() {
     ? (latestWeight.weight - startWeight.weight).toFixed(1)
     : null;
 
-  // Default goal weight in lbs
-  const goalWeight = 150;
-  const toGoal = latestWeight ? (latestWeight.weight - goalWeight).toFixed(1) : null;
+  // Get goal weight from profile (default to null if not set)
+  const userGoalWeight = (profile as any)?.goal_weight || null;
+  const goalWeightUnit = (profile as any)?.goal_weight_unit || 'lbs';
+  const toGoal = latestWeight && userGoalWeight 
+    ? (latestWeight.weight - userGoalWeight).toFixed(1) 
+    : null;
 
   const handleAddEntry = async () => {
     if (!user || !newEntry.weight) return;
@@ -180,15 +185,55 @@ export default function WeightLog() {
         </div>
 
         <div className="stat-card">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center">
-              <Target className="w-5 h-5 text-purple-600" />
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center">
+                <Target className="w-5 h-5 text-purple-600" />
+              </div>
             </div>
+            {userGoalWeight && (
+              <button
+                onClick={() => {
+                  setGoalWeight(userGoalWeight.toString());
+                  setIsEditingGoal(true);
+                  setShowGoalModal(true);
+                }}
+                className="p-1.5 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                title="Edit goal weight"
+              >
+                <Edit2 className="w-4 h-4" />
+              </button>
+            )}
           </div>
-          <p className="text-2xl font-bold text-gray-900">
-            {toGoal || '--'} lbs
-          </p>
-          <p className="text-sm text-gray-500">To Goal ({goalWeight} lbs)</p>
+          {userGoalWeight ? (
+            <>
+              <p className={`text-2xl font-bold ${
+                toGoal && Number(toGoal) <= 0 ? 'text-green-600' : 'text-gray-900'
+              }`}>
+                {toGoal ? `${Number(toGoal) > 0 ? '+' : ''}${toGoal}` : '0'} lbs
+              </p>
+              <p className="text-sm text-gray-500">
+                To Goal ({userGoalWeight} {goalWeightUnit})
+                {toGoal && Number(toGoal) <= 0 && (
+                  <span className="text-green-600 font-medium ml-1">✓ Reached!</span>
+                )}
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-2xl font-bold text-gray-400">--</p>
+              <button
+                onClick={() => {
+                  setGoalWeight('');
+                  setIsEditingGoal(false);
+                  setShowGoalModal(true);
+                }}
+                className="text-sm text-purple-600 hover:text-purple-700 font-medium mt-1"
+              >
+                Set Goal Weight
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -217,12 +262,14 @@ export default function WeightLog() {
                 }}
                 formatter={(value: number) => [`${value} lbs`, 'Weight']}
               />
-              <ReferenceLine
-                y={goalWeight}
-                stroke="#9333ea"
-                strokeDasharray="5 5"
-                label={{ value: `Goal: ${goalWeight} lbs`, position: 'right', fontSize: 12 }}
-              />
+              {userGoalWeight && (
+                <ReferenceLine
+                  y={userGoalWeight}
+                  stroke="#9333ea"
+                  strokeDasharray="5 5"
+                  label={{ value: `Goal: ${userGoalWeight} ${goalWeightUnit}`, position: 'right', fontSize: 12 }}
+                />
+              )}
               <Line
                 type="monotone"
                 dataKey="weight"
@@ -359,6 +406,94 @@ export default function WeightLog() {
                   Log Weight
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Set Goal Weight Modal */}
+      {showGoalModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl w-full max-w-md p-4 sm:p-6 shadow-elevated my-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-display font-semibold">
+                {isEditingGoal ? 'Edit Goal Weight' : 'Set Goal Weight'}
+              </h3>
+              <button
+                onClick={() => {
+                  setShowGoalModal(false);
+                  setIsEditingGoal(false);
+                  setGoalWeight('');
+                }}
+                className="p-2 hover:bg-gray-100 rounded-lg"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Goal Weight ({goalWeightUnit})
+                </label>
+                <input
+                  type="number"
+                  step="0.1"
+                  value={goalWeight}
+                  onChange={(e) => setGoalWeight(e.target.value)}
+                  placeholder={userGoalWeight ? userGoalWeight.toString() : "Enter your goal weight"}
+                  className="input text-2xl text-center font-bold"
+                  autoFocus
+                />
+                <p className="text-xs text-gray-500 mt-2">
+                  Set a target weight to track your progress toward your goal.
+                </p>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={() => {
+                    setShowGoalModal(false);
+                    setIsEditingGoal(false);
+                    setGoalWeight('');
+                  }}
+                  className="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleSetGoalWeight} 
+                  className="flex-1 btn-primary flex items-center justify-center gap-2"
+                  disabled={!goalWeight || isNaN(parseFloat(goalWeight))}
+                >
+                  <Check className="w-5 h-5" />
+                  {isEditingGoal ? 'Update Goal' : 'Set Goal'}
+                </button>
+              </div>
+
+              {userGoalWeight && (
+                <button
+                  onClick={async () => {
+                    if (!user) return;
+                    try {
+                      const { error } = await supabase
+                        .from('user_profiles')
+                        .update({ goal_weight: null })
+                        .eq('id', user.id);
+
+                      if (error) throw error;
+                      setShowGoalModal(false);
+                      setIsEditingGoal(false);
+                    } catch (error) {
+                      console.error('Error removing goal weight:', error);
+                      alert('Failed to remove goal weight. Please try again.');
+                    }
+                  }}
+                  className="w-full px-4 py-2 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                >
+                  Remove Goal Weight
+                </button>
+              )}
             </div>
           </div>
         </div>

@@ -202,17 +202,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       supabaseUrl = supabaseUrl.replace(/\/$/, '');
       const functionUrl = `${supabaseUrl}/functions/v1/passwordless-auth`;
 
+      // Log for debugging (only in development)
+      if (import.meta.env.DEV) {
+        console.log('🔐 Calling Edge Function:', functionUrl);
+      }
+
       const response = await fetch(functionUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${anonKey}`
+          'Authorization': `Bearer ${anonKey}`,
+          'apikey': anonKey
         },
         body: JSON.stringify({ email })
       });
 
       if (!response.ok) {
         // Handle HTTP errors
+        const errorText = await response.text();
+        
+        // Log error for debugging
+        if (import.meta.env.DEV) {
+          console.error('❌ Edge Function error:', response.status, errorText);
+        }
+        
         if (response.status === 404) {
           return { 
             error: new Error(
@@ -222,12 +235,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             requiresPassword: false 
           };
         }
-        const errorText = await response.text();
+        
         try {
           const errorData = JSON.parse(errorText);
           return { error: new Error(errorData.error || errorData.message || 'Authentication failed'), requiresPassword: false };
         } catch {
-          return { error: new Error(`Authentication failed: ${response.status} ${response.statusText}`), requiresPassword: false };
+          return { error: new Error(`Authentication failed: ${response.status} ${response.statusText}. ${errorText.substring(0, 100)}`), requiresPassword: false };
         }
       }
 

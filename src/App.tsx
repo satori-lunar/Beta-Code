@@ -20,6 +20,7 @@ import Badges from './pages/Badges';
 import AdminDashboard from './pages/AdminDashboard';
 import SignIn from './pages/SignIn';
 import SignUp from './pages/SignUp';
+import ResetPassword from './pages/ResetPassword';
 
 function App() {
   return (
@@ -31,6 +32,7 @@ function App() {
               {/* Public routes */}
               <Route path="/signin" element={<SignIn />} />
               <Route path="/signup" element={<SignUp />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
 
               {/* Protected routes */}
               <Route

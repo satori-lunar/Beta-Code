@@ -6,10 +6,9 @@ import { Heart, Loader2 } from 'lucide-react'
 export default function SignUp() {
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const { signUp } = useAuth()
+  const { signInPasswordless } = useAuth()
   const navigate = useNavigate()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -17,13 +16,38 @@ export default function SignUp() {
     setLoading(true)
     setError('')
 
-    const { error } = await signUp(email, password, fullName)
+    // Use passwordless auth (will create account if new, sign in if exists)
+    const { error: authError, requiresPassword } = await signInPasswordless(email)
 
-    if (error) {
-      setError(error.message)
+    if (requiresPassword) {
+      // User already exists with password - redirect to sign in
+      setError('An account with this email already exists. Please sign in instead.')
+      setLoading(false)
+      setTimeout(() => navigate('/signin'), 2000)
+      return
+    }
+
+    if (authError) {
+      setError(authError.message)
       setLoading(false)
     } else {
-      // Sign up successful - redirect to dashboard
+      // Success - update user metadata with name if provided
+      if (fullName) {
+        // This will be handled by the trigger that creates the user profile
+        // The Edge Function already sets name from email, but we can update it
+        try {
+          const { supabase } = await import('../lib/supabase')
+          const { data: { user } } = await supabase.auth.getUser()
+          if (user) {
+            await supabase.auth.updateUser({
+              data: { name: fullName }
+            })
+          }
+        } catch (err) {
+          // Non-critical - name update failed
+        }
+      }
+      // Navigate will happen via auth state change
       navigate('/')
     }
   }
@@ -51,14 +75,13 @@ export default function SignUp() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-1">
-                Full Name
+                Full Name <span className="text-gray-400 font-normal">(optional)</span>
               </label>
               <input
                 id="fullName"
                 type="text"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                required
                 className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-rose-400 focus:border-transparent outline-none transition"
                 placeholder="John Doe"
               />
@@ -74,26 +97,10 @@ export default function SignUp() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-rose-400 focus:border-transparent outline-none transition"
+                disabled={loading}
+                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-rose-400 focus:border-transparent outline-none transition disabled:opacity-50"
                 placeholder="you@example.com"
               />
-            </div>
-
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                Password
-              </label>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={6}
-                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-rose-400 focus:border-transparent outline-none transition"
-                placeholder="••••••••"
-              />
-              <p className="mt-1 text-xs text-gray-500">Must be at least 6 characters</p>
             </div>
 
             {error && (
@@ -113,10 +120,14 @@ export default function SignUp() {
                   Creating account...
                 </>
               ) : (
-                'Sign Up'
+                'Create Account'
               )}
             </button>
           </form>
+
+          <p className="mt-4 text-center text-gray-500 text-xs">
+            Enter your email to create an account. No password needed!
+          </p>
 
           <p className="mt-6 text-center text-gray-600 text-sm">
             Already have an account?{' '}

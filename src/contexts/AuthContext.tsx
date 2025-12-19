@@ -22,6 +22,8 @@ interface AuthContextType {
   signUp: (email: string, password: string, name: string) => Promise<{ error: Error | null; needsConfirmation?: boolean }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signInWithMagicLink: (email: string) => Promise<{ error: Error | null; message?: string }>;
+  signInPasswordless: (email: string) => Promise<{ error: Error | null; requiresPassword?: boolean }>;
+  resetPassword: (email: string) => Promise<{ error: Error | null; message?: string }>;
   signOut: () => Promise<void>;
 }
 
@@ -181,6 +183,66 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: null, message: 'Check your email for the magic link!' };
   };
 
+  const signInPasswordless = async (email: string) => {
+    if (DEMO_MODE) {
+      setUser(DEMO_USER);
+      return { error: null, requiresPassword: false };
+    }
+
+    try {
+      // Call Edge Function for passwordless auth
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+      const { data, error } = await fetch(`${supabaseUrl}/functions/v1/passwordless-auth`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY || ''}`
+        },
+        body: JSON.stringify({ email })
+      }).then(res => res.json());
+
+      if (error || data?.error) {
+        return { error: new Error(error || data?.error || 'Authentication failed'), requiresPassword: false };
+      }
+
+      if (data?.requiresPassword) {
+        return { error: null, requiresPassword: true };
+      }
+
+      if (!data?.token) {
+        return { error: new Error('No authentication token received'), requiresPassword: false };
+      }
+
+      // Use the token to sign in
+      const { error: signInError } = await supabase.auth.verifyOtp({
+        email,
+        token: data.token,
+        type: 'email'
+      });
+
+      if (signInError) {
+        return { error: signInError, requiresPassword: false };
+      }
+
+      return { error: null, requiresPassword: false };
+    } catch (err: any) {
+      return { error: new Error(err?.message || 'Failed to authenticate'), requiresPassword: false };
+    }
+  };
+
+  const resetPassword = async (email: string) => {
+    if (DEMO_MODE) {
+      return { error: null, message: 'Password reset email sent (demo mode)' };
+    }
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`
+    });
+    if (error) {
+      return { error, message: error.message };
+    }
+    return { error: null, message: 'Check your email for the password reset link!' };
+  };
+
   const signOut = async () => {
     if (DEMO_MODE) {
       setUser(null);
@@ -190,7 +252,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signUp, signIn, signInWithMagicLink, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, signUp, signIn, signInWithMagicLink, signInPasswordless, resetPassword, signOut }}>
       {children}
     </AuthContext.Provider>
   );

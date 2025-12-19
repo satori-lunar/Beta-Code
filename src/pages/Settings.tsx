@@ -23,7 +23,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { useUserProfile } from '../hooks/useSupabaseData';
+import { useUserProfile, useNotificationPreferences } from '../hooks/useSupabaseData';
 import { supabase } from '../lib/supabase';
 import { useTheme } from '../contexts/ThemeContext';
 // AvatarBuilder and AvatarDisplay removed while profile avatar is disabled
@@ -33,14 +33,9 @@ export default function Settings() {
   const { user } = useAuth();
   const { profile } = useUserProfile();
   const { colorPreset, setColorPreset, isDark, toggleDark, colorPresets, primaryColor } = useTheme();
+  const { preferences: notificationPrefs, loading: prefsLoading, updatePreferences } = useNotificationPreferences();
   const [name, setName] = useState(user?.user_metadata?.name || user?.email?.split('@')[0] || '');
   const [email, setEmail] = useState(user?.email || '');
-  const [notifications, setNotifications] = useState({
-    reminders: true,
-    classAlerts: true,
-    weeklyProgress: true,
-    achievements: true,
-  });
   // Language selection temporarily disabled
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
@@ -86,18 +81,10 @@ export default function Settings() {
     setShowComingSoonModal(true);
   };
 
-  const settingsSections = [
-    {
-      title: 'Notifications',
-      icon: Bell,
-      items: [
-        { label: 'Daily Reminders', key: 'reminders' },
-        { label: 'Class Alerts', key: 'classAlerts' },
-        { label: 'Weekly Progress', key: 'weeklyProgress' },
-        { label: 'Achievement Alerts', key: 'achievements' },
-      ],
-    },
-  ];
+  const handleNotificationPreferenceChange = async (field: string, value: any) => {
+    if (!notificationPrefs) return
+    await updatePreferences({ [field]: value })
+  }
 
   return (
     <div className="space-y-8 pb-20 lg:pb-0 max-w-3xl">
@@ -282,41 +269,210 @@ export default function Settings() {
       <div className="card">
         <h2 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
           <Bell className="w-5 h-5 text-gray-400" />
-          Notifications
+          Notifications & Reminders
         </h2>
 
-        <div className="space-y-4">
-          {settingsSections[0].items.map((item) => (
-            <div
-              key={item.key}
-              className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0"
-            >
-              <span className="text-gray-700">{item.label}</span>
+        {prefsLoading ? (
+          <div className="text-center py-8 text-gray-500">Loading preferences...</div>
+        ) : notificationPrefs ? (
+          <div className="space-y-6">
+            {/* Habit Reminders */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-gray-900">Habit Reminders</p>
+                  <p className="text-sm text-gray-500">Get reminded to complete your daily habits</p>
+                </div>
+                <button
+                  onClick={() => handleNotificationPreferenceChange('habit_reminders_enabled', !notificationPrefs.habit_reminders_enabled)}
+                  className="relative w-12 h-7 rounded-full transition-colors"
+                  style={{
+                    backgroundColor: notificationPrefs.habit_reminders_enabled ? primaryColor : '#e5e7eb'
+                  }}
+                >
+                  <div
+                    className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+                      notificationPrefs.habit_reminders_enabled ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+              {notificationPrefs.habit_reminders_enabled && (
+                <div>
+                  <label className="block text-sm text-gray-700 mb-1">Reminder Time</label>
+                  <input
+                    type="time"
+                    value={notificationPrefs.habit_reminder_time?.slice(0, 5) || '09:00'}
+                    onChange={(e) => handleNotificationPreferenceChange('habit_reminder_time', e.target.value + ':00')}
+                    className="input text-sm"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Journal Reminders */}
+            <div className="space-y-3 border-t border-gray-100 pt-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-gray-900">Journal Reminders</p>
+                  <p className="text-sm text-gray-500">Reminders to write in your journal</p>
+                </div>
+                <button
+                  onClick={() => handleNotificationPreferenceChange('journal_reminders_enabled', !notificationPrefs.journal_reminders_enabled)}
+                  className="relative w-12 h-7 rounded-full transition-colors"
+                  style={{
+                    backgroundColor: notificationPrefs.journal_reminders_enabled ? primaryColor : '#e5e7eb'
+                  }}
+                >
+                  <div
+                    className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+                      notificationPrefs.journal_reminders_enabled ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+              {notificationPrefs.journal_reminders_enabled && (
+                <div>
+                  <label className="block text-sm text-gray-700 mb-1">Reminder Time</label>
+                  <input
+                    type="time"
+                    value={notificationPrefs.journal_reminder_time?.slice(0, 5) || '20:00'}
+                    onChange={(e) => handleNotificationPreferenceChange('journal_reminder_time', e.target.value + ':00')}
+                    className="input text-sm"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Mental Health Reminders */}
+            <div className="space-y-3 border-t border-gray-100 pt-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-gray-900">Mental Health Reminders</p>
+                  <p className="text-sm text-gray-500">Reminders for mindfulness and mental health exercises</p>
+                </div>
+                <button
+                  onClick={() => handleNotificationPreferenceChange('mental_health_reminders_enabled', !notificationPrefs.mental_health_reminders_enabled)}
+                  className="relative w-12 h-7 rounded-full transition-colors"
+                  style={{
+                    backgroundColor: notificationPrefs.mental_health_reminders_enabled ? primaryColor : '#e5e7eb'
+                  }}
+                >
+                  <div
+                    className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+                      notificationPrefs.mental_health_reminders_enabled ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+              {notificationPrefs.mental_health_reminders_enabled && (
+                <div>
+                  <label className="block text-sm text-gray-700 mb-1">Reminder Time</label>
+                  <input
+                    type="time"
+                    value={notificationPrefs.mental_health_reminder_time?.slice(0, 5) || '14:00'}
+                    onChange={(e) => handleNotificationPreferenceChange('mental_health_reminder_time', e.target.value + ':00')}
+                    className="input text-sm"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Goal Reminders */}
+            <div className="space-y-3 border-t border-gray-100 pt-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-gray-900">Goal Reminders</p>
+                  <p className="text-sm text-gray-500">Get reminded about your active goals</p>
+                </div>
+                <button
+                  onClick={() => handleNotificationPreferenceChange('goal_reminders_enabled', !notificationPrefs.goal_reminders_enabled)}
+                  className="relative w-12 h-7 rounded-full transition-colors"
+                  style={{
+                    backgroundColor: notificationPrefs.goal_reminders_enabled ? primaryColor : '#e5e7eb'
+                  }}
+                >
+                  <div
+                    className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+                      notificationPrefs.goal_reminders_enabled ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+              {notificationPrefs.goal_reminders_enabled && (
+                <>
+                  <div>
+                    <label className="block text-sm text-gray-700 mb-1">Frequency</label>
+                    <select
+                      value={notificationPrefs.goal_reminder_frequency || 'daily'}
+                      onChange={(e) => handleNotificationPreferenceChange('goal_reminder_frequency', e.target.value)}
+                      className="input text-sm"
+                    >
+                      <option value="daily">Daily</option>
+                      <option value="weekly">Weekly (Mondays)</option>
+                      <option value="never">Never</option>
+                    </select>
+                  </div>
+                  {notificationPrefs.goal_reminder_frequency !== 'never' && (
+                    <div>
+                      <label className="block text-sm text-gray-700 mb-1">Reminder Time</label>
+                      <input
+                        type="time"
+                        value={notificationPrefs.goal_reminder_time?.slice(0, 5) || '10:00'}
+                        onChange={(e) => handleNotificationPreferenceChange('goal_reminder_time', e.target.value + ':00')}
+                        className="input text-sm"
+                      />
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* Achievement Notifications */}
+            <div className="flex items-center justify-between border-t border-gray-100 pt-4">
+              <div>
+                <p className="font-medium text-gray-900">Achievement Notifications</p>
+                <p className="text-sm text-gray-500">Get notified when you earn badges</p>
+              </div>
               <button
-                onClick={() =>
-                  setNotifications({
-                    ...notifications,
-                    [item.key]: !notifications[item.key as keyof typeof notifications],
-                  })
-                }
+                onClick={() => handleNotificationPreferenceChange('achievement_notifications_enabled', !notificationPrefs.achievement_notifications_enabled)}
                 className="relative w-12 h-7 rounded-full transition-colors"
                 style={{
-                  backgroundColor: notifications[item.key as keyof typeof notifications]
-                    ? primaryColor
-                    : '#e5e7eb'
+                  backgroundColor: notificationPrefs.achievement_notifications_enabled ? primaryColor : '#e5e7eb'
                 }}
               >
                 <div
                   className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-transform ${
-                    notifications[item.key as keyof typeof notifications]
-                      ? 'translate-x-6'
-                      : 'translate-x-1'
+                    notificationPrefs.achievement_notifications_enabled ? 'translate-x-6' : 'translate-x-1'
                   }`}
                 />
               </button>
             </div>
-          ))}
-        </div>
+
+            {/* Streak Reminders */}
+            <div className="flex items-center justify-between border-t border-gray-100 pt-4">
+              <div>
+                <p className="font-medium text-gray-900">Streak Reminders</p>
+                <p className="text-sm text-gray-500">Get reminders to maintain your streaks</p>
+              </div>
+              <button
+                onClick={() => handleNotificationPreferenceChange('streak_reminders_enabled', !notificationPrefs.streak_reminders_enabled)}
+                className="relative w-12 h-7 rounded-full transition-colors"
+                style={{
+                  backgroundColor: notificationPrefs.streak_reminders_enabled ? primaryColor : '#e5e7eb'
+                }}
+              >
+                <div
+                  className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+                    notificationPrefs.streak_reminders_enabled ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="text-center py-8 text-gray-500">Unable to load notification preferences</div>
+        )}
       </div>
 
       {/* Quick Links */}

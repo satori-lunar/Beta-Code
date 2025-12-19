@@ -1388,3 +1388,76 @@ export async function checkFirstTimeBadges(
   return null;
 }
 
+// Hook for notification preferences
+export function useNotificationPreferences() {
+  const { user } = useAuth()
+  const [preferences, setPreferences] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
+  
+  const userId = user ? user.id : null
+
+  useEffect(() => {
+    if (!user) {
+      setPreferences(null)
+      setLoading(false)
+      return
+    }
+
+    async function fetchPreferences() {
+      try {
+        setLoading(true)
+        const { data, error: fetchError } = await supabase
+          .from('notification_preferences')
+          .select('*')
+          .eq('user_id', user.id)
+          .maybeSingle()
+
+        if (fetchError) throw fetchError
+
+        if (data) {
+          setPreferences(data)
+        } else {
+          // Create default preferences if they don't exist
+          const { data: newPrefs, error: createError } = await supabase
+            .from('notification_preferences')
+            .insert({ user_id: user.id })
+            .select()
+            .single()
+
+          if (createError) throw createError
+          setPreferences(newPrefs)
+        }
+      } catch (err) {
+        setError(err as Error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchPreferences()
+  }, [userId])
+
+  const updatePreferences = async (updates: Partial<typeof preferences>) => {
+    if (!user || !preferences) return
+
+    try {
+      const { data, error: updateError } = await supabase
+        .from('notification_preferences')
+        .update(updates)
+        .eq('user_id', user.id)
+        .select()
+        .single()
+
+      if (updateError) throw updateError
+      setPreferences(data)
+      return { success: true }
+    } catch (err) {
+      setError(err as Error)
+      return { success: false, error: err }
+    }
+  }
+
+  return { preferences, loading, error, updatePreferences }
+}
+

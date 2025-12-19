@@ -202,10 +202,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       supabaseUrl = supabaseUrl.replace(/\/$/, '');
       const functionUrl = `${supabaseUrl}/functions/v1/passwordless-auth`;
 
-      // Log for debugging (only in development)
-      if (import.meta.env.DEV) {
-        console.log('🔐 Calling Edge Function:', functionUrl);
-      }
+      // Log for debugging (always log to help troubleshoot)
+      console.log('🔐 Calling Edge Function:', {
+        url: functionUrl,
+        hasUrl: !!supabaseUrl,
+        hasKey: !!anonKey,
+        keyLength: anonKey.length
+      });
 
       const response = await fetch(functionUrl, {
         method: 'POST',
@@ -273,10 +276,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (err: any) {
       // Handle network errors (failed to fetch)
       if (err?.message?.includes('fetch') || err?.name === 'TypeError' || err?.message?.includes('Failed to fetch')) {
+        // Log detailed error for debugging
+        console.error('❌ Edge Function connection error:', {
+          error: err,
+          message: err?.message,
+          name: err?.name,
+          functionUrl: `${supabaseUrl}/functions/v1/passwordless-auth`,
+          hasUrl: !!supabaseUrl,
+          hasKey: !!anonKey
+        });
+        
         return { 
           error: new Error(
-            'Unable to connect to authentication service. ' +
-            'Please make sure the Edge Function "passwordless-auth" is deployed.'
+            `Unable to connect to authentication service at ${supabaseUrl}/functions/v1/passwordless-auth. ` +
+            'This could be a CORS issue, network problem, or the function may not be accessible. ' +
+            'Please check the browser console for more details.'
           ), 
           requiresPassword: false 
         };

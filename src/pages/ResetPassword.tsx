@@ -2,12 +2,11 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
-import { Heart, Loader2, Lock, CheckCircle2 } from 'lucide-react'
+import { Loader2, Lock, CheckCircle2 } from 'lucide-react'
 
 export default function ResetPassword() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
-  const { user } = useAuth()
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [loading, setLoading] = useState(false)

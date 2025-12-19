@@ -1,10 +1,9 @@
 import { useEffect } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { Loader2 } from 'lucide-react'
 
 export default function AuthCallback() {
-  const [searchParams] = useSearchParams()
   const navigate = useNavigate()
 
   useEffect(() => {

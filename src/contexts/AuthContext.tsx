@@ -194,7 +194,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // This will automatically create the user if they don't exist
       // Note: This sends an email with a magic link that the user must click
       // For truly automatic auth without email interaction, you need the Edge Function
-      const { data, error } = await supabase.auth.signInWithOtp({
+      const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
           shouldCreateUser: true, // Auto-create user if they don't exist

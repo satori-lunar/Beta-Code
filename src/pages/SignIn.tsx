@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { Heart, Loader2 } from 'lucide-react'
 
@@ -9,7 +8,6 @@ export default function SignIn() {
   const [error, setError] = useState('')
   const [emailSent, setEmailSent] = useState(false)
   const { signInPasswordless } = useAuth()
-  const navigate = useNavigate()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

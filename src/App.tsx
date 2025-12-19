@@ -21,6 +21,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import SignIn from './pages/SignIn';
 import SignUp from './pages/SignUp';
 import ResetPassword from './pages/ResetPassword';
+import AuthCallback from './pages/AuthCallback';
 
 function App() {
   return (
@@ -33,6 +34,7 @@ function App() {
               <Route path="/signin" element={<SignIn />} />
               <Route path="/signup" element={<SignUp />} />
               <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/auth/callback" element={<AuthCallback />} />
 
               {/* Protected routes */}
               <Route

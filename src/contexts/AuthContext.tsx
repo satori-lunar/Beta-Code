@@ -190,91 +190,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      // Call Edge Function for passwordless auth
-      let supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-      const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
-
-      if (!supabaseUrl || !anonKey) {
-        return { error: new Error('Supabase configuration is missing. Please check your environment variables.'), requiresPassword: false };
-      }
-
-      // Ensure URL doesn't end with a slash to avoid double slashes
-      supabaseUrl = supabaseUrl.replace(/\/$/, '');
-      const functionUrl = `${supabaseUrl}/functions/v1/passwordless-auth`;
-      
-      // Log for debugging (only in development)
-      if (import.meta.env.DEV) {
-        console.log('🔐 Attempting passwordless auth:', { email, functionUrl: functionUrl.replace(/\/\/.*@/, '//***@') });
-      }
-
-      const response = await fetch(functionUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${anonKey}`
-        },
-        body: JSON.stringify({ email })
-      });
-
-      if (!response.ok) {
-        // Handle HTTP errors
-        if (response.status === 404) {
-          return { 
-            error: new Error(
-              'The passwordless authentication service is not deployed. ' +
-              'Please deploy the Edge Function "passwordless-auth" to your Supabase project. ' +
-              'Run: supabase functions deploy passwordless-auth'
-            ), 
-            requiresPassword: false 
-          };
-        }
-        const errorText = await response.text();
-        try {
-          const errorData = JSON.parse(errorText);
-          return { error: new Error(errorData.error || errorData.message || 'Authentication failed'), requiresPassword: false };
-        } catch {
-          return { error: new Error(`Authentication failed: ${response.status} ${response.statusText}`), requiresPassword: false };
-        }
-      }
-
-      const data = await response.json();
-
-      if (data?.error) {
-        return { error: new Error(data.error || 'Authentication failed'), requiresPassword: false };
-      }
-
-      if (data?.requiresPassword) {
-        return { error: null, requiresPassword: true };
-      }
-
-      if (!data?.token) {
-        return { error: new Error('No authentication token received'), requiresPassword: false };
-      }
-
-      // Use the token to sign in
-      const { error: signInError } = await supabase.auth.verifyOtp({
+      // Use Supabase's built-in OTP authentication
+      // This will automatically create the user if they don't exist
+      // Note: This sends an email with a magic link that the user must click
+      // For truly automatic auth without email interaction, you need the Edge Function
+      const { data, error } = await supabase.auth.signInWithOtp({
         email,
-        token: data.token,
-        type: 'email'
+        options: {
+          shouldCreateUser: true, // Auto-create user if they don't exist
+          emailRedirectTo: `${window.location.origin}/auth/callback`
+        }
       });
 
-      if (signInError) {
-        return { error: signInError, requiresPassword: false };
+      if (error) {
+        // Check if error indicates user has password
+        // Some Supabase configurations return specific errors for password accounts
+        const errorMsg = error.message?.toLowerCase() || '';
+        if (errorMsg.includes('password') || 
+            errorMsg.includes('user already registered') ||
+            errorMsg.includes('email already registered')) {
+          // Try to check if user exists with password by attempting a different method
+          return { error: null, requiresPassword: true };
+        }
+        return { error, requiresPassword: false };
       }
 
+      // OTP email was sent successfully
+      // User needs to check their email and click the magic link
+      // The link will redirect to /auth/callback which will complete the sign-in
+      // This is the standard Supabase flow - for automatic auth without email,
+      // you would need to deploy the Edge Function
       return { error: null, requiresPassword: false };
     } catch (err: any) {
-      // Handle network errors (failed to fetch)
-      if (err?.message?.includes('fetch') || err?.name === 'TypeError' || err?.message?.includes('Failed to fetch')) {
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-        return { 
-          error: new Error(
-            `Unable to connect to authentication service at ${supabaseUrl}/functions/v1/passwordless-auth. ` +
-            'The Edge Function may not be deployed. Please deploy it using: supabase functions deploy passwordless-auth'
-          ), 
-          requiresPassword: false 
-        };
-      }
       return { error: new Error(err?.message || 'Failed to authenticate'), requiresPassword: false };
     }
   };

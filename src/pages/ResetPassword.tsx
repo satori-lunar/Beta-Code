@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
 import { Loader2, Lock, CheckCircle2 } from 'lucide-react'
 

@@ -190,70 +190,84 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      // Try to sign up with a random password (user never sees it)
-      // If email confirmation is disabled in Supabase, this will immediately sign them in
-      // Generate a secure random password that the user never sees
-      const randomPassword = crypto.getRandomValues(new Uint32Array(16)).join('') + 'Aa1!';
-      
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password: randomPassword,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`,
-          data: {
-            name: email.split('@')[0] // Use email prefix as default name
-          }
-        }
+      // Call Edge Function for passwordless auth
+      let supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+      const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+
+      if (!supabaseUrl || !anonKey) {
+        return { error: new Error('Supabase configuration is missing. Please check your environment variables.'), requiresPassword: false };
+      }
+
+      // Ensure URL doesn't end with a slash to avoid double slashes
+      supabaseUrl = supabaseUrl.replace(/\/$/, '');
+      const functionUrl = `${supabaseUrl}/functions/v1/passwordless-auth`;
+
+      const response = await fetch(functionUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${anonKey}`
+        },
+        body: JSON.stringify({ email })
       });
 
-      // If sign up succeeds and we have a session, user was created and signed in
-      if (signUpData?.session) {
-        // User was created and signed in immediately (email confirmation disabled)
-        return { error: null, requiresPassword: false };
-      }
-
-      // If sign up fails because user already exists, try to sign in
-      if (signUpError) {
-        const errorMsg = signUpError.message?.toLowerCase() || '';
-        
-        // Check if user already exists
-        if (errorMsg.includes('user already registered') || 
-            errorMsg.includes('email already registered') ||
-            errorMsg.includes('already registered')) {
-          
-          // User exists - try to sign in with OTP (but this requires email click)
-          // Since we can't auto-sign in existing users without password or email verification,
-          // we'll use OTP as fallback
-          const { error: otpError } = await supabase.auth.signInWithOtp({
-            email,
-            options: {
-              emailRedirectTo: `${window.location.origin}/auth/callback`
-            }
-          });
-
-          if (otpError) {
-            // Check if it's a password account
-            if (otpError.message?.toLowerCase().includes('password')) {
-              return { error: null, requiresPassword: true };
-            }
-            return { error: otpError, requiresPassword: false };
-          }
-
-          // OTP email sent - user needs to click link
-          // Note: This is a limitation - we can't auto-sign in existing users without
-          // password or email verification from client side
-          return { error: null, requiresPassword: false };
+      if (!response.ok) {
+        // Handle HTTP errors
+        if (response.status === 404) {
+          return { 
+            error: new Error(
+              'The passwordless authentication service is not deployed. ' +
+              'Please deploy the Edge Function "passwordless-auth" to your Supabase project.'
+            ), 
+            requiresPassword: false 
+          };
         }
-
-        // Other sign up error
-        return { error: signUpError, requiresPassword: false };
+        const errorText = await response.text();
+        try {
+          const errorData = JSON.parse(errorText);
+          return { error: new Error(errorData.error || errorData.message || 'Authentication failed'), requiresPassword: false };
+        } catch {
+          return { error: new Error(`Authentication failed: ${response.status} ${response.statusText}`), requiresPassword: false };
+        }
       }
 
-      // Sign up succeeded but no session (email confirmation required)
-      // In this case, user needs to verify email
-      // But we'll return success since account was created
+      const data = await response.json();
+
+      if (data?.error) {
+        return { error: new Error(data.error || 'Authentication failed'), requiresPassword: false };
+      }
+
+      if (data?.requiresPassword) {
+        return { error: null, requiresPassword: true };
+      }
+
+      if (!data?.token) {
+        return { error: new Error('No authentication token received'), requiresPassword: false };
+      }
+
+      // Use the token to sign in automatically
+      const { error: signInError } = await supabase.auth.verifyOtp({
+        email,
+        token: data.token,
+        type: 'email'
+      });
+
+      if (signInError) {
+        return { error: signInError, requiresPassword: false };
+      }
+
       return { error: null, requiresPassword: false };
     } catch (err: any) {
+      // Handle network errors (failed to fetch)
+      if (err?.message?.includes('fetch') || err?.name === 'TypeError' || err?.message?.includes('Failed to fetch')) {
+        return { 
+          error: new Error(
+            'Unable to connect to authentication service. ' +
+            'Please make sure the Edge Function "passwordless-auth" is deployed.'
+          ), 
+          requiresPassword: false 
+        };
+      }
       return { error: new Error(err?.message || 'Failed to authenticate'), requiresPassword: false };
     }
   };

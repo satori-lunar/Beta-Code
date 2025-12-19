@@ -39,41 +39,17 @@ serve(async (req) => {
       }
     )
 
-    // Check if user exists
-    const { data: existingUser } = await supabaseAdmin.auth.admin.getUserByEmail(email)
-
-    let userId: string
-    let isNewUser = false
-
-    if (existingUser?.user) {
-      // User exists - sign them in (no password check, just use email)
-      userId = existingUser.user.id
-    } else {
-      // User doesn't exist - create them
-      const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
-        email,
-        email_confirm: true, // Auto-confirm email
-        user_metadata: {
-          name: email.split('@')[0] // Use email prefix as default name
-        }
-      })
-
-      if (createError || !newUser?.user) {
-        return new Response(
-          JSON.stringify({ error: createError?.message || 'Failed to create user' }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-      }
-
-      userId = newUser.user.id
-      isNewUser = true
-    }
+    // We don't need to look up or create the user explicitly here.
+    // The generateLink admin API will handle user creation if needed.
 
     // Generate OTP for passwordless sign-in
     // This sends an email with a code, but we'll extract the token for immediate use
-    const origin = req.headers.get('origin') || req.headers.get('referer')?.split('/').slice(0, 3).join('/') || 'http://localhost:3000'
+    const origin =
+      req.headers.get('origin') ||
+      req.headers.get('referer')?.split('/').slice(0, 3).join('/') ||
+      'http://localhost:3000'
     
-    // Use admin API to send OTP
+    // Use admin API to send OTP / magic link
     const { data: otpData, error: otpError } = await supabaseAdmin.auth.admin.generateLink({
       type: 'magiclink',
       email,
@@ -89,28 +65,73 @@ serve(async (req) => {
       )
     }
 
-    // Extract token from the generated link
+    // generateLink returns a magic link with tokens we can use
+    // We need to extract the access_token and refresh_token from the action_link
     const actionLink = otpData.properties?.action_link || ''
-    // The link format is usually: https://...?token=XXX or #access_token=XXX
-    const tokenMatch = actionLink.match(/[#&?]token=([^&]+)/) || actionLink.match(/[#&?]token_hash=([^&]+)/)
-    const token = tokenMatch ? decodeURIComponent(tokenMatch[1]) : null
+    
+    // Parse the URL to extract tokens
+    // Magic links typically have format: https://...?token=XXX#access_token=YYY&refresh_token=ZZZ
+    // or: https://...#access_token=YYY&refresh_token=ZZZ&type=magiclink
+    try {
+      const url = new URL(actionLink)
+      const hashParams = new URLSearchParams(url.hash.substring(1)) // Remove the #
+      const queryParams = new URLSearchParams(url.search.substring(1)) // Remove the ?
+      
+      // Try to get tokens from hash first, then query params
+      let accessToken = hashParams.get('access_token') || queryParams.get('access_token') || ''
+      let refreshToken = hashParams.get('refresh_token') || queryParams.get('refresh_token') || ''
+      const tokenType = hashParams.get('type') || queryParams.get('type') || 'magiclink'
 
-    if (!token) {
+      if (!accessToken || !refreshToken) {
+        // Fallback: try regex extraction
+        const accessTokenMatch = actionLink.match(/[#&?]access_token=([^&]+)/)
+        const refreshTokenMatch = actionLink.match(/[#&?]refresh_token=([^&]+)/)
+        
+        accessToken = accessTokenMatch ? decodeURIComponent(accessTokenMatch[1]) : ''
+        refreshToken = refreshTokenMatch ? decodeURIComponent(refreshTokenMatch[1]) : ''
+      }
+      
+      if (!accessToken || !refreshToken) {
+        return new Response(
+          JSON.stringify({ error: 'Failed to extract tokens from authentication link' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
       return new Response(
-        JSON.stringify({ error: 'Failed to extract authentication token from link' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ 
+          success: true,
+          access_token: accessToken,
+          refresh_token: refreshToken,
+          type: tokenType
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    } catch (urlError) {
+      // If URL parsing fails, try regex extraction
+      const accessTokenMatch = actionLink.match(/[#&?]access_token=([^&]+)/)
+      const refreshTokenMatch = actionLink.match(/[#&?]refresh_token=([^&]+)/)
+      
+      const accessToken = accessTokenMatch ? decodeURIComponent(accessTokenMatch[1]) : ''
+      const refreshToken = refreshTokenMatch ? decodeURIComponent(refreshTokenMatch[1]) : ''
+      
+      if (!accessToken || !refreshToken) {
+        return new Response(
+          JSON.stringify({ error: 'Failed to extract tokens from authentication link' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      return new Response(
+        JSON.stringify({ 
+          success: true,
+          access_token: accessToken,
+          refresh_token: refreshToken,
+          type: 'magiclink'
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
-
-    return new Response(
-      JSON.stringify({ 
-        success: true,
-        isNewUser,
-        token,
-        userId
-      }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
 
   } catch (error: any) {
     return new Response(

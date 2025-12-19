@@ -271,22 +271,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { error: new Error(data.error || 'Authentication failed'), requiresPassword: false };
       }
 
-      if (!data?.token) {
-        return { error: new Error('No authentication token received'), requiresPassword: false };
+      // The Edge Function now returns access_token and refresh_token from the magic link
+      if (data?.access_token && data?.refresh_token) {
+        // Use setSession to establish the session directly
+        const { error: sessionError } = await supabase.auth.setSession({
+          access_token: data.access_token,
+          refresh_token: data.refresh_token
+        });
+
+        if (sessionError) {
+          return { error: sessionError, requiresPassword: false };
+        }
+
+        return { error: null, requiresPassword: false };
       }
 
-      // Use the token to sign in automatically
-      const { error: signInError } = await supabase.auth.verifyOtp({
-        email,
-        token: data.token,
-        type: 'email'
-      });
+      // Fallback: if we still get a token field, try verifyOtp (for backward compatibility)
+      if (data?.token) {
+        const { error: signInError } = await supabase.auth.verifyOtp({
+          email,
+          token: data.token,
+          type: 'email'
+        });
 
-      if (signInError) {
-        return { error: signInError, requiresPassword: false };
+        if (signInError) {
+          return { error: signInError, requiresPassword: false };
+        }
+
+        return { error: null, requiresPassword: false };
       }
 
-      return { error: null, requiresPassword: false };
+      return { error: new Error('No authentication tokens received'), requiresPassword: false };
     } catch (err: any) {
       // Handle network errors (failed to fetch)
       if (err?.message?.includes('fetch') || err?.name === 'TypeError' || err?.message?.includes('Failed to fetch')) {

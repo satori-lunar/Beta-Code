@@ -273,8 +273,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // Method 1: Use token_hash if available (preferred)
       if (data?.token_hash) {
+        // For magic link verification, Supabase expects ONLY token_hash and type
         const { error: signInError } = await supabase.auth.verifyOtp({
-          email,
           token_hash: data.token_hash,
           type: 'magiclink'
         });

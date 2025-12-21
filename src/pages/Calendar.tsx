@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Plus,
   X,
@@ -6,10 +6,15 @@ import {
   Target,
   Bell,
   Flag,
-  Globe
+  Globe,
+  ChevronLeft,
+  ChevronRight,
+  Calendar as CalendarIcon
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
-import { format } from 'date-fns';
+import { format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, getDay, addWeeks, startOfWeek, endOfWeek } from 'date-fns';
+import { useUserClassReminders } from '../hooks/useSupabaseData';
+import { useAuth } from '../contexts/AuthContext';
 
 const eventTypes = [
   { id: 'class', name: 'Class', icon: Video, color: '#f8b4b4' },
@@ -35,44 +40,197 @@ const timezones = [
   { value: 'Australia/Sydney', label: 'Sydney (AEDT)' },
 ];
 
+// Calendar event interface
+interface CalendarEvent {
+  id: string;
+  title: string;
+  date: string; // YYYY-MM-DD format
+  time?: string; // HH:MM format
+  type: 'class' | 'habit' | 'reminder' | 'goal';
+  color: string;
+  description?: string;
+  isRepeating?: boolean; // For weekly repeating classes
+  originalDate?: string; // Original scheduled_at for repeating events
+}
+
+// Simple Month Calendar Component
+function MonthCalendar({ 
+  currentMonth, 
+  events, 
+  onDateClick 
+}: { 
+  currentMonth: Date; 
+  events: CalendarEvent[];
+  onDateClick: (date: Date) => void;
+}) {
+  const monthStart = startOfMonth(currentMonth);
+  const monthEnd = endOfMonth(currentMonth);
+  const calendarStart = startOfWeek(monthStart, { weekStartsOn: 0 }); // Start on Sunday
+  const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 0 });
+  
+  const daysInMonth = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
+  
+  const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  
+  const getEventsForDate = (date: Date) => {
+    const dateStr = format(date, 'yyyy-MM-dd');
+    return events.filter(event => event.date === dateStr);
+  };
+
+  return (
+    <div className="w-full">
+      <div className="grid grid-cols-7 gap-1 mb-2">
+        {weekdays.map(day => (
+          <div key={day} className="text-center text-sm font-semibold text-gray-600 py-2">
+            {day}
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-7 gap-1">
+        {daysInMonth.map(day => {
+          const dayEvents = getEventsForDate(day);
+          const isCurrentMonth = isSameMonth(day, currentMonth);
+          const isToday = isSameDay(day, new Date());
+          
+          return (
+            <div
+              key={day.toISOString()}
+              onClick={() => onDateClick(day)}
+              className={`
+                min-h-[80px] p-1 border border-gray-200 rounded-lg cursor-pointer
+                hover:bg-gray-50 transition-colors
+                ${!isCurrentMonth ? 'bg-gray-50 text-gray-400' : 'bg-white'}
+                ${isToday ? 'ring-2 ring-coral-500' : ''}
+              `}
+            >
+              <div className={`text-sm font-medium mb-1 ${isToday ? 'text-coral-600' : ''}`}>
+                {format(day, 'd')}
+              </div>
+              <div className="space-y-1">
+                {dayEvents.slice(0, 2).map(event => (
+                  <div
+                    key={event.id}
+                    className="text-xs px-1 py-0.5 rounded truncate"
+                    style={{ backgroundColor: event.color, color: 'white' }}
+                    title={event.title}
+                  >
+                    {event.time ? `${format(parseISO(`${event.date}T${event.time}`), 'h:mm a')} ` : ''}
+                    {event.title}
+                  </div>
+                ))}
+                {dayEvents.length > 2 && (
+                  <div className="text-xs text-gray-500">
+                    +{dayEvents.length - 2} more
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function Calendar() {
-  const { addCalendarEvent } = useStore();
-  const [selectedDate] = useState(new Date());
+  const { user } = useAuth();
+  const { calendarEvents, addCalendarEvent } = useStore();
+  const { reminders, loading: remindersLoading } = useUserClassReminders();
+  const [activeTab, setActiveTab] = useState<'google' | 'my'>('google');
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState(new Date());
   const [showAddModal, setShowAddModal] = useState(false);
   const [isMobile, setIsMobile] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
     return window.innerWidth < 768;
   });
   const [timezone, setTimezone] = useState<string>(() => {
-    // Get timezone from localStorage or default to Eastern Time
     const saved = localStorage.getItem('calendar_timezone');
     return saved || 'America/New_York';
   });
   const [newEvent, setNewEvent] = useState({
     title: '',
-    type: 'reminder',
+    type: 'reminder' as 'class' | 'habit' | 'reminder' | 'goal',
     time: '',
     description: '',
+    date: format(new Date(), 'yyyy-MM-dd'),
   });
 
-  // Track viewport size to switch calendar view on mobile
+  // Track viewport size
   useEffect(() => {
     const handleResize = () => {
       if (typeof window === 'undefined') return;
       setIsMobile(window.innerWidth < 768);
     };
-
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Save timezone to localStorage when it changes
+  // Save timezone to localStorage
   useEffect(() => {
     localStorage.setItem('calendar_timezone', timezone);
   }, [timezone]);
 
-  const selectedDateString = format(selectedDate, 'yyyy-MM-dd');
+  // Generate repeating weekly class events from reminders
+  const classEvents = useMemo(() => {
+    if (!reminders || reminders.length === 0) return [];
+    
+    const events: CalendarEvent[] = [];
+    const now = new Date();
+    const sixMonthsFromNow = addMonths(now, 6);
+    
+    reminders.forEach((reminder: any) => {
+      const liveClass = reminder.live_classes;
+      if (!liveClass || !liveClass.scheduled_at) return;
+      
+      const originalDate = parseISO(liveClass.scheduled_at);
+      const dayOfWeek = getDay(originalDate); // 0 = Sunday, 6 = Saturday
+      const time = format(originalDate, 'HH:mm');
+      
+      // Generate events for the next 6 months, repeating weekly
+      let currentDate = startOfWeek(now, { weekStartsOn: 0 });
+      // Find the first occurrence of this day of week on or after today
+      while (getDay(currentDate) !== dayOfWeek) {
+        currentDate = new Date(currentDate.getTime() + 24 * 60 * 60 * 1000);
+      }
+      
+      while (currentDate <= sixMonthsFromNow) {
+        const dateStr = format(currentDate, 'yyyy-MM-dd');
+        events.push({
+          id: `class-${reminder.live_class_id}-${dateStr}`,
+          title: liveClass.title,
+          date: dateStr,
+          time: time,
+          type: 'class',
+          color: '#f8b4b4',
+          description: liveClass.description,
+          isRepeating: true,
+          originalDate: liveClass.scheduled_at,
+        });
+        
+        // Move to next week
+        currentDate = addWeeks(currentDate, 1);
+      }
+    });
+    
+    return events;
+  }, [reminders]);
+
+  // Combine class events with custom events
+  const allEvents = useMemo(() => {
+    const customEvents: CalendarEvent[] = calendarEvents.map(event => ({
+      id: event.id,
+      title: event.title,
+      date: event.date,
+      time: event.time,
+      type: event.type,
+      color: event.color,
+      description: event.description,
+    }));
+    
+    return [...classEvents, ...customEvents];
+  }, [classEvents, calendarEvents]);
 
   const handleAddEvent = () => {
     if (newEvent.title.trim()) {
@@ -80,15 +238,26 @@ export default function Calendar() {
       addCalendarEvent({
         id: Date.now().toString(),
         title: newEvent.title,
-        date: selectedDateString,
+        date: newEvent.date,
         time: newEvent.time || undefined,
-        type: newEvent.type as 'class' | 'habit' | 'reminder' | 'goal',
+        type: newEvent.type,
         color: eventType?.color || '#f8b4b4',
         description: newEvent.description || undefined,
       });
-      setNewEvent({ title: '', type: 'reminder', time: '', description: '' });
+      setNewEvent({ title: '', type: 'reminder', time: '', description: '', date: format(selectedDate, 'yyyy-MM-dd') });
       setShowAddModal(false);
     }
+  };
+
+  const handleDateClick = (date: Date) => {
+    setSelectedDate(date);
+    setNewEvent(prev => ({ ...prev, date: format(date, 'yyyy-MM-dd') }));
+    setShowAddModal(true);
+  };
+
+  const getEventsForSelectedDate = () => {
+    const dateStr = format(selectedDate, 'yyyy-MM-dd');
+    return allEvents.filter(event => event.date === dateStr);
   };
 
   return (
@@ -118,7 +287,11 @@ export default function Calendar() {
             </select>
           </div>
           <button
-            onClick={() => setShowAddModal(true)}
+            onClick={() => {
+              setSelectedDate(new Date());
+              setNewEvent(prev => ({ ...prev, date: format(new Date(), 'yyyy-MM-dd') }));
+              setShowAddModal(true);
+            }}
             className="btn-primary flex items-center gap-2"
           >
             <Plus className="w-5 h-5" />
@@ -127,27 +300,143 @@ export default function Calendar() {
         </div>
       </div>
 
-      {/* Embedded Google Calendar */}
-      <div className="card">
-        <h2 className="text-xl font-display font-semibold text-gray-900 mb-4">
-          Calendar
-        </h2>
-        <div className="w-full" style={{ height: isMobile ? '500px' : '600px' }}>
-          <iframe
-            src={`https://calendar.google.com/calendar/embed?height=600&wkst=1&ctz=${encodeURIComponent(
-              timezone
-            )}&showPrint=0&mode=${isMobile ? 'AGENDA' : 'WEEK'}&src=ZW1pbHlicm93ZXJsaWZlY29hY2hAZ21haWwuY29t&color=%237986cb`}
-            style={{ border: 'solid 1px #777', width: '100%', height: '100%', borderWidth: 0 }}
-            frameBorder="0"
-            scrolling="no"
-          />
-        </div>
+      {/* Tabs */}
+      <div className="border-b border-gray-200">
+        <nav className="flex space-x-8">
+          <button
+            onClick={() => setActiveTab('google')}
+            className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+              activeTab === 'google'
+                ? 'border-coral-500 text-coral-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            Google Calendar
+          </button>
+          <button
+            onClick={() => setActiveTab('my')}
+            className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+              activeTab === 'my'
+                ? 'border-coral-500 text-coral-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            My Calendar
+          </button>
+        </nav>
       </div>
+
+      {/* Google Calendar View */}
+      {activeTab === 'google' && (
+        <div className="card">
+          <h2 className="text-xl font-display font-semibold text-gray-900 mb-4">
+            Calendar
+          </h2>
+          <div className="w-full" style={{ height: isMobile ? '500px' : '600px' }}>
+            <iframe
+              src={`https://calendar.google.com/calendar/embed?height=600&wkst=1&ctz=${encodeURIComponent(
+                timezone
+              )}&showPrint=0&mode=${isMobile ? 'AGENDA' : 'WEEK'}&src=ZW1pbHlicm93ZXJsaWZlY29hY2hAZ21haWwuY29t&color=%237986cb`}
+              style={{ border: 'solid 1px #777', width: '100%', height: '100%', borderWidth: 0 }}
+              frameBorder="0"
+              scrolling="no"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* My Calendar View */}
+      {activeTab === 'my' && (
+        <div className="space-y-6">
+          {/* Calendar Navigation */}
+          <div className="card">
+            <div className="flex items-center justify-between mb-6">
+              <button
+                onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
+                className="p-2 hover:bg-gray-100 rounded-lg"
+              >
+                <ChevronLeft className="w-5 h-5 text-gray-600" />
+              </button>
+              <h2 className="text-xl font-display font-semibold text-gray-900">
+                {format(currentMonth, 'MMMM yyyy')}
+              </h2>
+              <button
+                onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
+                className="p-2 hover:bg-gray-100 rounded-lg"
+              >
+                <ChevronRight className="w-5 h-5 text-gray-600" />
+              </button>
+            </div>
+            
+            {remindersLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-coral-500"></div>
+                <span className="ml-3 text-gray-600">Loading calendar...</span>
+              </div>
+            ) : (
+              <MonthCalendar
+                currentMonth={currentMonth}
+                events={allEvents}
+                onDateClick={handleDateClick}
+              />
+            )}
+          </div>
+
+          {/* Selected Date Events */}
+          <div className="card">
+            <h3 className="text-lg font-display font-semibold text-gray-900 mb-4">
+              Events for {format(selectedDate, 'EEEE, MMMM d, yyyy')}
+            </h3>
+            <div className="space-y-3">
+              {getEventsForSelectedDate().length === 0 ? (
+                <p className="text-gray-500 text-center py-8">No events scheduled for this day</p>
+              ) : (
+                getEventsForSelectedDate().map(event => {
+                  const eventType = eventTypes.find(t => t.id === event.type);
+                  const IconComponent = eventType?.icon || Bell;
+                  return (
+                    <div
+                      key={event.id}
+                      className="flex items-start gap-3 p-4 rounded-xl border border-gray-200"
+                      style={{ borderLeftColor: event.color, borderLeftWidth: '4px' }}
+                    >
+                      <div
+                        className="p-2 rounded-lg flex-shrink-0"
+                        style={{ backgroundColor: event.color + '20' }}
+                      >
+                        <IconComponent className="w-5 h-5" style={{ color: event.color }} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <h4 className="font-semibold text-gray-900">{event.title}</h4>
+                          {event.time && (
+                            <span className="text-sm text-gray-500 whitespace-nowrap">
+                              {format(parseISO(`${event.date}T${event.time}`), 'h:mm a')}
+                            </span>
+                          )}
+                        </div>
+                        {event.description && (
+                          <p className="text-sm text-gray-600 mt-1">{event.description}</p>
+                        )}
+                        {event.isRepeating && (
+                          <span className="inline-block mt-2 text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700">
+                            Repeats weekly
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Add Event Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl w-full max-w-md p-6 shadow-elevated">
+          <div className="bg-white rounded-3xl w-full max-w-md p-6 shadow-elevated max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-display font-semibold">Add Event</h3>
               <button
@@ -167,7 +456,7 @@ export default function Calendar() {
                   {eventTypes.map((type) => (
                     <button
                       key={type.id}
-                      onClick={() => setNewEvent({ ...newEvent, type: type.id })}
+                      onClick={() => setNewEvent({ ...newEvent, type: type.id as any })}
                       className={`p-3 rounded-xl flex flex-col items-center gap-1 transition-all ${
                         newEvent.type === type.id
                           ? 'ring-2 ring-coral-500'
@@ -202,10 +491,10 @@ export default function Calendar() {
                   Date
                 </label>
                 <input
-                  type="text"
-                  value={format(selectedDate, 'MMMM d, yyyy')}
-                  disabled
-                  className="input bg-gray-50"
+                  type="date"
+                  value={newEvent.date}
+                  onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })}
+                  className="input"
                 />
               </div>
 

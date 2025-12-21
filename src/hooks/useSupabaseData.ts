@@ -1278,6 +1278,74 @@ export function useClassReminders() {
   return { setReminder, loading, error }
 }
 
+// Hook to fetch user's class reminders with live class details
+export function useUserClassReminders() {
+  const { user } = useAuth()
+  const [reminders, setReminders] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
+
+  useEffect(() => {
+    if (!user) {
+      setReminders([])
+      setLoading(false)
+      return
+    }
+
+    async function fetchReminders() {
+      try {
+        setLoading(true)
+        const { data, error: fetchError } = await supabase
+          .from('class_reminders')
+          .select(`
+            *,
+            live_classes (
+              id,
+              title,
+              description,
+              instructor,
+              scheduled_at,
+              duration,
+              zoom_link,
+              category
+            )
+          `)
+          .eq('user_id', user.id)
+
+        if (fetchError) throw fetchError
+        setReminders(data || [])
+      } catch (err) {
+        setError(err as Error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchReminders()
+
+    // Subscribe to changes
+    const channel = supabase
+      .channel('class_reminders_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'class_reminders',
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => fetchReminders()
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [user?.id])
+
+  return { reminders, loading, error }
+}
+
 // Helper function to award a badge to a user
 export async function awardBadge(
   userId: string,

@@ -33,6 +33,7 @@ import { useIsAdmin } from '../hooks/useAdmin';
 import { formatDistanceToNow } from 'date-fns';
 import HelpDesk from './HelpDesk';
 import DashboardTour from './DashboardTour';
+import UrgentClassReminderBanner from './UrgentClassReminderBanner';
 import { supabase } from '../lib/supabase';
 
 const DASHBOARD_TOUR_STORAGE_KEY = 'wellness_dashboard_tour_done';
@@ -354,6 +355,9 @@ export default function Layout() {
         background: `linear-gradient(to bottom right, ${colorPresets[colorPreset]?.light}60, white, ${colorPresets[colorPreset]?.light}40)`
       }}
     >
+      {/* Urgent Class Reminder Banner */}
+      <UrgentClassReminderBanner />
+
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
         <div

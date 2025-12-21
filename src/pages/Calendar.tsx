@@ -15,11 +15,24 @@ import { format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, isSameMo
 import { useUserClassReminders } from '../hooks/useSupabaseData';
 
 const eventTypes = [
-  { id: 'class', name: 'Class', icon: Video, color: '#f8b4b4' },
-  { id: 'habit', name: 'Habit', icon: Target, color: '#d8f3dc' },
-  { id: 'reminder', name: 'Reminder', icon: Bell, color: '#bde0fe' },
-  { id: 'goal', name: 'Goal', icon: Flag, color: '#e2d5f1' },
+  { id: 'class', name: 'Class', icon: Video, color: '#ef4444' }, // Red - darker for contrast
+  { id: 'habit', name: 'Habit', icon: Target, color: '#10b981' }, // Green - darker for contrast
+  { id: 'reminder', name: 'Reminder', icon: Bell, color: '#3b82f6' }, // Blue - darker for contrast
+  { id: 'goal', name: 'Goal', icon: Flag, color: '#8b5cf6' }, // Purple - darker for contrast
 ];
+
+// Helper function to determine if a color is light (returns true) or dark (returns false)
+function isLightColor(hex: string): boolean {
+  // Remove # if present
+  const color = hex.replace('#', '');
+  // Convert to RGB
+  const r = parseInt(color.substr(0, 2), 16);
+  const g = parseInt(color.substr(2, 2), 16);
+  const b = parseInt(color.substr(4, 2), 16);
+  // Calculate luminance
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luminance > 0.5;
+}
 
 // Common timezones
 const timezones = [
@@ -105,17 +118,24 @@ function MonthCalendar({
                 {format(day, 'd')}
               </div>
               <div className="space-y-1">
-                {dayEvents.slice(0, 2).map(event => (
-                  <div
-                    key={event.id}
-                    className="text-xs px-1 py-0.5 rounded truncate"
-                    style={{ backgroundColor: event.color, color: 'white' }}
-                    title={event.title}
-                  >
-                    {event.time ? `${format(parseISO(`${event.date}T${event.time}`), 'h:mm a')} ` : ''}
-                    {event.title}
-                  </div>
-                ))}
+                {dayEvents.slice(0, 2).map(event => {
+                  const useLightText = !isLightColor(event.color);
+                  return (
+                    <div
+                      key={event.id}
+                      className="text-xs px-1 py-0.5 rounded truncate font-medium"
+                      style={{ 
+                        backgroundColor: event.color, 
+                        color: useLightText ? 'white' : '#1f2937',
+                        fontWeight: 500
+                      }}
+                      title={event.title}
+                    >
+                      {event.time ? `${format(parseISO(`${event.date}T${event.time}`), 'h:mm a')} ` : ''}
+                      {event.title}
+                    </div>
+                  );
+                })}
                 {dayEvents.length > 2 && (
                   <div className="text-xs text-gray-500">
                     +{dayEvents.length - 2} more

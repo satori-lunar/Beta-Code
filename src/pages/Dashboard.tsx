@@ -115,7 +115,7 @@ export default function Dashboard() {
   const { data: habits = [] } = useHabits();
   const { data: journalEntries = [] } = useJournalEntries();
   const { data: userBadges = [] } = useUserBadges();
-  const currentYear = new Date().getFullYear();
+  const currentYear = 2026;
   const { resolutions: newYearResolutions } = useNewYearResolutions(currentYear);
   
   // Check if it's New Year season (Dec 1 - Jan 31)

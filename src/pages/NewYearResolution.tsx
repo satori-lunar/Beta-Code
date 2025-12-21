@@ -35,7 +35,7 @@ type Reflection = {
   progressPercentage?: number;
 };
 
-const currentYear = new Date().getFullYear();
+const currentYear = 2026;
 
 const suggestedCategories = [
   { id: 'weight-health', label: 'Weight & Health', icon: Target, color: 'bg-purple-100 text-purple-700', description: 'Focus on your physical health and weight goals' },

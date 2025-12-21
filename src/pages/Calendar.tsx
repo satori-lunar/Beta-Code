@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, getDay, addWeeks, startOfWeek, endOfWeek } from 'date-fns';
-import { zonedTimeToUtc, utcToZonedTime, format as formatTz } from 'date-fns-tz';
+import { utcToZonedTime, format as formatTz } from 'date-fns-tz';
 import { useUserClassReminders } from '../hooks/useSupabaseData';
 
 const eventTypes = [

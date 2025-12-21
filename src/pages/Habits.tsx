@@ -270,7 +270,6 @@ export default function Habits() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showAddModal, setShowAddModal] = useState(false);
   const [expandedHabit, setExpandedHabit] = useState<string | null>(null);
-  const [editingHabit, setEditingHabit] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'habits' | 'analytics' | 'insights'>('habits');
   const [userPoints, setUserPoints] = useState<UserPoints | null>(null);
   const [habitNotes, setHabitNotes] = useState<Record<string, Record<string, string>>>({});
@@ -987,9 +986,12 @@ export default function Habits() {
                           </div>
                         )}
 
-                        {/* Edit Habit Button */}
+                        {/* Edit Habit Button - Coming Soon */}
                         <button
-                          onClick={() => setEditingHabit(habit.id)}
+                          onClick={() => {
+                            // TODO: Implement habit editing
+                            alert('Habit editing coming soon!');
+                          }}
                           className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
                         >
                           <Edit3 className="w-4 h-4" />

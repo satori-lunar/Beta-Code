@@ -13,7 +13,6 @@ import {
 import { useStore } from '../store/useStore';
 import { format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, getDay, addWeeks, startOfWeek, endOfWeek } from 'date-fns';
 import { useUserClassReminders } from '../hooks/useSupabaseData';
-import { useAuth } from '../contexts/AuthContext';
 
 const eventTypes = [
   { id: 'class', name: 'Class', icon: Video, color: '#f8b4b4' },

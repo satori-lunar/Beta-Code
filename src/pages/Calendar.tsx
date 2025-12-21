@@ -238,6 +238,40 @@ export default function Calendar() {
     setSelectedDate(nowInTimezone);
   }, [timezone]);
 
+  // Helper function to calculate hour offset between two timezones
+  const getTimezoneOffsetHours = (fromTz: string, toTz: string): number => {
+    const now = new Date();
+    const fromTime = formatTz(now, 'HH:mm:ss', { timeZone: fromTz });
+    const toTime = formatTz(now, 'HH:mm:ss', { timeZone: toTz });
+    
+    // Parse times
+    const [fromHour, fromMin, fromSec] = fromTime.split(':').map(Number);
+    const [toHour, toMin, toSec] = toTime.split(':').map(Number);
+    
+    // Calculate difference in seconds
+    const fromSeconds = fromHour * 3600 + fromMin * 60 + fromSec;
+    const toSeconds = toHour * 3600 + toMin * 60 + toSec;
+    const diffSeconds = toSeconds - fromSeconds;
+    
+    // Convert to hours (round to nearest hour for simplicity)
+    return Math.round(diffSeconds / 3600);
+  };
+
+  // Helper function to adjust time by hours
+  const adjustTimeByHours = (timeStr: string, hours: number): string => {
+    const [hour, minute] = timeStr.split(':').map(Number);
+    let newHour = hour + hours;
+    
+    // Handle day rollover (but we'll keep the same day)
+    if (newHour < 0) {
+      newHour = 24 + newHour;
+    } else if (newHour >= 24) {
+      newHour = newHour - 24;
+    }
+    
+    return `${String(newHour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+  };
+
   // Generate repeating weekly class events from reminders
   const classEvents = useMemo(() => {
     if (!reminders || reminders.length === 0) return [];
@@ -246,6 +280,9 @@ export default function Calendar() {
     // Eastern timezone where classes are stored
     const EASTERN_TIMEZONE = 'America/New_York';
     
+    // Calculate hour offset between Eastern and selected timezone
+    const hourOffset = getTimezoneOffsetHours(EASTERN_TIMEZONE, timezone);
+    
     reminders.forEach((reminder: any) => {
       const liveClass = reminder.live_classes;
       if (!liveClass || !liveClass.scheduled_at) return;
@@ -253,35 +290,22 @@ export default function Calendar() {
       // Parse the original scheduled time
       const originalDate = parseISO(liveClass.scheduled_at);
       
-      // Get the date/time components in Eastern timezone (where classes are stored)
-      const easternDateTimeStr = formatTz(originalDate, 'yyyy-MM-dd HH:mm', { timeZone: EASTERN_TIMEZONE });
-      const [easternDateStr, easternTimeStr] = easternDateTimeStr.split(' ');
+      // Get the time in Eastern (where classes are stored)
+      const easternTimeStr = formatTz(originalDate, 'HH:mm', { timeZone: EASTERN_TIMEZONE });
+      const easternDateStr = formatTz(originalDate, 'yyyy-MM-dd', { timeZone: EASTERN_TIMEZONE });
       
-      // Get day of week from the Eastern date
-      // Use formatTz to get the day name, then convert to day number
-      // This ensures we get the correct day regardless of timezone conversions
-      const easternDayName = formatTz(originalDate, 'EEEE', { timeZone: EASTERN_TIMEZONE }); // Full day name
+      // Get day of week from Eastern date (keep the same day)
+      const easternDayName = formatTz(originalDate, 'EEEE', { timeZone: EASTERN_TIMEZONE });
       const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
       const dayOfWeek = dayNames.indexOf(easternDayName); // 0 = Sunday, 6 = Saturday
       
-      // Convert the time from Eastern to the selected timezone
-      // Create a date object from the Eastern time components
-      const easternDateObj = parseISO(`${easternDateStr}T${easternTimeStr}`);
-      // Convert from Eastern to UTC (treating the date as Eastern time)
-      const utcDate = fromZonedTime(easternDateObj, EASTERN_TIMEZONE);
-      // Convert from UTC to the selected timezone
-      const zonedDate = toZonedTime(utcDate, timezone);
-      // Get just the time in the selected timezone
-      const time = formatTz(zonedDate, 'HH:mm', { timeZone: timezone });
+      // Simply adjust the time by the hour offset
+      const adjustedTime = adjustTimeByHours(easternTimeStr, hourOffset);
       
       // Generate events for the next 6 months, repeating weekly
-      // Work with date strings directly to avoid timezone conversion issues
-      // Get today's date string in Eastern (our reference timezone)
+      // Use today's date to find the next occurrence of this day of week
       const today = new Date();
-      const todayEasternStr = formatTz(today, 'yyyy-MM-dd', { timeZone: EASTERN_TIMEZONE });
-      const [todayYear, todayMonth, todayDay] = todayEasternStr.split('-').map(Number);
-      const todayEasternDateObj = new Date(todayYear, todayMonth - 1, todayDay);
-      const todayDayOfWeek = getDay(todayEasternDateObj);
+      const todayDayOfWeek = getDay(today);
       
       // Calculate days to add to get to the target day of week
       let daysToAdd = (dayOfWeek - todayDayOfWeek + 7) % 7;
@@ -289,28 +313,28 @@ export default function Calendar() {
       // If it's the same day, check if we need to move to next week
       if (daysToAdd === 0) {
         const todayTime = formatTz(today, 'HH:mm', { timeZone: EASTERN_TIMEZONE });
-        if (todayEasternStr >= easternDateStr && todayTime >= easternTimeStr) {
+        const adjustedTodayTime = adjustTimeByHours(todayTime, hourOffset);
+        if (adjustedTodayTime >= adjustedTime) {
           daysToAdd = 7; // Move to next week
         }
       }
       
-      // Start from today's Eastern date and add days
-      let currentDateObj = new Date(todayYear, todayMonth - 1, todayDay + daysToAdd);
+      // Start from today and add days
+      let currentDate = new Date(today);
+      currentDate.setDate(currentDate.getDate() + daysToAdd);
       
       // Generate events for 6 months
-      const endDateObj = new Date(todayYear, todayMonth - 1 + 6, todayDay);
+      const endDate = new Date(today);
+      endDate.setMonth(endDate.getMonth() + 6);
       
-      while (currentDateObj <= endDateObj) {
-        // Format the date directly from the date object - no timezone conversion
-        const year = currentDateObj.getFullYear();
-        const month = String(currentDateObj.getMonth() + 1).padStart(2, '0');
-        const day = String(currentDateObj.getDate()).padStart(2, '0');
-        const dateStr = `${year}-${month}-${day}`;
+      while (currentDate <= endDate) {
+        // Format the date - same day regardless of timezone
+        const dateStr = format(currentDate, 'yyyy-MM-dd');
         events.push({
           id: `class-${reminder.live_class_id}-${dateStr}`,
           title: liveClass.title,
           date: dateStr,
-          time: time,
+          time: adjustedTime,
           type: 'class',
           color: '#f8b4b4',
           description: liveClass.description,
@@ -319,7 +343,7 @@ export default function Calendar() {
         });
         
         // Move to next week
-        currentDateObj = addWeeks(currentDateObj, 1);
+        currentDate = addWeeks(currentDate, 1);
       }
     });
     

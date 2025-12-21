@@ -9,7 +9,10 @@ import {
   X,
   Trash2,
   Edit2,
-  Check
+  Check,
+  Star,
+  CalendarDays,
+  Sparkles
 } from 'lucide-react';
 import {
   LineChart,
@@ -34,7 +37,7 @@ export default function WeightLog() {
   const { profile } = useUserProfile();
   const [showAddModal, setShowAddModal] = useState(false);
   const [showGoalModal, setShowGoalModal] = useState(false);
-  const [isEditingGoal, setIsEditingGoal] = useState(false);
+  const [editingGoalType, setEditingGoalType] = useState<'ultimate' | 'weekly' | 'newyear' | null>(null);
   const [goalWeight, setGoalWeight] = useState('');
   const [newEntry, setNewEntry] = useState({
     weight: '',
@@ -64,11 +67,24 @@ export default function WeightLog() {
     ? (latestWeight.weight - startWeight.weight).toFixed(1)
     : null;
 
-  // Get goal weight from profile (default to null if not set)
+  // Get goal weights from profile (default to null if not set)
   const userGoalWeight = (profile as any)?.goal_weight || null;
+  const ultimateGoalWeight = (profile as any)?.ultimate_goal_weight || null;
+  const weeklyGoalWeight = (profile as any)?.weekly_goal_weight || null;
+  const newYearResolutionWeight = (profile as any)?.new_year_resolution_weight || null;
   const goalWeightUnit = (profile as any)?.goal_weight_unit || 'lbs';
+  
   const toGoal = latestWeight && userGoalWeight 
     ? (latestWeight.weight - userGoalWeight).toFixed(1) 
+    : null;
+  const toUltimateGoal = latestWeight && ultimateGoalWeight 
+    ? (latestWeight.weight - ultimateGoalWeight).toFixed(1) 
+    : null;
+  const toWeeklyGoal = latestWeight && weeklyGoalWeight 
+    ? (latestWeight.weight - weeklyGoalWeight).toFixed(1) 
+    : null;
+  const toNewYearGoal = latestWeight && newYearResolutionWeight 
+    ? (latestWeight.weight - newYearResolutionWeight).toFixed(1) 
     : null;
 
   const handleAddEntry = async () => {
@@ -116,7 +132,7 @@ export default function WeightLog() {
   };
 
   const handleSetGoalWeight = async () => {
-    if (!user || !goalWeight) return;
+    if (!user || !goalWeight || !editingGoalType) return;
 
     try {
       const goalWeightValue = parseFloat(goalWeight);
@@ -125,15 +141,24 @@ export default function WeightLog() {
         return;
       }
 
+      const updateData: any = {};
+      if (editingGoalType === 'ultimate') {
+        updateData.ultimate_goal_weight = goalWeightValue;
+      } else if (editingGoalType === 'weekly') {
+        updateData.weekly_goal_weight = goalWeightValue;
+      } else if (editingGoalType === 'newyear') {
+        updateData.new_year_resolution_weight = goalWeightValue;
+      }
+
       const { error } = await supabase
         .from('user_profiles')
-        .update({ goal_weight: goalWeightValue })
+        .update(updateData)
         .eq('id', user.id);
 
       if (error) throw error;
 
       setShowGoalModal(false);
-      setIsEditingGoal(false);
+      setEditingGoalType(null);
       setGoalWeight('');
       // Force a page refresh to update the profile data
       window.location.reload();
@@ -223,19 +248,6 @@ export default function WeightLog() {
                 <Target className="w-5 h-5 text-purple-600" />
               </div>
             </div>
-            {userGoalWeight && (
-              <button
-                onClick={() => {
-                  setGoalWeight(userGoalWeight.toString());
-                  setIsEditingGoal(true);
-                  setShowGoalModal(true);
-                }}
-                className="p-1.5 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
-                title="Edit goal weight"
-              >
-                <Edit2 className="w-4 h-4" />
-              </button>
-            )}
           </div>
           {userGoalWeight ? (
             <>
@@ -266,6 +278,175 @@ export default function WeightLog() {
               </button>
             </>
           )}
+        </div>
+      </div>
+
+      {/* Weight Plan Section */}
+      <div className="card">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-display font-semibold text-gray-900">
+            Weight Plan
+          </h2>
+          <button
+            onClick={() => {
+              setShowGoalModal(true);
+              setEditingGoalType(null);
+              setGoalWeight('');
+            }}
+            className="text-sm text-coral-600 hover:text-coral-700 font-medium flex items-center gap-1"
+          >
+            <Plus className="w-4 h-4" />
+            Manage Goals
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Ultimate Goal */}
+          <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl p-5 border border-purple-100">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-10 h-10 rounded-lg bg-purple-500 flex items-center justify-center">
+                  <Star className="w-5 h-5 text-white" />
+                </div>
+                <h3 className="font-semibold text-gray-900">Ultimate Goal</h3>
+              </div>
+              <button
+                onClick={() => {
+                  setGoalWeight(ultimateGoalWeight?.toString() || '');
+                  setEditingGoalType('ultimate');
+                  setShowGoalModal(true);
+                }}
+                className="p-1.5 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                title="Edit ultimate goal"
+              >
+                <Edit2 className="w-4 h-4" />
+              </button>
+            </div>
+            {ultimateGoalWeight ? (
+              <>
+                <p className="text-2xl font-bold text-gray-900 mb-1">
+                  {ultimateGoalWeight} {goalWeightUnit}
+                </p>
+                {latestWeight && (
+                  <p className={`text-sm ${Number(toUltimateGoal) <= 0 ? 'text-green-600' : 'text-gray-600'}`}>
+                    {Number(toUltimateGoal) > 0 ? '+' : ''}{toUltimateGoal} {goalWeightUnit} to go
+                    {Number(toUltimateGoal) <= 0 && (
+                      <span className="ml-1 font-medium">✓ Reached!</span>
+                    )}
+                  </p>
+                )}
+              </>
+            ) : (
+              <button
+                onClick={() => {
+                  setGoalWeight('');
+                  setEditingGoalType('ultimate');
+                  setShowGoalModal(true);
+                }}
+                className="text-sm text-purple-600 hover:text-purple-700 font-medium"
+              >
+                Set Ultimate Goal
+              </button>
+            )}
+          </div>
+
+          {/* Weekly Goal */}
+          <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-5 border border-blue-100">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-10 h-10 rounded-lg bg-blue-500 flex items-center justify-center">
+                  <CalendarDays className="w-5 h-5 text-white" />
+                </div>
+                <h3 className="font-semibold text-gray-900">This Week</h3>
+              </div>
+              <button
+                onClick={() => {
+                  setGoalWeight(weeklyGoalWeight?.toString() || '');
+                  setEditingGoalType('weekly');
+                  setShowGoalModal(true);
+                }}
+                className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                title="Edit weekly goal"
+              >
+                <Edit2 className="w-4 h-4" />
+              </button>
+            </div>
+            {weeklyGoalWeight ? (
+              <>
+                <p className="text-2xl font-bold text-gray-900 mb-1">
+                  {weeklyGoalWeight} {goalWeightUnit}
+                </p>
+                {latestWeight && (
+                  <p className={`text-sm ${Number(toWeeklyGoal) <= 0 ? 'text-green-600' : 'text-gray-600'}`}>
+                    {Number(toWeeklyGoal) > 0 ? '+' : ''}{toWeeklyGoal} {goalWeightUnit} to go
+                    {Number(toWeeklyGoal) <= 0 && (
+                      <span className="ml-1 font-medium">✓ Reached!</span>
+                    )}
+                  </p>
+                )}
+              </>
+            ) : (
+              <button
+                onClick={() => {
+                  setGoalWeight('');
+                  setEditingGoalType('weekly');
+                  setShowGoalModal(true);
+                }}
+                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+              >
+                Set Weekly Goal
+              </button>
+            )}
+          </div>
+
+          {/* New Year Resolution */}
+          <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-5 border border-amber-100">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-10 h-10 rounded-lg bg-amber-500 flex items-center justify-center">
+                  <Sparkles className="w-5 h-5 text-white" />
+                </div>
+                <h3 className="font-semibold text-gray-900">New Year</h3>
+              </div>
+              <button
+                onClick={() => {
+                  setGoalWeight(newYearResolutionWeight?.toString() || '');
+                  setEditingGoalType('newyear');
+                  setShowGoalModal(true);
+                }}
+                className="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                title="Edit New Year resolution"
+              >
+                <Edit2 className="w-4 h-4" />
+              </button>
+            </div>
+            {newYearResolutionWeight ? (
+              <>
+                <p className="text-2xl font-bold text-gray-900 mb-1">
+                  {newYearResolutionWeight} {goalWeightUnit}
+                </p>
+                {latestWeight && (
+                  <p className={`text-sm ${Number(toNewYearGoal) <= 0 ? 'text-green-600' : 'text-gray-600'}`}>
+                    {Number(toNewYearGoal) > 0 ? '+' : ''}{toNewYearGoal} {goalWeightUnit} to go
+                    {Number(toNewYearGoal) <= 0 && (
+                      <span className="ml-1 font-medium">✓ Reached!</span>
+                    )}
+                  </p>
+                )}
+              </>
+            ) : (
+              <button
+                onClick={() => {
+                  setGoalWeight('');
+                  setEditingGoalType('newyear');
+                  setShowGoalModal(true);
+                }}
+                className="text-sm text-amber-600 hover:text-amber-700 font-medium"
+              >
+                Set New Year Goal
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -449,12 +630,15 @@ export default function WeightLog() {
           <div className="bg-white rounded-3xl w-full max-w-md p-4 sm:p-6 shadow-elevated my-auto">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-display font-semibold">
-                {isEditingGoal ? 'Edit Goal Weight' : 'Set Goal Weight'}
+                {editingGoalType === 'ultimate' ? 'Ultimate Goal Weight' :
+                 editingGoalType === 'weekly' ? 'Weekly Goal Weight' :
+                 editingGoalType === 'newyear' ? 'New Year Resolution' :
+                 'Weight Plan Goals'}
               </h3>
               <button
                 onClick={() => {
                   setShowGoalModal(false);
-                  setIsEditingGoal(false);
+                  setEditingGoalType(null);
                   setGoalWeight('');
                 }}
                 className="p-2 hover:bg-gray-100 rounded-lg"
@@ -464,67 +648,178 @@ export default function WeightLog() {
             </div>
 
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Goal Weight ({goalWeightUnit})
-                </label>
-                <input
-                  type="number"
-                  step="0.1"
-                  value={goalWeight}
-                  onChange={(e) => setGoalWeight(e.target.value)}
-                  placeholder={userGoalWeight ? userGoalWeight.toString() : "Enter your goal weight"}
-                  className="input text-2xl text-center font-bold"
-                  autoFocus
-                />
-                <p className="text-xs text-gray-500 mt-2">
-                  Set a target weight to track your progress toward your goal.
-                </p>
-              </div>
+              {editingGoalType ? (
+                // Editing a specific goal
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Goal Weight ({goalWeightUnit})
+                    </label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={goalWeight}
+                      onChange={(e) => setGoalWeight(e.target.value)}
+                      placeholder={`Enter your ${editingGoalType === 'ultimate' ? 'ultimate' : editingGoalType === 'weekly' ? 'weekly' : 'New Year'} goal weight`}
+                      className="input text-2xl text-center font-bold"
+                      autoFocus
+                    />
+                    <p className="text-xs text-gray-500 mt-2">
+                      {editingGoalType === 'ultimate' && 'Set your long-term ultimate weight goal.'}
+                      {editingGoalType === 'weekly' && 'Set your goal weight for this week.'}
+                      {editingGoalType === 'newyear' && 'Set your New Year resolution weight goal.'}
+                    </p>
+                  </div>
 
-              <div className="flex gap-3 pt-4">
-                <button
-                  onClick={() => {
-                    setShowGoalModal(false);
-                    setIsEditingGoal(false);
-                    setGoalWeight('');
-                  }}
-                  className="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button 
-                  onClick={handleSetGoalWeight} 
-                  className="flex-1 btn-primary flex items-center justify-center gap-2"
-                  disabled={!goalWeight || isNaN(parseFloat(goalWeight))}
-                >
-                  <Check className="w-5 h-5" />
-                  {isEditingGoal ? 'Update Goal' : 'Set Goal'}
-                </button>
-              </div>
+                  <div className="flex gap-3 pt-4">
+                    <button
+                      onClick={() => {
+                        setShowGoalModal(false);
+                        setEditingGoalType(null);
+                        setGoalWeight('');
+                      }}
+                      className="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-gray-50"
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      onClick={handleSetGoalWeight} 
+                      className="flex-1 btn-primary flex items-center justify-center gap-2"
+                      disabled={!goalWeight || isNaN(parseFloat(goalWeight))}
+                    >
+                      <Check className="w-5 h-5" />
+                      {((editingGoalType === 'ultimate' && ultimateGoalWeight) ||
+                        (editingGoalType === 'weekly' && weeklyGoalWeight) ||
+                        (editingGoalType === 'newyear' && newYearResolutionWeight)) ? 'Update Goal' : 'Set Goal'}
+                    </button>
+                  </div>
 
-              {userGoalWeight && (
-                <button
-                  onClick={async () => {
-                    if (!user) return;
-                    try {
-                      const { error } = await supabase
-                        .from('user_profiles')
-                        .update({ goal_weight: null })
-                        .eq('id', user.id);
+                  {((editingGoalType === 'ultimate' && ultimateGoalWeight) ||
+                    (editingGoalType === 'weekly' && weeklyGoalWeight) ||
+                    (editingGoalType === 'newyear' && newYearResolutionWeight)) && (
+                    <button
+                      onClick={async () => {
+                        if (!user) return;
+                        try {
+                          const updateData: any = {};
+                          if (editingGoalType === 'ultimate') {
+                            updateData.ultimate_goal_weight = null;
+                          } else if (editingGoalType === 'weekly') {
+                            updateData.weekly_goal_weight = null;
+                          } else if (editingGoalType === 'newyear') {
+                            updateData.new_year_resolution_weight = null;
+                          }
 
-                      if (error) throw error;
+                          const { error } = await supabase
+                            .from('user_profiles')
+                            .update(updateData)
+                            .eq('id', user.id);
+
+                          if (error) throw error;
+                          setShowGoalModal(false);
+                          setEditingGoalType(null);
+                          window.location.reload();
+                        } catch (error) {
+                          console.error('Error removing goal weight:', error);
+                          alert('Failed to remove goal weight. Please try again.');
+                        }
+                      }}
+                      className="w-full px-4 py-2 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                    >
+                      Remove Goal
+                    </button>
+                  )}
+                </>
+              ) : (
+                // Managing all goals - show options to edit each
+                <div className="space-y-4">
+                  <div className="text-sm text-gray-600 mb-4">
+                    Select a goal type to set or edit:
+                  </div>
+                  
+                  <button
+                    onClick={() => {
+                      setGoalWeight(ultimateGoalWeight?.toString() || '');
+                      setEditingGoalType('ultimate');
+                    }}
+                    className="w-full p-4 rounded-xl border-2 border-purple-200 hover:border-purple-400 bg-purple-50 hover:bg-purple-100 transition-colors text-left"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-purple-500 flex items-center justify-center">
+                        <Star className="w-5 h-5 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-semibold text-gray-900">Ultimate Goal</p>
+                        <p className="text-sm text-gray-600">Your long-term weight goal</p>
+                        {ultimateGoalWeight && (
+                          <p className="text-sm text-purple-600 font-medium mt-1">
+                            Current: {ultimateGoalWeight} {goalWeightUnit}
+                          </p>
+                        )}
+                      </div>
+                      <Edit2 className="w-5 h-5 text-gray-400" />
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setGoalWeight(weeklyGoalWeight?.toString() || '');
+                      setEditingGoalType('weekly');
+                    }}
+                    className="w-full p-4 rounded-xl border-2 border-blue-200 hover:border-blue-400 bg-blue-50 hover:bg-blue-100 transition-colors text-left"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-blue-500 flex items-center justify-center">
+                        <CalendarDays className="w-5 h-5 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-semibold text-gray-900">Weekly Goal</p>
+                        <p className="text-sm text-gray-600">Your goal for this week</p>
+                        {weeklyGoalWeight && (
+                          <p className="text-sm text-blue-600 font-medium mt-1">
+                            Current: {weeklyGoalWeight} {goalWeightUnit}
+                          </p>
+                        )}
+                      </div>
+                      <Edit2 className="w-5 h-5 text-gray-400" />
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setGoalWeight(newYearResolutionWeight?.toString() || '');
+                      setEditingGoalType('newyear');
+                    }}
+                    className="w-full p-4 rounded-xl border-2 border-amber-200 hover:border-amber-400 bg-amber-50 hover:bg-amber-100 transition-colors text-left"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-amber-500 flex items-center justify-center">
+                        <Sparkles className="w-5 h-5 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-semibold text-gray-900">New Year Resolution</p>
+                        <p className="text-sm text-gray-600">Your New Year weight goal</p>
+                        {newYearResolutionWeight && (
+                          <p className="text-sm text-amber-600 font-medium mt-1">
+                            Current: {newYearResolutionWeight} {goalWeightUnit}
+                          </p>
+                        )}
+                      </div>
+                      <Edit2 className="w-5 h-5 text-gray-400" />
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => {
                       setShowGoalModal(false);
-                      setIsEditingGoal(false);
-                    } catch (error) {
-                      console.error('Error removing goal weight:', error);
-                      alert('Failed to remove goal weight. Please try again.');
-                    }
-                  }}
-                  className="w-full px-4 py-2 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
-                >
-                  Remove Goal Weight
-                </button>
+                      setEditingGoalType(null);
+                      setGoalWeight('');
+                    }}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-gray-50 mt-4"
+                  >
+                    Cancel
+                  </button>
+                </div>
               )}
             </div>
           </div>

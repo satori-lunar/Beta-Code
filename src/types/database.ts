@@ -398,6 +398,9 @@ export type Database = {
           full_name: string | null
           goal_weight: number | null
           goal_weight_unit: string | null
+          ultimate_goal_weight: number | null
+          weekly_goal_weight: number | null
+          new_year_resolution_weight: number | null
           id: string
           join_date: string | null
           has_completed_dashboard_tour: boolean | null
@@ -412,6 +415,9 @@ export type Database = {
           full_name?: string | null
           goal_weight?: number | null
           goal_weight_unit?: string | null
+          ultimate_goal_weight?: number | null
+          weekly_goal_weight?: number | null
+          new_year_resolution_weight?: number | null
           id: string
           join_date?: string | null
           has_completed_dashboard_tour?: boolean | null
@@ -426,6 +432,9 @@ export type Database = {
           full_name?: string | null
           goal_weight?: number | null
           goal_weight_unit?: string | null
+          ultimate_goal_weight?: number | null
+          weekly_goal_weight?: number | null
+          new_year_resolution_weight?: number | null
           id?: string
           join_date?: string | null
           has_completed_dashboard_tour?: boolean | null

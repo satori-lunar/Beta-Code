@@ -257,18 +257,19 @@ export default function Nutrition() {
 
       if (error) throw error;
 
-      if (data) {
+      if (data && typeof data === 'object' && 'id' in data) {
+        const meal = data as any;
         // Add to local state
         setMeals([
           ...meals,
           {
-            id: data.id,
-            type: data.type,
-            name: data.name,
-            calories: data.calories || 0,
-            protein: data.protein || 0,
-            carbs: data.carbs || 0,
-            fat: data.fat || 0,
+            id: meal.id,
+            type: meal.type,
+            name: meal.name,
+            calories: meal.calories || 0,
+            protein: meal.protein || 0,
+            carbs: meal.carbs || 0,
+            fat: meal.fat || 0,
           },
         ]);
       }

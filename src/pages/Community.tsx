@@ -7,10 +7,7 @@ import {
   MessageCircle,
   Send,
   Pin,
-  Image as ImageIcon,
-  BookOpen,
-  Megaphone,
-  HelpCircle
+  Image as ImageIcon
 } from 'lucide-react';
 import { useIsAdmin } from '../hooks/useAdmin';
 

@@ -93,57 +93,6 @@ export default function HealthDashboard() {
     }));
   };
 
-  // Handle saving a preset
-  const handleSavePreset = async (preset: WorkoutPreset) => {
-    await savePreset({
-      name: preset.name,
-      activityType: preset.activityType,
-      goalType: preset.goalType,
-      targetTime: preset.targetTime,
-      targetMilestones: preset.targetMilestones,
-      milestoneMode: preset.milestoneMode,
-      autoMilestoneInterval: preset.autoMilestoneInterval,
-      intensity: preset.intensity,
-    });
-  };
-
-  // Handle workout completion - save to history
-  const handleWorkoutComplete = async (data: WorkoutData) => {
-    await saveWorkout({
-      activityType: data.activityType,
-      duration: data.duration,
-      milestones: data.milestones,
-      calories: data.calories,
-      milestoneMode: data.milestoneMode,
-      autoMilestoneInterval: data.autoMilestoneInterval,
-    });
-  };
-
-  // Convert DB preset to component preset
-  const dbPresetToComponentPreset = (dbPreset: typeof presets[0]): WorkoutPreset => ({
-    id: dbPreset.id,
-    name: dbPreset.name,
-    activityType: dbPreset.activity_type,
-    goalType: dbPreset.goal_type as WorkoutPreset['goalType'],
-    targetTime: dbPreset.target_time ?? undefined,
-    targetMilestones: dbPreset.target_milestones ?? undefined,
-    milestoneMode: dbPreset.milestone_mode as WorkoutPreset['milestoneMode'],
-    autoMilestoneInterval: dbPreset.auto_milestone_interval ?? undefined,
-    intensity: dbPreset.intensity as WorkoutPreset['intensity'],
-  });
-
-  // Format duration for display
-  const formatDuration = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    if (mins >= 60) {
-      const hrs = Math.floor(mins / 60);
-      const remainMins = mins % 60;
-      return `${hrs}h ${remainMins}m`;
-    }
-    return secs > 0 ? `${mins}m ${secs}s` : `${mins}m`;
-  };
-
   const handleSaveMetric = (key: MetricKey) => {
     const now = new Date().toISOString();
 

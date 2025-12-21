@@ -8,8 +8,7 @@ import {
   Flag,
   Globe,
   ChevronLeft,
-  ChevronRight,
-  Calendar as CalendarIcon
+  ChevronRight
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, getDay, addWeeks, startOfWeek, endOfWeek } from 'date-fns';
@@ -133,7 +132,6 @@ function MonthCalendar({
 }
 
 export default function Calendar() {
-  const { user } = useAuth();
   const { calendarEvents, addCalendarEvent } = useStore();
   const { reminders, loading: remindersLoading } = useUserClassReminders();
   const [activeTab, setActiveTab] = useState<'google' | 'my'>('google');

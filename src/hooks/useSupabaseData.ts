@@ -1293,6 +1293,7 @@ export function useUserClassReminders() {
     }
 
     async function fetchReminders() {
+      if (!user) return;
       try {
         setLoading(true)
         const { data, error: fetchError } = await supabase

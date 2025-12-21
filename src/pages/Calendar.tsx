@@ -240,9 +240,10 @@ export default function Calendar() {
 
   // Helper function to calculate hour offset between two timezones
   const getTimezoneOffsetHours = (fromTz: string, toTz: string): number => {
-    const now = new Date();
-    const fromTime = formatTz(now, 'HH:mm:ss', { timeZone: fromTz });
-    const toTime = formatTz(now, 'HH:mm:ss', { timeZone: toTz });
+    // Create a date object for a specific time
+    const testDate = new Date('2024-01-15T12:00:00Z'); // Use a fixed UTC date
+    const fromTime = formatTz(testDate, 'HH:mm:ss', { timeZone: fromTz });
+    const toTime = formatTz(testDate, 'HH:mm:ss', { timeZone: toTz });
     
     // Parse times
     const [fromHour, fromMin, fromSec] = fromTime.split(':').map(Number);
@@ -257,12 +258,12 @@ export default function Calendar() {
     return Math.round(diffSeconds / 3600);
   };
 
-  // Helper function to adjust time by hours
+  // Helper function to adjust time by hours (keep same day)
   const adjustTimeByHours = (timeStr: string, hours: number): string => {
     const [hour, minute] = timeStr.split(':').map(Number);
     let newHour = hour + hours;
     
-    // Handle day rollover (but we'll keep the same day)
+    // Handle hour rollover but keep the same day
     if (newHour < 0) {
       newHour = 24 + newHour;
     } else if (newHour >= 24) {
@@ -293,18 +294,18 @@ export default function Calendar() {
       // Get the time in Eastern (where classes are stored)
       const easternTimeStr = formatTz(originalDate, 'HH:mm', { timeZone: EASTERN_TIMEZONE });
       
-      // Get day of week from Eastern date (keep the same day)
+      // Get day of week from Eastern date - THIS IS THE DAY WE KEEP
       const easternDayName = formatTz(originalDate, 'EEEE', { timeZone: EASTERN_TIMEZONE });
       const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
       const dayOfWeek = dayNames.indexOf(easternDayName); // 0 = Sunday, 6 = Saturday
       
-      // Simply adjust the time by the hour offset
+      // Simply adjust the time by the hour offset (keep same day)
       const adjustedTime = adjustTimeByHours(easternTimeStr, hourOffset);
       
       // Generate events for the next 6 months, repeating weekly
-      // Use today's date to find the next occurrence of this day of week
+      // Find the next occurrence of the SAME day of week (from Eastern)
       const today = new Date();
-      const todayDayOfWeek = getDay(today);
+      const todayDayOfWeek = getDay(today); // 0 = Sunday, 6 = Saturday
       
       // Calculate days to add to get to the target day of week
       let daysToAdd = (dayOfWeek - todayDayOfWeek + 7) % 7;
@@ -318,7 +319,7 @@ export default function Calendar() {
         }
       }
       
-      // Start from today and add days
+      // Start from today and add days to get to the target day
       let currentDate = new Date(today);
       currentDate.setDate(currentDate.getDate() + daysToAdd);
       
@@ -327,13 +328,13 @@ export default function Calendar() {
       endDate.setMonth(endDate.getMonth() + 6);
       
       while (currentDate <= endDate) {
-        // Format the date - same day regardless of timezone
+        // Format the date - this is the SAME day of week from Eastern
         const dateStr = format(currentDate, 'yyyy-MM-dd');
         events.push({
           id: `class-${reminder.live_class_id}-${dateStr}`,
           title: liveClass.title,
           date: dateStr,
-          time: adjustedTime,
+          time: adjustedTime, // Only the time is adjusted, not the date
           type: 'class',
           color: '#f8b4b4',
           description: liveClass.description,
@@ -341,7 +342,7 @@ export default function Calendar() {
           originalDate: liveClass.scheduled_at,
         });
         
-        // Move to next week
+        // Move to next week (same day of week)
         currentDate = addWeeks(currentDate, 1);
       }
     });

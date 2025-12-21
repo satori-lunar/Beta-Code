@@ -234,11 +234,29 @@ export default function Nutrition() {
   };
 
   const handleAddMeal = async () => {
-    if (!newMeal.name.trim() || !nutritionEntryId || !user) return;
+    if (!newMeal.name.trim()) {
+      alert('Please enter a meal name');
+      return;
+    }
+
+    if (!user) {
+      alert('You must be logged in to add meals');
+      return;
+    }
+
+    // Ensure we have a nutrition entry ID
+    let entryId = nutritionEntryId;
+    if (!entryId) {
+      entryId = await getOrCreateNutritionEntry();
+      if (!entryId) {
+        alert('Failed to initialize nutrition entry. Please refresh the page and try again.');
+        return;
+      }
+    }
 
     try {
       const mealData = {
-        nutrition_entry_id: nutritionEntryId,
+        nutrition_entry_id: entryId,
         user_id: user.id,
         type: selectedMealType,
         name: newMeal.name,
@@ -255,7 +273,10 @@ export default function Nutrition() {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
 
       if (data && typeof data === 'object' && 'id' in data) {
         const meal = data as any;
@@ -272,15 +293,18 @@ export default function Nutrition() {
             fat: meal.fat || 0,
           },
         ]);
+      } else {
+        throw new Error('No data returned from insert');
       }
 
       // Reset form but keep modal open and preserve meal type
       setNewMeal({ name: '', calories: '', protein: '', carbs: '', fat: '' });
       setMealImage(null);
       setImagePreview(null);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding meal:', error);
-      alert('Failed to add meal. Please try again.');
+      const errorMessage = error?.message || 'Failed to add meal. Please try again.';
+      alert(errorMessage);
     }
   };
 

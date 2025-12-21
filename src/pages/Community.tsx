@@ -8,7 +8,6 @@ import {
   Send,
   Pin,
   Image as ImageIcon,
-  Users,
   BookOpen,
   Megaphone,
   HelpCircle
@@ -175,10 +174,12 @@ export default function Community() {
           });
         }
 
-        setPostComments(prev => ({
-          ...prev,
-          [expandedPost]: (data || []) as Comment[]
-        }));
+        if (expandedPost) {
+          setPostComments(prev => ({
+            ...prev,
+            [expandedPost]: (data || []) as Comment[]
+          }));
+        }
       } catch (error) {
         console.error('Error fetching comments:', error);
       }
@@ -196,7 +197,7 @@ export default function Community() {
       if (newPostImage) {
         const fileExt = newPostImage.name.split('.').pop();
         const fileName = `${user.id}-${Date.now()}.${fileExt}`;
-        const { error: uploadError, data } = await supabase.storage
+        const { error: uploadError } = await supabase.storage
           .from('community-images')
           .upload(fileName, newPostImage);
 
@@ -380,13 +381,6 @@ export default function Community() {
     } catch (error) {
       console.error('Error adding comment:', error);
     }
-  };
-
-  const channelIcons: Record<string, any> = {
-    'General': MessageCircle,
-    'Resources': BookOpen,
-    'Announcements': Megaphone,
-    'Support': HelpCircle
   };
 
   const pinnedPosts = posts.filter(p => p.is_pinned);

@@ -125,10 +125,13 @@ export default function Nutrition() {
         }
       }
 
-      // If no existing entry, create one - only use required fields
+      // If no existing entry, create one
+      // Note: If meal_type column exists (old schema), provide a dummy value
+      // This will be fixed once migration 016 is run
       const insertData: any = {
         user_id: user.id,
         date: today,
+        meal_type: 'breakfast', // Temporary: required by old schema, will be removed by migration
       };
 
       const { data: newEntry, error: createError } = await supabase

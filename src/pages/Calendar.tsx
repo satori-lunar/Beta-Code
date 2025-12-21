@@ -243,8 +243,9 @@ export default function Calendar() {
     if (!reminders || reminders.length === 0) return [];
     
     const events: CalendarEvent[] = [];
-    // Get current time in the selected timezone
-    const now = toZonedTime(new Date(), timezone);
+    // Use current date in UTC for consistent day-of-week calculation
+    // This ensures the day of week is the same regardless of timezone
+    const now = new Date();
     const sixMonthsFromNow = addMonths(now, 6);
     
     // Eastern timezone where classes are stored
@@ -257,14 +258,16 @@ export default function Calendar() {
       // Parse the original scheduled time
       const originalDate = parseISO(liveClass.scheduled_at);
       
-      // First, get what time this is in Eastern (where it's stored)
-      // This gives us the actual Eastern time components
+      // Get the date/time components in Eastern timezone (where classes are stored)
       const easternDateTimeStr = formatTz(originalDate, 'yyyy-MM-dd HH:mm', { timeZone: EASTERN_TIMEZONE });
       const [easternDateStr, easternTimeStr] = easternDateTimeStr.split(' ');
       
-      // Get the day of week from the Eastern date (keep the same day)
-      const easternDate = parseISO(`${easternDateStr}T${easternTimeStr}`);
-      const dayOfWeek = getDay(easternDate); // 0 = Sunday, 6 = Saturday - keep original day
+      // Get day of week from the Eastern date
+      // Use formatTz to get the day name, then convert to day number
+      // This ensures we get the correct day regardless of timezone conversions
+      const easternDayName = formatTz(originalDate, 'EEEE', { timeZone: EASTERN_TIMEZONE }); // Full day name
+      const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      const dayOfWeek = dayNames.indexOf(easternDayName); // 0 = Sunday, 6 = Saturday
       
       // Convert the time from Eastern to the selected timezone
       // Create a date object from the Eastern time components
@@ -277,15 +280,37 @@ export default function Calendar() {
       const time = formatTz(zonedDate, 'HH:mm', { timeZone: timezone });
       
       // Generate events for the next 6 months, repeating weekly
-      // Start from the converted date's day of week
-      let currentDate = startOfWeek(now, { weekStartsOn: 0 });
-      // Find the first occurrence of this day of week on or after today
-      while (getDay(currentDate) !== dayOfWeek) {
-        currentDate = new Date(currentDate.getTime() + 24 * 60 * 60 * 1000);
+      // Work with date strings directly to avoid timezone conversion issues
+      // Get today's date string in Eastern (our reference timezone)
+      const today = new Date();
+      const todayEasternStr = formatTz(today, 'yyyy-MM-dd', { timeZone: EASTERN_TIMEZONE });
+      const [todayYear, todayMonth, todayDay] = todayEasternStr.split('-').map(Number);
+      const todayEasternDateObj = new Date(todayYear, todayMonth - 1, todayDay);
+      const todayDayOfWeek = getDay(todayEasternDateObj);
+      
+      // Calculate days to add to get to the target day of week
+      let daysToAdd = (dayOfWeek - todayDayOfWeek + 7) % 7;
+      
+      // If it's the same day, check if we need to move to next week
+      if (daysToAdd === 0) {
+        const todayTime = formatTz(today, 'HH:mm', { timeZone: EASTERN_TIMEZONE });
+        if (todayEasternStr >= easternDateStr && todayTime >= easternTimeStr) {
+          daysToAdd = 7; // Move to next week
+        }
       }
       
-      while (currentDate <= sixMonthsFromNow) {
-        const dateStr = format(currentDate, 'yyyy-MM-dd');
+      // Start from today's Eastern date and add days
+      let currentDateObj = new Date(todayYear, todayMonth - 1, todayDay + daysToAdd);
+      
+      // Generate events for 6 months
+      const endDateObj = new Date(todayYear, todayMonth - 1 + 6, todayDay);
+      
+      while (currentDateObj <= endDateObj) {
+        // Format the date directly from the date object - no timezone conversion
+        const year = currentDateObj.getFullYear();
+        const month = String(currentDateObj.getMonth() + 1).padStart(2, '0');
+        const day = String(currentDateObj.getDate()).padStart(2, '0');
+        const dateStr = `${year}-${month}-${day}`;
         events.push({
           id: `class-${reminder.live_class_id}-${dateStr}`,
           title: liveClass.title,

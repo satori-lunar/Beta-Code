@@ -262,18 +262,18 @@ export default function Calendar() {
       const easternDateTimeStr = formatTz(originalDate, 'yyyy-MM-dd HH:mm', { timeZone: EASTERN_TIMEZONE });
       const [easternDateStr, easternTimeStr] = easternDateTimeStr.split(' ');
       
-      // Create a date object from the Eastern time components
-      // We'll treat this as if it's in Eastern timezone
+      // Get the day of week from the Eastern date (keep the same day)
       const easternDate = parseISO(`${easternDateStr}T${easternTimeStr}`);
+      const dayOfWeek = getDay(easternDate); // 0 = Sunday, 6 = Saturday - keep original day
       
+      // Convert the time from Eastern to the selected timezone
+      // Create a date object from the Eastern time components
+      const easternDateObj = parseISO(`${easternDateStr}T${easternTimeStr}`);
       // Convert from Eastern to UTC (treating the date as Eastern time)
-      const utcDate = fromZonedTime(easternDate, EASTERN_TIMEZONE);
-      
+      const utcDate = fromZonedTime(easternDateObj, EASTERN_TIMEZONE);
       // Convert from UTC to the selected timezone
       const zonedDate = toZonedTime(utcDate, timezone);
-      
-      // Get the day of week and time in the selected timezone
-      const dayOfWeek = getDay(zonedDate); // 0 = Sunday, 6 = Saturday
+      // Get just the time in the selected timezone
       const time = formatTz(zonedDate, 'HH:mm', { timeZone: timezone });
       
       // Generate events for the next 6 months, repeating weekly

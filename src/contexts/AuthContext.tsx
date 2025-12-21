@@ -19,8 +19,6 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  isBlocked: boolean;
-  blockedReason: string | null;
   signUp: (email: string, password: string, name: string) => Promise<{ error: Error | null; needsConfirmation?: boolean }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signInWithMagicLink: (email: string) => Promise<{ error: Error | null; message?: string }>;
@@ -35,8 +33,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(DEMO_MODE ? DEMO_USER : null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(!DEMO_MODE);
-  const [isBlocked, setIsBlocked] = useState(false);
-  const [blockedReason, setBlockedReason] = useState<string | null>(null);
 
   useEffect(() => {
     if (DEMO_MODE) {
@@ -62,42 +58,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         clearTimeout(timeout);
         setSession(session);
         setUser(session?.user ?? null);
-        
-        // Check if user is blocked (only if columns exist)
-        if (session?.user) {
-          try {
-            const { data: userData, error: userError } = await (supabase as any)
-              .from('users')
-              .select('is_blocked, blocked_reason')
-              .eq('id', session.user.id)
-              .single();
-            
-            // If column doesn't exist yet, ignore the error and continue
-            if (userError && (userError.message?.includes('column') || userError.code === '42703')) {
-              // Column doesn't exist - migration not run yet, assume not blocked
-              setIsBlocked(false);
-              setBlockedReason(null);
-            } else if (userData?.is_blocked) {
-              setIsBlocked(true);
-              setBlockedReason(userData.blocked_reason || 'Your account has been blocked. Please contact support if you believe this is an error.');
-              // Sign out the blocked user
-              await supabase.auth.signOut();
-              setUser(null);
-              setSession(null);
-            } else {
-              setIsBlocked(false);
-              setBlockedReason(null);
-            }
-          } catch (err: any) {
-            // If we can't check (column doesn't exist, etc.), assume not blocked and continue
-            console.warn('Could not check blocked status (non-critical):', err?.message);
-            setIsBlocked(false);
-            setBlockedReason(null);
-          }
-        } else {
-          setIsBlocked(false);
-          setBlockedReason(null);
-        }
         
         // Track login is handled in onAuthStateChange below
         
@@ -132,44 +92,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
         } catch (err) {
           // Ignore logging errors
-        }
-        
-        // Check if user is blocked before setting session (only if columns exist)
-        if (session?.user) {
-          try {
-            const { data: userData, error: userError } = await (supabase as any)
-              .from('users')
-              .select('is_blocked, blocked_reason')
-              .eq('id', session.user.id)
-              .single();
-            
-            // If column doesn't exist yet, ignore the error and continue
-            if (userError && (userError.message?.includes('column') || userError.code === '42703')) {
-              // Column doesn't exist - migration not run yet, assume not blocked
-              setIsBlocked(false);
-              setBlockedReason(null);
-            } else if (userData?.is_blocked) {
-              setIsBlocked(true);
-              setBlockedReason(userData.blocked_reason || 'Your account has been blocked. Please contact support if you believe this is an error.');
-              // Sign out the blocked user
-              await supabase.auth.signOut();
-              setUser(null);
-              setSession(null);
-              setLoading(false);
-              return;
-            } else {
-              setIsBlocked(false);
-              setBlockedReason(null);
-            }
-          } catch (err: any) {
-            // If we can't check (column doesn't exist, etc.), assume not blocked and continue
-            console.warn('Could not check blocked status (non-critical):', err?.message);
-            setIsBlocked(false);
-            setBlockedReason(null);
-          }
-        } else {
-          setIsBlocked(false);
-          setBlockedReason(null);
         }
         
         setSession(session);
@@ -452,7 +374,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, isBlocked, blockedReason, signUp, signIn, signInWithMagicLink, signInPasswordless, resetPassword, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, signUp, signIn, signInWithMagicLink, signInPasswordless, resetPassword, signOut }}>
       {children}
     </AuthContext.Provider>
   );

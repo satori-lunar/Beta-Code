@@ -316,43 +316,82 @@ export type Database = {
       }
       nutrition_entries: {
         Row: {
-          calories: number | null
-          carbs: number | null
-          created_at: string | null
-          date: string
-          fat: number | null
           id: string
-          meal_type: string
-          name: string
-          notes: string | null
-          protein: number | null
           user_id: string
+          date: string
+          total_calories: number | null
+          total_protein: number | null
+          total_carbs: number | null
+          total_fat: number | null
+          water_intake: number | null
+          created_at: string | null
+          updated_at: string | null
         }
         Insert: {
-          calories?: number | null
-          carbs?: number | null
-          created_at?: string | null
-          date: string
-          fat?: number | null
           id?: string
-          meal_type: string
-          name: string
-          notes?: string | null
-          protein?: number | null
           user_id: string
+          date: string
+          total_calories?: number | null
+          total_protein?: number | null
+          total_carbs?: number | null
+          total_fat?: number | null
+          water_intake?: number | null
+          created_at?: string | null
+          updated_at?: string | null
         }
         Update: {
-          calories?: number | null
-          carbs?: number | null
-          created_at?: string | null
-          date?: string
-          fat?: number | null
           id?: string
-          meal_type?: string
-          name?: string
-          notes?: string | null
-          protein?: number | null
           user_id?: string
+          date?: string
+          total_calories?: number | null
+          total_protein?: number | null
+          total_carbs?: number | null
+          total_fat?: number | null
+          water_intake?: number | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      meals: {
+        Row: {
+          id: string
+          nutrition_entry_id: string
+          user_id: string
+          type: string
+          name: string
+          calories: number | null
+          protein: number | null
+          carbs: number | null
+          fat: number | null
+          time: string
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          nutrition_entry_id: string
+          user_id: string
+          type: string
+          name: string
+          calories?: number | null
+          protein?: number | null
+          carbs?: number | null
+          fat?: number | null
+          time: string
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          nutrition_entry_id?: string
+          user_id?: string
+          type?: string
+          name?: string
+          calories?: number | null
+          protein?: number | null
+          carbs?: number | null
+          fat?: number | null
+          time?: string
+          created_at?: string | null
         }
         Relationships: []
       }

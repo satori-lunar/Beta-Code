@@ -111,7 +111,7 @@ export default function Nutrition() {
 
       if (fetchError) throw fetchError;
 
-      if (existing) {
+      if (existing && existing.id) {
         setNutritionEntryId(existing.id);
         setWaterIntake(existing.water_intake || 0);
         return existing.id;
@@ -128,14 +128,17 @@ export default function Nutrition() {
           total_carbs: 0,
           total_fat: 0,
           water_intake: 0,
-        })
+        } as any)
         .select('id')
         .single();
 
       if (createError) throw createError;
 
-      setNutritionEntryId(newEntry.id);
-      return newEntry.id;
+      if (newEntry && newEntry.id) {
+        setNutritionEntryId(newEntry.id);
+        return newEntry.id;
+      }
+      return null;
     } catch (error) {
       console.error('Error getting/creating nutrition entry:', error);
       return null;
@@ -148,7 +151,7 @@ export default function Nutrition() {
 
     try {
       const { data, error } = await supabase
-        .from('meals')
+        .from('meals' as any)
         .select('*')
         .eq('user_id', user.id)
         .eq('nutrition_entry_id', entryId)
@@ -206,7 +209,7 @@ export default function Nutrition() {
 
       supabase
         .from('nutrition_entries')
-        .update(totals)
+        .update(totals as any)
         .eq('id', nutritionEntryId)
         .then(({ error }) => {
           if (error) console.error('Error updating nutrition totals:', error);
@@ -222,7 +225,7 @@ export default function Nutrition() {
       try {
         await supabase
           .from('nutrition_entries')
-          .update({ water_intake: newAmount })
+          .update({ water_intake: newAmount } as any)
           .eq('id', nutritionEntryId);
       } catch (error) {
         console.error('Error updating water intake:', error);
@@ -247,26 +250,28 @@ export default function Nutrition() {
       };
 
       const { data, error } = await supabase
-        .from('meals')
+        .from('meals' as any)
         .insert(mealData)
         .select()
         .single();
 
       if (error) throw error;
 
-      // Add to local state
-      setMeals([
-        ...meals,
-        {
-          id: data.id,
-          type: data.type,
-          name: data.name,
-          calories: data.calories || 0,
-          protein: data.protein || 0,
-          carbs: data.carbs || 0,
-          fat: data.fat || 0,
-        },
-      ]);
+      if (data) {
+        // Add to local state
+        setMeals([
+          ...meals,
+          {
+            id: data.id,
+            type: data.type,
+            name: data.name,
+            calories: data.calories || 0,
+            protein: data.protein || 0,
+            carbs: data.carbs || 0,
+            fat: data.fat || 0,
+          },
+        ]);
+      }
 
       // Reset form but keep modal open and preserve meal type
       setNewMeal({ name: '', calories: '', protein: '', carbs: '', fat: '' });
@@ -387,6 +392,17 @@ export default function Nutrition() {
     getMealsByType(type).reduce((sum, m) => sum + m.calories, 0);
 
   const hasNoData = meals.length === 0 && waterIntake === 0;
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-coral-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading your meals...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 pb-20 lg:pb-0">

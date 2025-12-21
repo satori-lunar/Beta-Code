@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, getDay, addWeeks, startOfWeek, endOfWeek } from 'date-fns';
-import { utcToZonedTime, format as formatTz } from 'date-fns-tz';
+import { toZonedTime, format as formatTz } from 'date-fns-tz';
 import { useUserClassReminders } from '../hooks/useSupabaseData';
 
 const eventTypes = [
@@ -78,7 +78,7 @@ function MonthCalendar({
   timezone: string;
 }) {
   // Convert current month to the selected timezone
-  const zonedCurrentMonth = utcToZonedTime(currentMonth, timezone);
+  const zonedCurrentMonth = toZonedTime(currentMonth, timezone);
   const monthStart = startOfMonth(zonedCurrentMonth);
   const monthEnd = endOfMonth(zonedCurrentMonth);
   const calendarStart = startOfWeek(monthStart, { weekStartsOn: 0 }); // Start on Sunday
@@ -90,7 +90,7 @@ function MonthCalendar({
   
   const getEventsForDate = (date: Date) => {
     // Convert date to the selected timezone for comparison
-    const zonedDate = utcToZonedTime(date, timezone);
+    const zonedDate = toZonedTime(date, timezone);
     const dateStr = format(zonedDate, 'yyyy-MM-dd');
     return events.filter(event => event.date === dateStr);
   };
@@ -109,7 +109,7 @@ function MonthCalendar({
           const dayEvents = getEventsForDate(day);
           const isCurrentMonth = isSameMonth(day, zonedCurrentMonth);
           // Get today in the selected timezone
-          const nowInTimezone = utcToZonedTime(new Date(), timezone);
+          const nowInTimezone = toZonedTime(new Date(), timezone);
           const isToday = isSameDay(day, nowInTimezone);
           
           return (
@@ -140,7 +140,7 @@ function MonthCalendar({
                       // Then we'll format it in the selected timezone
                       const localDate = new Date(dateTimeStr + 'Z'); // Treat as UTC first
                       // Convert from UTC to the selected timezone
-                      const zonedDate = utcToZonedTime(localDate, timezone);
+                      const zonedDate = toZonedTime(localDate, timezone);
                       // Format in the selected timezone
                       timeDisplay = formatTz(zonedDate, 'h:mm a', { timeZone: timezone });
                     } catch (e) {
@@ -193,19 +193,19 @@ export default function Calendar() {
   
   // Helper function to get current date in selected timezone
   const getCurrentDateInTimezone = (tz: string) => {
-    return utcToZonedTime(new Date(), tz);
+    return toZonedTime(new Date(), tz);
   };
   
   // Initialize dates in the selected timezone
   const [currentMonth, setCurrentMonth] = useState(() => {
     const saved = localStorage.getItem('calendar_timezone');
     const tz = saved || 'America/New_York';
-    return utcToZonedTime(new Date(), tz);
+    return toZonedTime(new Date(), tz);
   });
   const [selectedDate, setSelectedDate] = useState(() => {
     const saved = localStorage.getItem('calendar_timezone');
     const tz = saved || 'America/New_York';
-    return utcToZonedTime(new Date(), tz);
+    return toZonedTime(new Date(), tz);
   });
   const [showAddModal, setShowAddModal] = useState(false);
   const [isMobile, setIsMobile] = useState<boolean>(() => {
@@ -246,7 +246,7 @@ export default function Calendar() {
     
     const events: CalendarEvent[] = [];
     // Get current time in the selected timezone
-    const now = utcToZonedTime(new Date(), timezone);
+    const now = toZonedTime(new Date(), timezone);
     const sixMonthsFromNow = addMonths(now, 6);
     
     reminders.forEach((reminder: any) => {
@@ -256,7 +256,7 @@ export default function Calendar() {
       // Parse the original scheduled time (assumed to be in UTC or the original timezone)
       const originalDate = parseISO(liveClass.scheduled_at);
       // Convert to the selected timezone
-      const zonedOriginalDate = utcToZonedTime(originalDate, timezone);
+      const zonedOriginalDate = toZonedTime(originalDate, timezone);
       const dayOfWeek = getDay(zonedOriginalDate); // 0 = Sunday, 6 = Saturday
       const time = formatTz(zonedOriginalDate, 'HH:mm', { timeZone: timezone });
       
@@ -329,7 +329,7 @@ export default function Calendar() {
 
   const getEventsForSelectedDate = () => {
     // Convert selected date to the selected timezone for comparison
-    const zonedSelectedDate = utcToZonedTime(selectedDate, timezone);
+    const zonedSelectedDate = toZonedTime(selectedDate, timezone);
     const dateStr = format(zonedSelectedDate, 'yyyy-MM-dd');
     return allEvents.filter(event => event.date === dateStr);
   };
@@ -493,7 +493,7 @@ export default function Calendar() {
                                   const dateTimeStr = `${event.date}T${event.time}:00`;
                                   // Treat as UTC, then convert to selected timezone
                                   const localDate = new Date(dateTimeStr + 'Z');
-                                  const zonedDate = utcToZonedTime(localDate, timezone);
+                                  const zonedDate = toZonedTime(localDate, timezone);
                                   return formatTz(zonedDate, 'h:mm a', { timeZone: timezone });
                                 } catch (e) {
                                   // Fallback: format time string directly

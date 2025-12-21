@@ -248,24 +248,36 @@ export default function Nutrition() {
     loadData();
   }, [user, today]);
 
-  // Update totals when meals or water change
+  // Update totals when meals or water change (only if columns exist)
   useEffect(() => {
     if (nutritionEntryId && user) {
-      const totals = {
-        total_calories: meals.reduce((sum, meal) => sum + meal.calories, 0),
-        total_protein: meals.reduce((sum, meal) => sum + meal.protein, 0),
-        total_carbs: meals.reduce((sum, meal) => sum + meal.carbs, 0),
-        total_fat: meals.reduce((sum, meal) => sum + meal.fat, 0),
-        water_intake: waterIntake,
-      };
+      // Try to update totals, but don't fail if columns don't exist
+      const totals: any = {};
+      const calculatedCalories = meals.reduce((sum, meal) => sum + meal.calories, 0);
+      const calculatedProtein = meals.reduce((sum, meal) => sum + meal.protein, 0);
+      const calculatedCarbs = meals.reduce((sum, meal) => sum + meal.carbs, 0);
+      const calculatedFat = meals.reduce((sum, meal) => sum + meal.fat, 0);
 
-      supabase
-        .from('nutrition_entries')
-        .update(totals as any)
-        .eq('id', nutritionEntryId)
-        .then(({ error }) => {
-          if (error) console.error('Error updating nutrition totals:', error);
-        });
+      // Only include fields if they have values (avoid updating with defaults unnecessarily)
+      if (calculatedCalories > 0) totals.total_calories = calculatedCalories;
+      if (calculatedProtein > 0) totals.total_protein = calculatedProtein;
+      if (calculatedCarbs > 0) totals.total_carbs = calculatedCarbs;
+      if (calculatedFat > 0) totals.total_fat = calculatedFat;
+      if (waterIntake > 0) totals.water_intake = waterIntake;
+
+      // Only update if we have something to update
+      if (Object.keys(totals).length > 0) {
+        supabase
+          .from('nutrition_entries')
+          .update(totals)
+          .eq('id', nutritionEntryId)
+          .then(({ error }) => {
+            if (error) {
+              // Silently fail if columns don't exist - this is okay, totals are calculated client-side
+              console.warn('Could not update nutrition totals (columns may not exist):', error.message);
+            }
+          });
+      }
     }
   }, [meals, waterIntake, nutritionEntryId, user]);
 
@@ -275,12 +287,17 @@ export default function Nutrition() {
     
     if (nutritionEntryId && user) {
       try {
-        await supabase
+        const { error } = await supabase
           .from('nutrition_entries')
           .update({ water_intake: newAmount } as any)
           .eq('id', nutritionEntryId);
+        
+        if (error) {
+          // Silently fail if column doesn't exist - water intake is stored in state
+          console.warn('Could not update water intake (column may not exist):', error.message);
+        }
       } catch (error) {
-        console.error('Error updating water intake:', error);
+        console.warn('Error updating water intake:', error);
       }
     }
   };

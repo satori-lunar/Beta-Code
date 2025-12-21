@@ -660,7 +660,7 @@ export default function Nutrition() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Food Name
+                  Food Name *
                 </label>
                 <input
                   type="text"
@@ -668,7 +668,11 @@ export default function Nutrition() {
                   onChange={(e) => setNewMeal({ ...newMeal, name: e.target.value })}
                   placeholder="e.g., Grilled chicken salad"
                   className="input"
+                  required
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  Calories and nutrition info are optional
+                </p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">

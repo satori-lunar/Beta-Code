@@ -1,7 +1,10 @@
 -- Create meals table if it doesn't exist
 -- This table stores individual meals linked to nutrition entries
 
-CREATE TABLE IF NOT EXISTS public.meals (
+-- Drop the table if it exists with wrong schema (will recreate with correct schema)
+DROP TABLE IF EXISTS public.meals CASCADE;
+
+CREATE TABLE public.meals (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   nutrition_entry_id UUID NOT NULL REFERENCES public.nutrition_entries(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,

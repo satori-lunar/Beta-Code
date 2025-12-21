@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, getDay, addWeeks, startOfWeek, endOfWeek } from 'date-fns';
-import { toZonedTime, fromZonedTime, format as formatTz } from 'date-fns-tz';
+import { toZonedTime, format as formatTz } from 'date-fns-tz';
 import { useUserClassReminders } from '../hooks/useSupabaseData';
 
 const eventTypes = [
@@ -292,7 +292,6 @@ export default function Calendar() {
       
       // Get the time in Eastern (where classes are stored)
       const easternTimeStr = formatTz(originalDate, 'HH:mm', { timeZone: EASTERN_TIMEZONE });
-      const easternDateStr = formatTz(originalDate, 'yyyy-MM-dd', { timeZone: EASTERN_TIMEZONE });
       
       // Get day of week from Eastern date (keep the same day)
       const easternDayName = formatTz(originalDate, 'EEEE', { timeZone: EASTERN_TIMEZONE });

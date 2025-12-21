@@ -3,7 +3,6 @@ import {
   Plus,
   Flame,
   CheckCircle2,
-  Circle,
   TrendingUp,
   Calendar,
   ChevronLeft,
@@ -22,21 +21,12 @@ import {
   ChevronDown,
   ChevronUp,
   Edit3,
-  Star,
-  Award,
   Trophy,
   BarChart3,
   Sparkles,
-  Zap,
-  FileText,
-  Download,
-  Minus,
   Plus as PlusIcon,
-  TrendingDown,
-  Clock,
-  CalendarDays,
-  Lightbulb,
-  MessageSquare
+  FileText,
+  Lightbulb
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -50,16 +40,9 @@ import {
   isSameDay, 
   parseISO, 
   differenceInDays,
-  startOfYear,
   eachDayOfInterval,
   subMonths,
-  startOfMonth,
-  endOfMonth,
-  getDay,
-  isSameMonth,
-  isToday as isTodayDate,
-  getWeek,
-  startOfDay
+  getDay
 } from 'date-fns';
 
 // Calculate streak from completed dates
@@ -291,8 +274,6 @@ export default function Habits() {
   const [activeTab, setActiveTab] = useState<'habits' | 'analytics' | 'insights'>('habits');
   const [userPoints, setUserPoints] = useState<UserPoints | null>(null);
   const [habitNotes, setHabitNotes] = useState<Record<string, Record<string, string>>>({});
-  const [currentNote, setCurrentNote] = useState('');
-  const [viewMode, setViewMode] = useState<'week' | 'month' | 'year'>('week');
   
   const [newHabit, setNewHabit] = useState({
     name: '',
@@ -309,17 +290,17 @@ export default function Habits() {
     if (!user) return;
     
     const fetchPoints = async () => {
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from('user_points')
         .select('*')
         .eq('user_id', user.id)
         .single();
       
       if (data) {
-        setUserPoints(data);
+        setUserPoints(data as UserPoints);
       } else {
         // Initialize points
-        const { data: newData } = await supabase
+        const { data: newData } = await (supabase as any)
           .from('user_points')
           .insert({
             user_id: user.id,
@@ -330,7 +311,7 @@ export default function Habits() {
           })
           .select()
           .single();
-        if (newData) setUserPoints(newData);
+        if (newData) setUserPoints(newData as UserPoints);
       }
     };
     
@@ -345,14 +326,14 @@ export default function Habits() {
       const notesMap: Record<string, Record<string, string>> = {};
       
       for (const habit of habits) {
-        const { data } = await supabase
+        const { data } = await (supabase as any)
           .from('habit_notes')
           .select('completed_date, note')
           .eq('habit_id', habit.id);
         
         if (data) {
           notesMap[habit.id] = {};
-          data.forEach(item => {
+          data.forEach((item: any) => {
             notesMap[habit.id][item.completed_date] = item.note || '';
           });
         }
@@ -377,7 +358,7 @@ export default function Habits() {
     
     try {
       // Try RPC call first
-      const { error: rpcError } = await supabase.rpc('award_points', {
+      const { error: rpcError } = await (supabase as any).rpc('award_points', {
         p_user_id: user.id,
         p_points: points,
         p_source: source,
@@ -390,7 +371,7 @@ export default function Habits() {
         console.warn('RPC failed, using fallback:', rpcError);
         
         // Insert into points history
-        await supabase.from('points_history').insert({
+        await (supabase as any).from('points_history').insert({
           user_id: user.id,
           points: points,
           source: source,
@@ -399,7 +380,7 @@ export default function Habits() {
         });
         
         // Update or insert user_points
-        const { data: existing } = await supabase
+        const { data: existing } = await (supabase as any)
           .from('user_points')
           .select('*')
           .eq('user_id', user.id)
@@ -411,7 +392,7 @@ export default function Habits() {
           const prevLevelPoints = newLevel === 1 ? 0 : ((newLevel - 1) * (newLevel - 1) * 25);
           const pointsToNext = newLevel === 1 ? 100 : (newLevel * newLevel * 25) - ((newLevel - 1) * (newLevel - 1) * 25);
           
-          await supabase
+          await (supabase as any)
             .from('user_points')
             .update({
               total_points: newTotal,
@@ -422,7 +403,7 @@ export default function Habits() {
             })
             .eq('user_id', user.id);
         } else {
-          await supabase.from('user_points').insert({
+          await (supabase as any).from('user_points').insert({
             user_id: user.id,
             total_points: points,
             level: 1,
@@ -433,13 +414,13 @@ export default function Habits() {
       }
       
       // Refresh points
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from('user_points')
         .select('*')
         .eq('user_id', user.id)
         .single();
       
-      if (data) setUserPoints(data);
+      if (data) setUserPoints(data as UserPoints);
     } catch (error) {
       console.error('Error awarding points:', error);
     }
@@ -502,7 +483,7 @@ export default function Habits() {
     if (!user) return;
     
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('habit_notes')
         .upsert({
           habit_id: habitId,
@@ -520,8 +501,6 @@ export default function Habits() {
           [date]: note
         }
       }));
-      
-      setCurrentNote('');
     } catch (error) {
       console.error('Error saving note:', error);
     }
@@ -559,16 +538,6 @@ export default function Habits() {
     const habitStats = habits.map(habit => {
       const completedDates = (habit.completed_dates as any) || [];
       const dates = Array.isArray(completedDates) ? completedDates : [];
-      
-      const last30DaysDates = dates.filter((d: string) => {
-        const date = parseISO(d);
-        return date >= last30Days && date <= now;
-      });
-      
-      const last7DaysDates = dates.filter((d: string) => {
-        const date = parseISO(d);
-        return date >= last7Days && date <= now;
-      });
       
       const completionRate30 = calculateCompletionRate(dates, last30Days, now);
       const completionRate7 = calculateCompletionRate(dates, last7Days, now);
@@ -840,7 +809,6 @@ export default function Habits() {
                 const isCompleted = Array.isArray(completedDates) && completedDates.includes(dateString);
                 const IconComponent = habitIcons[habit.icon || ''] || Target;
                 const isExpanded = expandedHabit === habit.id;
-                const isEditing = editingHabit === habit.id;
                 
                 // Calculate completion rate for last 30 days
                 const last30Days = subDays(new Date(), 30);

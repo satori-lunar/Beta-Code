@@ -44,7 +44,7 @@ const waterData = [
 const mealTypes = [
   { id: 'breakfast', name: 'Breakfast', icon: Coffee, color: '#fcd5ce' },
   { id: 'lunch', name: 'Lunch', icon: UtensilsCrossed, color: '#d8f3dc' },
-  { id: 'snacks', name: 'Snacks', icon: Cookie, color: '#e2d5f1' },
+  { id: 'snack', name: 'Snacks', icon: Cookie, color: '#e2d5f1' },
   { id: 'dinner', name: 'Dinner', icon: MoonIcon, color: '#bde0fe' },
 ];
 
@@ -106,11 +106,20 @@ export default function Nutrition() {
           fat: parseInt(newMeal.fat) || 0,
         },
       ]);
+      // Reset form but keep modal open and preserve meal type
       setNewMeal({ name: '', calories: '', protein: '', carbs: '', fat: '' });
       setMealImage(null);
       setImagePreview(null);
-      setShowAddMealModal(false);
+      // Don't close modal - allow adding multiple meals
     }
+  };
+
+  const handleCloseModal = () => {
+    setShowAddMealModal(false);
+    // Reset form when closing
+    setNewMeal({ name: '', calories: '', protein: '', carbs: '', fat: '' });
+    setMealImage(null);
+    setImagePreview(null);
   };
 
   const handleImageSelect = async (file: File) => {
@@ -547,7 +556,7 @@ export default function Nutrition() {
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-display font-semibold">Add Meal</h3>
               <button
-                onClick={() => setShowAddMealModal(false)}
+                onClick={handleCloseModal}
                 className="p-2 hover:bg-gray-100 rounded-lg"
               >
                 <X className="w-5 h-5 text-gray-500" />
@@ -718,10 +727,10 @@ export default function Nutrition() {
 
               <div className="flex gap-3 pt-4">
                 <button
-                  onClick={() => setShowAddMealModal(false)}
+                  onClick={handleCloseModal}
                   className="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-gray-50"
                 >
-                  Cancel
+                  Done
                 </button>
                 <button onClick={handleAddMeal} className="flex-1 btn-primary">
                   Add Meal

@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import SlugProtectedRoute from './components/SlugProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
@@ -16,6 +17,7 @@ import Pathways from './pages/Pathways';
 import PathwayDetail from './pages/PathwayDetail';
 import Calendar from './pages/Calendar';
 import Classes from './pages/Classes';
+import Community from './pages/Community';
 import Settings from './pages/Settings';
 import Badges from './pages/Badges';
 import AdminDashboard from './pages/AdminDashboard';
@@ -36,6 +38,22 @@ function App() {
               <Route path="/signup" element={<SignUp />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/auth/callback" element={<AuthCallback />} />
+              
+              {/* Slug-protected routes - require slug in URL */}
+              {/* Example: /share/:slug or /private/:slug */}
+              {/* Uncomment and customize the route below as needed */}
+              {/* 
+              <Route 
+                path="/share/:slug" 
+                element={
+                  <SlugProtectedRoute>
+                    <ErrorBoundary>
+                      <YourComponent />
+                    </ErrorBoundary>
+                  </SlugProtectedRoute>
+                } 
+              />
+              */}
 
               {/* Protected routes */}
               <Route
@@ -60,6 +78,7 @@ function App() {
                 <Route path="pathways/:id" element={<ErrorBoundary><PathwayDetail /></ErrorBoundary>} />
                 <Route path="calendar" element={<ErrorBoundary><Calendar /></ErrorBoundary>} />
                 <Route path="classes" element={<ErrorBoundary><Classes /></ErrorBoundary>} />
+                <Route path="community" element={<ErrorBoundary><Community /></ErrorBoundary>} />
                 <Route path="settings" element={<ErrorBoundary><Settings /></ErrorBoundary>} />
                 <Route path="badges" element={<ErrorBoundary><Badges /></ErrorBoundary>} />
                 <Route path="admin" element={<ErrorBoundary><AdminDashboard /></ErrorBoundary>} />

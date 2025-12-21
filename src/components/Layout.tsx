@@ -24,7 +24,8 @@ import {
   Clock,
   Activity,
   Shield,
-  Flag
+  Flag,
+  Users
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -42,6 +43,7 @@ const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
   { name: 'Calendar', href: '/calendar', icon: CalendarDays },
   { name: 'Classes', href: '/classes', icon: Video },
+  // { name: 'Community', href: '/community', icon: Users }, // Hidden for now
   { name: 'Health', href: '/health', icon: Activity },
   { name: 'Habits', href: '/habits', icon: Target },
   { name: 'Nutrition', href: '/nutrition', icon: Apple },
@@ -62,6 +64,7 @@ const pages = [
   { name: 'Pathways', description: 'Choose your wellness journey', href: '/pathways' },
   { name: 'Calendar', description: 'View your schedule', href: '/calendar' },
   { name: 'Classes', description: 'Live and recorded sessions', href: '/classes' },
+  // { name: 'Community', description: 'Connect with the community', href: '/community' }, // Hidden for now
   { name: 'Badges', description: 'View your achievements', href: '/badges' },
   { name: 'Settings', description: 'Manage your account', href: '/settings' },
 ];

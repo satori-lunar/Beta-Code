@@ -93,7 +93,7 @@ export default function Nutrition() {
   };
 
   const handleAddMeal = () => {
-    if (newMeal.name && newMeal.calories) {
+    if (newMeal.name.trim()) {
       setMeals([
         ...meals,
         {

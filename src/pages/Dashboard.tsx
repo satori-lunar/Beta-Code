@@ -148,8 +148,8 @@ const allAvailableBadges = [
   { id: 'week-one', name: 'Week One', description: 'Complete your first week', icon: 'calendar', category: 'special' },
   { id: 'month-one', name: 'Month One', description: 'Complete your first month', icon: 'calendar', category: 'special' },
   { id: 'quarter-champion', name: 'Quarter Champion', description: 'Complete 3 months', icon: 'award', category: 'special' },
-  { id: 'half-year-hero', name: 'Half Year Hero', description: 'Complete 6 months', icon: 'trophy', category: 'special' },
-  { id: 'year-warrior', name: 'Year Warrior', description: 'Complete 1 year', icon: 'crown', category: 'special' },
+  { id: 'six-month-milestone', name: 'Six Month Milestone', description: 'Complete 6 months', icon: 'trophy', category: 'special' },
+  { id: 'one-year-milestone', name: 'One Year Milestone', description: 'Complete 1 year', icon: 'crown', category: 'special' },
 ];
 
 const wellnessQuotes = [

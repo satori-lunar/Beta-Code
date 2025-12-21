@@ -243,11 +243,6 @@ export default function Calendar() {
     if (!reminders || reminders.length === 0) return [];
     
     const events: CalendarEvent[] = [];
-    // Use current date in UTC for consistent day-of-week calculation
-    // This ensures the day of week is the same regardless of timezone
-    const now = new Date();
-    const sixMonthsFromNow = addMonths(now, 6);
-    
     // Eastern timezone where classes are stored
     const EASTERN_TIMEZONE = 'America/New_York';
     
@@ -324,7 +319,7 @@ export default function Calendar() {
         });
         
         // Move to next week
-        currentDate = addWeeks(currentDate, 1);
+        currentDateObj = addWeeks(currentDateObj, 1);
       }
     });
     

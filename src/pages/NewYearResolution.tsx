@@ -70,11 +70,6 @@ export default function NewYearResolution() {
   });
 
   const hasResolutions = resolutions.length > 0;
-  const isNewYearSeason = () => {
-    const now = new Date();
-    const month = now.getMonth(); // 0-11
-    return month === 11 || month === 0; // December or January
-  };
 
   // Initialize wizard when creating new resolution
   const handleStartWizard = () => {

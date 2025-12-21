@@ -66,7 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Check if user is blocked
         if (session?.user) {
           try {
-            const { data: userData } = await supabase
+            const { data: userData } = await (supabase as any)
               .from('users')
               .select('is_blocked, blocked_reason')
               .eq('id', session.user.id)
@@ -128,7 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Check if user is blocked before setting session
         if (session?.user) {
           try {
-            const { data: userData } = await supabase
+            const { data: userData } = await (supabase as any)
               .from('users')
               .select('is_blocked, blocked_reason')
               .eq('id', session.user.id)

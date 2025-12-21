@@ -269,7 +269,7 @@ export default function WeightLog() {
               <button
                 onClick={() => {
                   setGoalWeight('');
-                  setIsEditingGoal(false);
+                  setEditingGoalType(null);
                   setShowGoalModal(true);
                 }}
                 className="text-sm text-purple-600 hover:text-purple-700 font-medium mt-1"

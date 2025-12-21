@@ -193,13 +193,14 @@ export default function Goals() {
             <Sparkles className="w-5 h-5" />
             New Year's Resolution
           </button>
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="btn-primary flex items-center gap-2 self-start sm:self-auto"
-        >
-          <Plus className="w-5 h-5" />
-          <span className="text-sm sm:text-base">New Goal</span>
-        </button>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="btn-primary flex items-center gap-2 self-start sm:self-auto"
+          >
+            <Plus className="w-5 h-5" />
+            <span className="text-sm sm:text-base">New Goal</span>
+          </button>
+        </div>
       </div>
 
       {/* Filters */}

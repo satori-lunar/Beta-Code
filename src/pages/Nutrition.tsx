@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   Plus,
   Droplet,
@@ -28,6 +28,9 @@ import {
   ResponsiveContainer
 } from 'recharts';
 import { analyzeFoodImage } from '../lib/foodAnalysis';
+import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabase';
+import { format } from 'date-fns';
 
 const waterData = [
   { time: '8AM', amount: 350 },
@@ -59,6 +62,7 @@ interface Meal {
 }
 
 export default function Nutrition() {
+  const { user } = useAuth();
   const [waterIntake, setWaterIntake] = useState(0);
   const [showAddMealModal, setShowAddMealModal] = useState(false);
   const [selectedMealType, setSelectedMealType] = useState('breakfast');
@@ -68,9 +72,13 @@ export default function Nutrition() {
   const [mealImage, setMealImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [showCamera, setShowCamera] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [nutritionEntryId, setNutritionEntryId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+
+  const today = format(new Date(), 'yyyy-MM-dd');
 
   const [newMeal, setNewMeal] = useState({
     name: '',
@@ -88,29 +96,185 @@ export default function Nutrition() {
   const totalCarbs = meals.reduce((sum, meal) => sum + meal.carbs, 0);
   const totalFat = meals.reduce((sum, meal) => sum + meal.fat, 0);
 
-  const addWater = (amount: number) => {
-    setWaterIntake(prev => Math.max(0, prev + amount));
+  // Get or create today's nutrition entry
+  const getOrCreateNutritionEntry = async () => {
+    if (!user) return null;
+
+    try {
+      // Try to get existing entry
+      const { data: existing, error: fetchError } = await supabase
+        .from('nutrition_entries')
+        .select('id, water_intake')
+        .eq('user_id', user.id)
+        .eq('date', today)
+        .maybeSingle();
+
+      if (fetchError) throw fetchError;
+
+      if (existing) {
+        setNutritionEntryId(existing.id);
+        setWaterIntake(existing.water_intake || 0);
+        return existing.id;
+      }
+
+      // Create new entry
+      const { data: newEntry, error: createError } = await supabase
+        .from('nutrition_entries')
+        .insert({
+          user_id: user.id,
+          date: today,
+          total_calories: 0,
+          total_protein: 0,
+          total_carbs: 0,
+          total_fat: 0,
+          water_intake: 0,
+        })
+        .select('id')
+        .single();
+
+      if (createError) throw createError;
+
+      setNutritionEntryId(newEntry.id);
+      return newEntry.id;
+    } catch (error) {
+      console.error('Error getting/creating nutrition entry:', error);
+      return null;
+    }
   };
 
-  const handleAddMeal = () => {
-    if (newMeal.name.trim()) {
+  // Fetch meals for today
+  const fetchMeals = async (entryId: string) => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('meals')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('nutrition_entry_id', entryId)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+
+      if (data) {
+        const mappedMeals: Meal[] = data.map((meal: any) => ({
+          id: meal.id,
+          type: meal.type,
+          name: meal.name,
+          calories: meal.calories || 0,
+          protein: meal.protein || 0,
+          carbs: meal.carbs || 0,
+          fat: meal.fat || 0,
+        }));
+        setMeals(mappedMeals);
+      }
+    } catch (error) {
+      console.error('Error fetching meals:', error);
+    }
+  };
+
+
+  // Load data on mount
+  useEffect(() => {
+    const loadData = async () => {
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      const entryId = await getOrCreateNutritionEntry();
+      if (entryId) {
+        await fetchMeals(entryId);
+      }
+      setLoading(false);
+    };
+
+    loadData();
+  }, [user, today]);
+
+  // Update totals when meals or water change
+  useEffect(() => {
+    if (nutritionEntryId && user) {
+      const totals = {
+        total_calories: meals.reduce((sum, meal) => sum + meal.calories, 0),
+        total_protein: meals.reduce((sum, meal) => sum + meal.protein, 0),
+        total_carbs: meals.reduce((sum, meal) => sum + meal.carbs, 0),
+        total_fat: meals.reduce((sum, meal) => sum + meal.fat, 0),
+        water_intake: waterIntake,
+      };
+
+      supabase
+        .from('nutrition_entries')
+        .update(totals)
+        .eq('id', nutritionEntryId)
+        .then(({ error }) => {
+          if (error) console.error('Error updating nutrition totals:', error);
+        });
+    }
+  }, [meals, waterIntake, nutritionEntryId, user]);
+
+  const addWater = async (amount: number) => {
+    const newAmount = Math.max(0, waterIntake + amount);
+    setWaterIntake(newAmount);
+    
+    if (nutritionEntryId && user) {
+      try {
+        await supabase
+          .from('nutrition_entries')
+          .update({ water_intake: newAmount })
+          .eq('id', nutritionEntryId);
+      } catch (error) {
+        console.error('Error updating water intake:', error);
+      }
+    }
+  };
+
+  const handleAddMeal = async () => {
+    if (!newMeal.name.trim() || !nutritionEntryId || !user) return;
+
+    try {
+      const mealData = {
+        nutrition_entry_id: nutritionEntryId,
+        user_id: user.id,
+        type: selectedMealType,
+        name: newMeal.name,
+        calories: parseInt(newMeal.calories) || 0,
+        protein: parseInt(newMeal.protein) || 0,
+        carbs: parseInt(newMeal.carbs) || 0,
+        fat: parseInt(newMeal.fat) || 0,
+        time: new Date().toTimeString().slice(0, 5), // HH:MM format
+      };
+
+      const { data, error } = await supabase
+        .from('meals')
+        .insert(mealData)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Add to local state
       setMeals([
         ...meals,
         {
-          id: Date.now().toString(),
-          type: selectedMealType,
-          name: newMeal.name,
-          calories: parseInt(newMeal.calories) || 0,
-          protein: parseInt(newMeal.protein) || 0,
-          carbs: parseInt(newMeal.carbs) || 0,
-          fat: parseInt(newMeal.fat) || 0,
+          id: data.id,
+          type: data.type,
+          name: data.name,
+          calories: data.calories || 0,
+          protein: data.protein || 0,
+          carbs: data.carbs || 0,
+          fat: data.fat || 0,
         },
       ]);
+
       // Reset form but keep modal open and preserve meal type
       setNewMeal({ name: '', calories: '', protein: '', carbs: '', fat: '' });
       setMealImage(null);
       setImagePreview(null);
-      // Don't close modal - allow adding multiple meals
+    } catch (error) {
+      console.error('Error adding meal:', error);
+      alert('Failed to add meal. Please try again.');
     }
   };
 

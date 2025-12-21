@@ -1027,6 +1027,57 @@ export type Database = {
         }
         Relationships: []
       }
+      new_year_resolutions: {
+        Row: {
+          id: string
+          user_id: string
+          year: number
+          title: string
+          description: string | null
+          category: string
+          why_important: string | null
+          milestones: Json | null
+          progress: number | null
+          status: string | null
+          target_date: string | null
+          reflections: Json | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          year: number
+          title: string
+          description?: string | null
+          category: string
+          why_important?: string | null
+          milestones?: Json | null
+          progress?: number | null
+          status?: string | null
+          target_date?: string | null
+          reflections?: Json | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          year?: number
+          title?: string
+          description?: string | null
+          category?: string
+          why_important?: string | null
+          milestones?: Json | null
+          progress?: number | null
+          status?: string | null
+          target_date?: string | null
+          reflections?: Json | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       user_session_completions: {
         Row: {
           id: string

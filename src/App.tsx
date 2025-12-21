@@ -11,6 +11,7 @@ import Nutrition from './pages/Nutrition';
 import WeightLog from './pages/WeightLog';
 import Journal from './pages/Journal';
 import Goals from './pages/Goals';
+import NewYearResolution from './pages/NewYearResolution';
 import Pathways from './pages/Pathways';
 import PathwayDetail from './pages/PathwayDetail';
 import Calendar from './pages/Calendar';
@@ -54,6 +55,7 @@ function App() {
                 <Route path="weight" element={<ErrorBoundary><WeightLog /></ErrorBoundary>} />
                 <Route path="journal" element={<ErrorBoundary><Journal /></ErrorBoundary>} />
                 <Route path="goals" element={<ErrorBoundary><Goals /></ErrorBoundary>} />
+                <Route path="new-year-resolution" element={<ErrorBoundary><NewYearResolution /></ErrorBoundary>} />
                 <Route path="pathways" element={<ErrorBoundary><Pathways /></ErrorBoundary>} />
                 <Route path="pathways/:id" element={<ErrorBoundary><PathwayDetail /></ErrorBoundary>} />
                 <Route path="calendar" element={<ErrorBoundary><Calendar /></ErrorBoundary>} />

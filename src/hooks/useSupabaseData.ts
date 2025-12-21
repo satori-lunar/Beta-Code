@@ -1462,3 +1462,203 @@ export function useNotificationPreferences() {
   return { preferences, loading, error, updatePreferences }
 }
 
+// Hook for New Year's Resolutions
+export function useNewYearResolutions(year?: number) {
+  const { user } = useAuth()
+  const [resolutions, setResolutions] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
+  
+  const targetYear = year || new Date().getFullYear()
+  const userId = user ? user.id : null
+
+  useEffect(() => {
+    if (!user) {
+      setResolutions([])
+      setLoading(false)
+      return
+    }
+
+    let isMounted = true
+
+    const fetchResolutions = async () => {
+      try {
+        setLoading(true)
+        const { data, error: fetchError } = await supabase
+          .from('new_year_resolutions')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('year', targetYear)
+          .order('created_at', { ascending: false })
+
+        if (fetchError) throw fetchError
+        if (!isMounted) return
+
+        setResolutions((data || []).map((r: any) => ({
+          id: r.id,
+          year: r.year,
+          title: r.title,
+          description: r.description,
+          category: r.category,
+          whyImportant: r.why_important,
+          milestones: r.milestones || [],
+          progress: r.progress || 0,
+          status: r.status || 'active',
+          targetDate: r.target_date,
+          reflections: r.reflections || [],
+          createdAt: r.created_at,
+          updatedAt: r.updated_at,
+        })))
+      } catch (err) {
+        if (isMounted) setError(err as Error)
+      } finally {
+        if (isMounted) setLoading(false)
+      }
+    }
+
+    fetchResolutions()
+
+    const channel = supabase
+      .channel('new_year_resolutions_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'new_year_resolutions',
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => fetchResolutions()
+      )
+      .subscribe()
+
+    return () => {
+      isMounted = false
+      supabase.removeChannel(channel)
+    }
+  }, [userId, targetYear])
+
+  const createResolution = async (resolutionData: {
+    title: string
+    description?: string
+    category: string
+    whyImportant?: string
+    milestones?: any[]
+    targetDate?: string
+  }) => {
+    if (!user) throw new Error('User not authenticated')
+
+    try {
+      const { data, error: createError } = await supabase
+        .from('new_year_resolutions')
+        .insert({
+          user_id: user.id,
+          year: targetYear,
+          title: resolutionData.title,
+          description: resolutionData.description || null,
+          category: resolutionData.category,
+          why_important: resolutionData.whyImportant || null,
+          milestones: resolutionData.milestones || [],
+          target_date: resolutionData.targetDate || null,
+          progress: 0,
+          status: 'active',
+        })
+        .select()
+        .single()
+
+      if (createError) throw createError
+      return { success: true, data }
+    } catch (err) {
+      setError(err as Error)
+      return { success: false, error: err }
+    }
+  }
+
+  const updateResolution = async (id: string, updates: any) => {
+    if (!user) throw new Error('User not authenticated')
+
+    try {
+      const updateData: any = {}
+      if (updates.title !== undefined) updateData.title = updates.title
+      if (updates.description !== undefined) updateData.description = updates.description
+      if (updates.category !== undefined) updateData.category = updates.category
+      if (updates.whyImportant !== undefined) updateData.why_important = updates.whyImportant
+      if (updates.milestones !== undefined) updateData.milestones = updates.milestones
+      if (updates.progress !== undefined) updateData.progress = updates.progress
+      if (updates.status !== undefined) updateData.status = updates.status
+      if (updates.targetDate !== undefined) updateData.target_date = updates.targetDate
+      if (updates.reflections !== undefined) updateData.reflections = updates.reflections
+
+      const { data, error: updateError } = await supabase
+        .from('new_year_resolutions')
+        .update(updateData)
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .select()
+        .single()
+
+      if (updateError) throw updateError
+      return { success: true, data }
+    } catch (err) {
+      setError(err as Error)
+      return { success: false, error: err }
+    }
+  }
+
+  const deleteResolution = async (id: string) => {
+    if (!user) throw new Error('User not authenticated')
+
+    try {
+      const { error: deleteError } = await supabase
+        .from('new_year_resolutions')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id)
+
+      if (deleteError) throw deleteError
+      return { success: true }
+    } catch (err) {
+      setError(err as Error)
+      return { success: false, error: err }
+    }
+  }
+
+  return {
+    resolutions,
+    loading,
+    error,
+    createResolution,
+    updateResolution,
+    deleteResolution,
+    refetch: () => {
+      if (user) {
+        supabase
+          .from('new_year_resolutions')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('year', targetYear)
+          .order('created_at', { ascending: false })
+          .then(({ data, error }) => {
+            if (!error && data) {
+              setResolutions((data || []).map((r: any) => ({
+                id: r.id,
+                year: r.year,
+                title: r.title,
+                description: r.description,
+                category: r.category,
+                whyImportant: r.why_important,
+                milestones: r.milestones || [],
+                progress: r.progress || 0,
+                status: r.status || 'active',
+                targetDate: r.target_date,
+                reflections: r.reflections || [],
+                createdAt: r.created_at,
+                updatedAt: r.updated_at,
+              })))
+            }
+          })
+      }
+    },
+  }
+}
+

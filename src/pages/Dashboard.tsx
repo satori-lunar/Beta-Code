@@ -18,11 +18,12 @@ import {
   Trophy,
   Palette,
   Sun,
-  Moon
+  Moon,
+  ChevronRight
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { useHabits, useJournalEntries, useUserBadges } from '../hooks/useSupabaseData';
+import { useHabits, useJournalEntries, useUserBadges, useNewYearResolutions } from '../hooks/useSupabaseData';
 import { supabase } from '../lib/supabase';
 import { format, isToday, parseISO } from 'date-fns';
 const badgeIcons: Record<string, React.ElementType> = {
@@ -114,6 +115,15 @@ export default function Dashboard() {
   const { data: habits = [] } = useHabits();
   const { data: journalEntries = [] } = useJournalEntries();
   const { data: userBadges = [] } = useUserBadges();
+  const currentYear = new Date().getFullYear();
+  const { resolutions: newYearResolutions } = useNewYearResolutions(currentYear);
+  
+  // Check if it's New Year season (Dec 1 - Jan 31)
+  const isNewYearSeason = () => {
+    const now = new Date();
+    const month = now.getMonth(); // 0-11
+    return month === 11 || month === 0; // December or January
+  };
 
   const [dailyQuote, setDailyQuote] = useState('');
   const [showBadgeModal, setShowBadgeModal] = useState(false);
@@ -260,6 +270,60 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
+
+        {/* New Year's Resolution Card (Seasonal) */}
+        {isNewYearSeason() && (
+          <div className="bg-gradient-to-br from-purple-500 via-indigo-500 to-pink-500 rounded-2xl shadow-xl p-6 sm:p-8 text-white">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
+                    <Sparkles className="w-6 h-6 text-white" />
+                  </div>
+                  <h2 className="text-2xl font-bold">New Year's Resolution {currentYear}</h2>
+                </div>
+                {newYearResolutions.length > 0 ? (
+                  <div className="space-y-3">
+                    {newYearResolutions.slice(0, 2).map((resolution) => (
+                      <div key={resolution.id} className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
+                        <h3 className="font-semibold text-lg mb-2">{resolution.title}</h3>
+                        <div className="flex items-center gap-3">
+                          <div className="flex-1 bg-white/20 rounded-full h-2 overflow-hidden">
+                            <div
+                              className="h-full bg-white rounded-full transition-all duration-500"
+                              style={{ width: `${resolution.progress}%` }}
+                            />
+                          </div>
+                          <span className="text-sm font-medium">{resolution.progress}%</span>
+                        </div>
+                      </div>
+                    ))}
+                    <Link
+                      to="/new-year-resolution"
+                      className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg font-medium transition-colors backdrop-blur-sm"
+                    >
+                      View All Resolutions
+                      <ChevronRight className="w-5 h-5" />
+                    </Link>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-lg opacity-90 mb-4">
+                      Ready for a fresh start? Set your intention for {currentYear} and create a resolution that truly matters to you.
+                    </p>
+                    <Link
+                      to="/new-year-resolution"
+                      className="inline-flex items-center gap-2 px-6 py-3 bg-white text-purple-600 rounded-xl font-semibold hover:bg-gray-100 transition-colors"
+                    >
+                      <Sparkles className="w-5 h-5" />
+                      Create Your Resolution
+                    </Link>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Today's Progress */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

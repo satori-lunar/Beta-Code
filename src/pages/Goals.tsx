@@ -95,12 +95,20 @@ export default function Goals() {
   });
 
   const handleSaveGoal = async () => {
-    if (!user || !newGoal.title.trim()) return;
+    if (!user) {
+      alert('You must be logged in to create goals.');
+      return;
+    }
+
+    if (!newGoal.title.trim()) {
+      alert('Please enter a goal title.');
+      return;
+    }
 
     try {
       const goalData = {
-        title: newGoal.title,
-        description: newGoal.description,
+        title: newGoal.title.trim(),
+        description: newGoal.description.trim() || null,
         category: newGoal.category,
         status: newGoal.status,
         target_date: newGoal.target_date || null,
@@ -109,23 +117,31 @@ export default function Goals() {
       };
 
       if (editingGoal) {
-        const { error } = await supabase
-          .from('goals' as any)
+        const { error } = await (supabase as any)
+          .from('goals')
           .update(goalData)
           .eq('id', editingGoal);
-        if (error) throw error;
+        if (error) {
+          console.error('Error updating goal:', error);
+          alert(`Failed to update goal: ${error.message || 'Unknown error'}`);
+          return;
+        }
       } else {
-        const { error } = await supabase
-          .from('goals' as any)
+        const { error } = await (supabase as any)
+          .from('goals')
           .insert(goalData);
-        if (error) throw error;
+        if (error) {
+          console.error('Error creating goal:', error);
+          alert(`Failed to create goal: ${error.message || 'Unknown error'}. Please make sure the goals table exists in your database.`);
+          return;
+        }
       }
 
-      fetchGoals();
+      await fetchGoals();
       resetForm();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving goal:', error);
-      alert('Failed to save goal. Please try again.');
+      alert(`Failed to save goal: ${error?.message || 'Unknown error'}. Please check the console for details.`);
     }
   };
 

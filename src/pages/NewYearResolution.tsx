@@ -1,15 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   Sparkles,
   Target,
   CheckCircle2,
-  Calendar,
   Heart,
   Brain,
   Flower2,
   Users,
   Plus,
-  ArrowRight,
   Edit2,
   Trash2,
   X,
@@ -20,11 +18,8 @@ import {
   Frown,
   Meh,
 } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
 import { useNewYearResolutions } from '../hooks/useSupabaseData';
 import { format, parseISO } from 'date-fns';
-
-type ResolutionStatus = 'active' | 'paused' | 'completed' | 'archived';
 type Milestone = {
   id: string;
   title: string;
@@ -52,11 +47,9 @@ const suggestedCategories = [
 ];
 
 export default function NewYearResolution() {
-  const { user } = useAuth();
   const { resolutions, loading, createResolution, updateResolution, deleteResolution } = useNewYearResolutions(currentYear);
   const [showWizard, setShowWizard] = useState(false);
   const [wizardStep, setWizardStep] = useState(1);
-  const [editingResolution, setEditingResolution] = useState<string | null>(null);
   const [showReflectionModal, setShowReflectionModal] = useState(false);
   const [selectedResolution, setSelectedResolution] = useState<string | null>(null);
   const [reflectionData, setReflectionData] = useState({
@@ -671,8 +664,7 @@ export default function NewYearResolution() {
                 <div className="flex gap-2">
                   <button
                     onClick={() => {
-                      // TODO: Implement edit
-                      setEditingResolution(resolution.id);
+                      // Edit functionality can be added later
                     }}
                     className="p-2 text-gray-400 hover:text-coral-600 hover:bg-coral-50 rounded-lg transition-colors"
                   >
@@ -788,7 +780,7 @@ export default function NewYearResolution() {
                       .slice()
                       .sort((a: Reflection, b: Reflection) => new Date(b.date).getTime() - new Date(a.date).getTime())
                       .map((reflection: Reflection, index: number) => {
-                        const moodIcon =
+                        const MoodIcon =
                           reflection.mood === 'great' || reflection.mood === 'good' ? Smile :
                           reflection.mood === 'neutral' ? Meh :
                           Frown;
@@ -801,7 +793,7 @@ export default function NewYearResolution() {
                           <div key={reflection.id || index} className="p-4 bg-blue-50 rounded-xl border border-blue-100">
                             <div className="flex items-center justify-between mb-2">
                               <div className="flex items-center gap-3">
-                                {moodIcon && <moodIcon className={`w-5 h-5 ${moodColor}`} />}
+                                <MoodIcon className={`w-5 h-5 ${moodColor}`} />
                                 <span className="text-sm font-medium text-blue-900">
                                   {format(parseISO(reflection.date), 'MMMM d, yyyy')}
                                 </span>

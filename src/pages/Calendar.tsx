@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, getDay, addWeeks, startOfWeek, endOfWeek } from 'date-fns';
-import { toZonedTime, format as formatTz } from 'date-fns-tz';
+import { toZonedTime, fromZonedTime, format as formatTz } from 'date-fns-tz';
 import { useUserClassReminders } from '../hooks/useSupabaseData';
 
 const eventTypes = [
@@ -130,19 +130,17 @@ function MonthCalendar({
                 {dayEvents.slice(0, 2).map(event => {
                   const useLightText = !isLightColor(event.color);
                   // Format time in the selected timezone
+                  // Event time is already converted to the selected timezone, just format it
                   let timeDisplay = '';
                   if (event.time) {
                     try {
-                      // Create a date string and parse it
-                      // We'll treat the stored time as if it's in the selected timezone
-                      const dateTimeStr = `${event.date}T${event.time}:00`;
-                      // Create a date object - this will be interpreted as local time
-                      // Then we'll format it in the selected timezone
-                      const localDate = new Date(dateTimeStr + 'Z'); // Treat as UTC first
-                      // Convert from UTC to the selected timezone
-                      const zonedDate = toZonedTime(localDate, timezone);
-                      // Format in the selected timezone
-                      timeDisplay = formatTz(zonedDate, 'h:mm a', { timeZone: timezone });
+                      // The event.time is already in HH:mm format in the selected timezone
+                      // Just format it for display
+                      const [hours, minutes] = event.time.split(':');
+                      const hour = parseInt(hours, 10);
+                      const ampm = hour >= 12 ? 'PM' : 'AM';
+                      const displayHour = hour % 12 || 12;
+                      timeDisplay = `${displayHour}:${minutes.padStart(2, '0')} ${ampm}`;
                     } catch (e) {
                       // Fallback: just format the time string directly
                       const [hours, minutes] = event.time.split(':');
@@ -249,18 +247,37 @@ export default function Calendar() {
     const now = toZonedTime(new Date(), timezone);
     const sixMonthsFromNow = addMonths(now, 6);
     
+    // Eastern timezone where classes are stored
+    const EASTERN_TIMEZONE = 'America/New_York';
+    
     reminders.forEach((reminder: any) => {
       const liveClass = reminder.live_classes;
       if (!liveClass || !liveClass.scheduled_at) return;
       
-      // Parse the original scheduled time (assumed to be in UTC or the original timezone)
+      // Parse the original scheduled time
       const originalDate = parseISO(liveClass.scheduled_at);
-      // Convert to the selected timezone
-      const zonedOriginalDate = toZonedTime(originalDate, timezone);
-      const dayOfWeek = getDay(zonedOriginalDate); // 0 = Sunday, 6 = Saturday
-      const time = formatTz(zonedOriginalDate, 'HH:mm', { timeZone: timezone });
+      
+      // First, get what time this is in Eastern (where it's stored)
+      // This gives us the actual Eastern time components
+      const easternDateTimeStr = formatTz(originalDate, 'yyyy-MM-dd HH:mm', { timeZone: EASTERN_TIMEZONE });
+      const [easternDateStr, easternTimeStr] = easternDateTimeStr.split(' ');
+      
+      // Create a date object from the Eastern time components
+      // We'll treat this as if it's in Eastern timezone
+      const easternDate = parseISO(`${easternDateStr}T${easternTimeStr}`);
+      
+      // Convert from Eastern to UTC (treating the date as Eastern time)
+      const utcDate = fromZonedTime(easternDate, EASTERN_TIMEZONE);
+      
+      // Convert from UTC to the selected timezone
+      const zonedDate = toZonedTime(utcDate, timezone);
+      
+      // Get the day of week and time in the selected timezone
+      const dayOfWeek = getDay(zonedDate); // 0 = Sunday, 6 = Saturday
+      const time = formatTz(zonedDate, 'HH:mm', { timeZone: timezone });
       
       // Generate events for the next 6 months, repeating weekly
+      // Start from the converted date's day of week
       let currentDate = startOfWeek(now, { weekStartsOn: 0 });
       // Find the first occurrence of this day of week on or after today
       while (getDay(currentDate) !== dayOfWeek) {
@@ -489,12 +506,12 @@ export default function Calendar() {
                             <span className="text-sm text-gray-500 whitespace-nowrap">
                               {(() => {
                                 try {
-                                  // Create a date string and parse it
-                                  const dateTimeStr = `${event.date}T${event.time}:00`;
-                                  // Treat as UTC, then convert to selected timezone
-                                  const localDate = new Date(dateTimeStr + 'Z');
-                                  const zonedDate = toZonedTime(localDate, timezone);
-                                  return formatTz(zonedDate, 'h:mm a', { timeZone: timezone });
+                                  // Event time is already in the selected timezone, just format it
+                                  const [hours, minutes] = event.time.split(':');
+                                  const hour = parseInt(hours, 10);
+                                  const ampm = hour >= 12 ? 'PM' : 'AM';
+                                  const displayHour = hour % 12 || 12;
+                                  return `${displayHour}:${minutes.padStart(2, '0')} ${ampm}`;
                                 } catch (e) {
                                   // Fallback: format time string directly
                                   const [hours, minutes] = event.time.split(':');

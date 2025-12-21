@@ -1405,6 +1405,7 @@ export function useNotificationPreferences() {
     }
 
     async function fetchPreferences() {
+      if (!user) return // Type guard
       try {
         setLoading(true)
         const { data, error: fetchError } = await supabase

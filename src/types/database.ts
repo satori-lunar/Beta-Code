@@ -964,6 +964,60 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_preferences: {
+        Row: {
+          id: string
+          user_id: string
+          habit_reminders_enabled: boolean | null
+          habit_reminder_time: string | null
+          journal_reminders_enabled: boolean | null
+          journal_reminder_time: string | null
+          mental_health_reminders_enabled: boolean | null
+          mental_health_reminder_time: string | null
+          goal_reminders_enabled: boolean | null
+          goal_reminder_frequency: string | null
+          goal_reminder_time: string | null
+          streak_reminders_enabled: boolean | null
+          achievement_notifications_enabled: boolean | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          habit_reminders_enabled?: boolean | null
+          habit_reminder_time?: string | null
+          journal_reminders_enabled?: boolean | null
+          journal_reminder_time?: string | null
+          mental_health_reminders_enabled?: boolean | null
+          mental_health_reminder_time?: string | null
+          goal_reminders_enabled?: boolean | null
+          goal_reminder_frequency?: string | null
+          goal_reminder_time?: string | null
+          streak_reminders_enabled?: boolean | null
+          achievement_notifications_enabled?: boolean | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          habit_reminders_enabled?: boolean | null
+          habit_reminder_time?: string | null
+          journal_reminders_enabled?: boolean | null
+          journal_reminder_time?: string | null
+          mental_health_reminders_enabled?: boolean | null
+          mental_health_reminder_time?: string | null
+          goal_reminders_enabled?: boolean | null
+          goal_reminder_frequency?: string | null
+          goal_reminder_time?: string | null
+          streak_reminders_enabled?: boolean | null
+          achievement_notifications_enabled?: boolean | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       user_session_completions: {
         Row: {
           id: string

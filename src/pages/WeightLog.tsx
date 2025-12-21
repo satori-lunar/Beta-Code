@@ -31,7 +31,11 @@ export default function WeightLog() {
   const { user } = useAuth();
   const { data: weightEntries = [], refetch } = useWeightEntries();
   const { trackWeightLog } = useTrackWeightLog();
+  const { profile } = useUserProfile();
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showGoalModal, setShowGoalModal] = useState(false);
+  const [isEditingGoal, setIsEditingGoal] = useState(false);
+  const [goalWeight, setGoalWeight] = useState('');
   const [newEntry, setNewEntry] = useState({
     weight: '',
     date: format(new Date(), 'yyyy-MM-dd'),
@@ -108,6 +112,34 @@ export default function WeightLog() {
     } catch (error) {
       console.error('Error saving weight entry:', error);
       alert('Failed to save weight entry. Please try again.');
+    }
+  };
+
+  const handleSetGoalWeight = async () => {
+    if (!user || !goalWeight) return;
+
+    try {
+      const goalWeightValue = parseFloat(goalWeight);
+      if (isNaN(goalWeightValue)) {
+        alert('Please enter a valid weight');
+        return;
+      }
+
+      const { error } = await supabase
+        .from('user_profiles')
+        .update({ goal_weight: goalWeightValue })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      setShowGoalModal(false);
+      setIsEditingGoal(false);
+      setGoalWeight('');
+      // Force a page refresh to update the profile data
+      window.location.reload();
+    } catch (error) {
+      console.error('Error setting goal weight:', error);
+      alert('Failed to set goal weight. Please try again.');
     }
   };
 

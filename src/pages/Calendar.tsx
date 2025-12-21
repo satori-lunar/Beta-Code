@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, getDay, addWeeks, startOfWeek, endOfWeek } from 'date-fns';
+import { zonedTimeToUtc, utcToZonedTime, format as formatTz } from 'date-fns-tz';
 import { useUserClassReminders } from '../hooks/useSupabaseData';
 
 const eventTypes = [
@@ -68,14 +69,18 @@ interface CalendarEvent {
 function MonthCalendar({ 
   currentMonth, 
   events, 
-  onDateClick 
+  onDateClick,
+  timezone
 }: { 
   currentMonth: Date; 
   events: CalendarEvent[];
   onDateClick: (date: Date) => void;
+  timezone: string;
 }) {
-  const monthStart = startOfMonth(currentMonth);
-  const monthEnd = endOfMonth(currentMonth);
+  // Convert current month to the selected timezone
+  const zonedCurrentMonth = utcToZonedTime(currentMonth, timezone);
+  const monthStart = startOfMonth(zonedCurrentMonth);
+  const monthEnd = endOfMonth(zonedCurrentMonth);
   const calendarStart = startOfWeek(monthStart, { weekStartsOn: 0 }); // Start on Sunday
   const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 0 });
   
@@ -84,7 +89,9 @@ function MonthCalendar({
   const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   
   const getEventsForDate = (date: Date) => {
-    const dateStr = format(date, 'yyyy-MM-dd');
+    // Convert date to the selected timezone for comparison
+    const zonedDate = utcToZonedTime(date, timezone);
+    const dateStr = format(zonedDate, 'yyyy-MM-dd');
     return events.filter(event => event.date === dateStr);
   };
 
@@ -100,8 +107,10 @@ function MonthCalendar({
       <div className="grid grid-cols-7 gap-1">
         {daysInMonth.map(day => {
           const dayEvents = getEventsForDate(day);
-          const isCurrentMonth = isSameMonth(day, currentMonth);
-          const isToday = isSameDay(day, new Date());
+          const isCurrentMonth = isSameMonth(day, zonedCurrentMonth);
+          // Get today in the selected timezone
+          const nowInTimezone = utcToZonedTime(new Date(), timezone);
+          const isToday = isSameDay(day, nowInTimezone);
           
           return (
             <div
@@ -120,6 +129,29 @@ function MonthCalendar({
               <div className="space-y-1">
                 {dayEvents.slice(0, 2).map(event => {
                   const useLightText = !isLightColor(event.color);
+                  // Format time in the selected timezone
+                  let timeDisplay = '';
+                  if (event.time) {
+                    try {
+                      // Create a date string and parse it
+                      // We'll treat the stored time as if it's in the selected timezone
+                      const dateTimeStr = `${event.date}T${event.time}:00`;
+                      // Create a date object - this will be interpreted as local time
+                      // Then we'll format it in the selected timezone
+                      const localDate = new Date(dateTimeStr + 'Z'); // Treat as UTC first
+                      // Convert from UTC to the selected timezone
+                      const zonedDate = utcToZonedTime(localDate, timezone);
+                      // Format in the selected timezone
+                      timeDisplay = formatTz(zonedDate, 'h:mm a', { timeZone: timezone });
+                    } catch (e) {
+                      // Fallback: just format the time string directly
+                      const [hours, minutes] = event.time.split(':');
+                      const hour = parseInt(hours, 10);
+                      const ampm = hour >= 12 ? 'PM' : 'AM';
+                      const displayHour = hour % 12 || 12;
+                      timeDisplay = `${displayHour}:${minutes} ${ampm}`;
+                    }
+                  }
                   return (
                     <div
                       key={event.id}
@@ -131,7 +163,7 @@ function MonthCalendar({
                       }}
                       title={event.title}
                     >
-                      {event.time ? `${format(parseISO(`${event.date}T${event.time}`), 'h:mm a')} ` : ''}
+                      {timeDisplay ? `${timeDisplay} ` : ''}
                       {event.title}
                     </div>
                   );
@@ -154,16 +186,31 @@ export default function Calendar() {
   const { calendarEvents, addCalendarEvent } = useStore();
   const { reminders, loading: remindersLoading } = useUserClassReminders();
   const [activeTab, setActiveTab] = useState<'google' | 'my'>('google');
-  const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [timezone, setTimezone] = useState<string>(() => {
+    const saved = localStorage.getItem('calendar_timezone');
+    return saved || 'America/New_York';
+  });
+  
+  // Helper function to get current date in selected timezone
+  const getCurrentDateInTimezone = (tz: string) => {
+    return utcToZonedTime(new Date(), tz);
+  };
+  
+  // Initialize dates in the selected timezone
+  const [currentMonth, setCurrentMonth] = useState(() => {
+    const saved = localStorage.getItem('calendar_timezone');
+    const tz = saved || 'America/New_York';
+    return utcToZonedTime(new Date(), tz);
+  });
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const saved = localStorage.getItem('calendar_timezone');
+    const tz = saved || 'America/New_York';
+    return utcToZonedTime(new Date(), tz);
+  });
   const [showAddModal, setShowAddModal] = useState(false);
   const [isMobile, setIsMobile] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
     return window.innerWidth < 768;
-  });
-  const [timezone, setTimezone] = useState<string>(() => {
-    const saved = localStorage.getItem('calendar_timezone');
-    return saved || 'America/New_York';
   });
   const [newEvent, setNewEvent] = useState({
     title: '',
@@ -184,9 +231,13 @@ export default function Calendar() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Save timezone to localStorage
+  // Save timezone to localStorage and update dates when timezone changes
   useEffect(() => {
     localStorage.setItem('calendar_timezone', timezone);
+    // Update current month and selected date to reflect the new timezone
+    const nowInTimezone = getCurrentDateInTimezone(timezone);
+    setCurrentMonth(nowInTimezone);
+    setSelectedDate(nowInTimezone);
   }, [timezone]);
 
   // Generate repeating weekly class events from reminders
@@ -194,16 +245,20 @@ export default function Calendar() {
     if (!reminders || reminders.length === 0) return [];
     
     const events: CalendarEvent[] = [];
-    const now = new Date();
+    // Get current time in the selected timezone
+    const now = utcToZonedTime(new Date(), timezone);
     const sixMonthsFromNow = addMonths(now, 6);
     
     reminders.forEach((reminder: any) => {
       const liveClass = reminder.live_classes;
       if (!liveClass || !liveClass.scheduled_at) return;
       
+      // Parse the original scheduled time (assumed to be in UTC or the original timezone)
       const originalDate = parseISO(liveClass.scheduled_at);
-      const dayOfWeek = getDay(originalDate); // 0 = Sunday, 6 = Saturday
-      const time = format(originalDate, 'HH:mm');
+      // Convert to the selected timezone
+      const zonedOriginalDate = utcToZonedTime(originalDate, timezone);
+      const dayOfWeek = getDay(zonedOriginalDate); // 0 = Sunday, 6 = Saturday
+      const time = formatTz(zonedOriginalDate, 'HH:mm', { timeZone: timezone });
       
       // Generate events for the next 6 months, repeating weekly
       let currentDate = startOfWeek(now, { weekStartsOn: 0 });
@@ -232,7 +287,7 @@ export default function Calendar() {
     });
     
     return events;
-  }, [reminders]);
+  }, [reminders, timezone]);
 
   // Combine class events with custom events
   const allEvents = useMemo(() => {
@@ -273,7 +328,9 @@ export default function Calendar() {
   };
 
   const getEventsForSelectedDate = () => {
-    const dateStr = format(selectedDate, 'yyyy-MM-dd');
+    // Convert selected date to the selected timezone for comparison
+    const zonedSelectedDate = utcToZonedTime(selectedDate, timezone);
+    const dateStr = format(zonedSelectedDate, 'yyyy-MM-dd');
     return allEvents.filter(event => event.date === dateStr);
   };
 
@@ -305,8 +362,9 @@ export default function Calendar() {
           </div>
           <button
             onClick={() => {
-              setSelectedDate(new Date());
-              setNewEvent(prev => ({ ...prev, date: format(new Date(), 'yyyy-MM-dd') }));
+              const nowInTimezone = getCurrentDateInTimezone(timezone);
+              setSelectedDate(nowInTimezone);
+              setNewEvent(prev => ({ ...prev, date: format(nowInTimezone, 'yyyy-MM-dd') }));
               setShowAddModal(true);
             }}
             className="btn-primary flex items-center gap-2"
@@ -375,7 +433,7 @@ export default function Calendar() {
                 <ChevronLeft className="w-5 h-5 text-gray-600" />
               </button>
               <h2 className="text-xl font-display font-semibold text-gray-900">
-                {format(currentMonth, 'MMMM yyyy')}
+                {formatTz(currentMonth, 'MMMM yyyy', { timeZone: timezone })}
               </h2>
               <button
                 onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
@@ -395,6 +453,7 @@ export default function Calendar() {
                 currentMonth={currentMonth}
                 events={allEvents}
                 onDateClick={handleDateClick}
+                timezone={timezone}
               />
             )}
           </div>
@@ -402,7 +461,7 @@ export default function Calendar() {
           {/* Selected Date Events */}
           <div className="card">
             <h3 className="text-lg font-display font-semibold text-gray-900 mb-4">
-              Events for {format(selectedDate, 'EEEE, MMMM d, yyyy')}
+              Events for {formatTz(selectedDate, 'EEEE, MMMM d, yyyy', { timeZone: timezone })}
             </h3>
             <div className="space-y-3">
               {getEventsForSelectedDate().length === 0 ? (
@@ -428,7 +487,23 @@ export default function Calendar() {
                           <h4 className="font-semibold text-gray-900">{event.title}</h4>
                           {event.time && (
                             <span className="text-sm text-gray-500 whitespace-nowrap">
-                              {format(parseISO(`${event.date}T${event.time}`), 'h:mm a')}
+                              {(() => {
+                                try {
+                                  // Create a date string and parse it
+                                  const dateTimeStr = `${event.date}T${event.time}:00`;
+                                  // Treat as UTC, then convert to selected timezone
+                                  const localDate = new Date(dateTimeStr + 'Z');
+                                  const zonedDate = utcToZonedTime(localDate, timezone);
+                                  return formatTz(zonedDate, 'h:mm a', { timeZone: timezone });
+                                } catch (e) {
+                                  // Fallback: format time string directly
+                                  const [hours, minutes] = event.time.split(':');
+                                  const hour = parseInt(hours, 10);
+                                  const ampm = hour >= 12 ? 'PM' : 'AM';
+                                  const displayHour = hour % 12 || 12;
+                                  return `${displayHour}:${minutes} ${ampm}`;
+                                }
+                              })()}
                             </span>
                           )}
                         </div>

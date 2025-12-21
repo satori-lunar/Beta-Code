@@ -104,7 +104,18 @@ export default function Nutrition() {
     }
 
     try {
-      // Try to get existing entry
+      // Use upsert to handle create-or-update atomically
+      const entryData: any = {
+        user_id: user.id,
+        date: today,
+        total_calories: 0,
+        total_protein: 0,
+        total_carbs: 0,
+        total_fat: 0,
+        water_intake: 0,
+      };
+
+      // First, try to get existing entry
       const { data: existing, error: fetchError } = await supabase
         .from('nutrition_entries')
         .select('*')
@@ -114,7 +125,6 @@ export default function Nutrition() {
 
       if (fetchError) {
         console.error('Error fetching nutrition entry:', fetchError);
-        throw fetchError;
       }
 
       if (existing) {
@@ -126,20 +136,10 @@ export default function Nutrition() {
         }
       }
 
-      // Create new entry
-      const insertData: any = {
-        user_id: user.id,
-        date: today,
-        total_calories: 0,
-        total_protein: 0,
-        total_carbs: 0,
-        total_fat: 0,
-        water_intake: 0,
-      };
-
+      // If no existing entry, create one
       const { data: newEntry, error: createError } = await supabase
         .from('nutrition_entries')
-        .insert(insertData)
+        .insert(entryData)
         .select('*')
         .single();
 
@@ -147,9 +147,11 @@ export default function Nutrition() {
         console.error('Error creating nutrition entry:', createError);
         console.error('Error code:', createError.code);
         console.error('Error message:', createError.message);
+        console.error('Error details:', JSON.stringify(createError, null, 2));
         
-        // If it's a unique constraint error, try to fetch again (race condition)
-        if (createError.code === '23505' || createError.message?.includes('duplicate')) {
+        // If it's a unique constraint error (entry was created between check and insert)
+        if (createError.code === '23505' || createError.message?.includes('duplicate') || createError.message?.includes('unique')) {
+          // Retry fetch one more time
           const { data: retryData, error: retryError } = await supabase
             .from('nutrition_entries')
             .select('*')
@@ -157,12 +159,7 @@ export default function Nutrition() {
             .eq('date', today)
             .maybeSingle();
           
-          if (retryError) {
-            console.error('Error on retry fetch:', retryError);
-            throw createError; // Throw original error
-          }
-          
-          if (retryData) {
+          if (!retryError && retryData) {
             const retryDataTyped = retryData as any;
             if (retryDataTyped.id) {
               setNutritionEntryId(retryDataTyped.id);
@@ -171,7 +168,10 @@ export default function Nutrition() {
             }
           }
         }
-        throw createError;
+        
+        // Show more detailed error to user
+        alert(`Failed to create nutrition entry: ${createError.message || 'Unknown error'}. Please check the console for details.`);
+        return null;
       }
 
       if (newEntry) {
@@ -180,22 +180,19 @@ export default function Nutrition() {
           setNutritionEntryId(newEntryData.id);
           setWaterIntake(newEntryData.water_intake || 0);
           return newEntryData.id;
+        } else {
+          console.error('Entry created but no ID in response:', newEntryData);
         }
+      } else {
+        console.error('No data returned from create operation');
       }
 
-      console.error('No ID returned from create operation');
-      console.error('New entry data:', newEntry);
       return null;
     } catch (error: any) {
-      console.error('Error getting/creating nutrition entry:', error);
+      console.error('Unexpected error getting/creating nutrition entry:', error);
       console.error('Error type:', typeof error);
-      console.error('Error details:', error);
-      if (error?.message) {
-        console.error('Error message:', error.message);
-      }
-      if (error?.code) {
-        console.error('Error code:', error.code);
-      }
+      console.error('Error stack:', error?.stack);
+      alert(`Unexpected error: ${error?.message || 'Unknown error'}. Please check the console.`);
       return null;
     }
   };

@@ -107,7 +107,7 @@ export default function Nutrition() {
       // Try to get existing entry
       const { data: existing, error: fetchError } = await supabase
         .from('nutrition_entries')
-        .select('id, water_intake')
+        .select('*')
         .eq('user_id', user.id)
         .eq('date', today)
         .maybeSingle();
@@ -117,14 +117,17 @@ export default function Nutrition() {
         throw fetchError;
       }
 
-      if (existing && existing.id) {
-        setNutritionEntryId(existing.id);
-        setWaterIntake((existing as any).water_intake || 0);
-        return existing.id;
+      if (existing) {
+        const existingData = existing as any;
+        if (existingData.id) {
+          setNutritionEntryId(existingData.id);
+          setWaterIntake(existingData.water_intake || 0);
+          return existingData.id;
+        }
       }
 
       // Create new entry
-      const insertData = {
+      const insertData: any = {
         user_id: user.id,
         date: today,
         total_calories: 0,
@@ -136,41 +139,63 @@ export default function Nutrition() {
 
       const { data: newEntry, error: createError } = await supabase
         .from('nutrition_entries')
-        .insert(insertData as any)
-        .select('id')
+        .insert(insertData)
+        .select('*')
         .single();
 
       if (createError) {
         console.error('Error creating nutrition entry:', createError);
+        console.error('Error code:', createError.code);
+        console.error('Error message:', createError.message);
+        
         // If it's a unique constraint error, try to fetch again (race condition)
-        if (createError.code === '23505') {
-          const { data: retryData } = await supabase
+        if (createError.code === '23505' || createError.message?.includes('duplicate')) {
+          const { data: retryData, error: retryError } = await supabase
             .from('nutrition_entries')
-            .select('id, water_intake')
+            .select('*')
             .eq('user_id', user.id)
             .eq('date', today)
             .maybeSingle();
           
-          if (retryData && retryData.id) {
-            setNutritionEntryId(retryData.id);
-            setWaterIntake((retryData as any).water_intake || 0);
-            return retryData.id;
+          if (retryError) {
+            console.error('Error on retry fetch:', retryError);
+            throw createError; // Throw original error
+          }
+          
+          if (retryData) {
+            const retryDataTyped = retryData as any;
+            if (retryDataTyped.id) {
+              setNutritionEntryId(retryDataTyped.id);
+              setWaterIntake(retryDataTyped.water_intake || 0);
+              return retryDataTyped.id;
+            }
           }
         }
         throw createError;
       }
 
-      if (newEntry && (newEntry as any).id) {
-        const entryId = (newEntry as any).id;
-        setNutritionEntryId(entryId);
-        return entryId;
+      if (newEntry) {
+        const newEntryData = newEntry as any;
+        if (newEntryData.id) {
+          setNutritionEntryId(newEntryData.id);
+          setWaterIntake(newEntryData.water_intake || 0);
+          return newEntryData.id;
+        }
       }
 
       console.error('No ID returned from create operation');
+      console.error('New entry data:', newEntry);
       return null;
     } catch (error: any) {
       console.error('Error getting/creating nutrition entry:', error);
-      console.error('Error details:', JSON.stringify(error, null, 2));
+      console.error('Error type:', typeof error);
+      console.error('Error details:', error);
+      if (error?.message) {
+        console.error('Error message:', error.message);
+      }
+      if (error?.code) {
+        console.error('Error code:', error.code);
+      }
       return null;
     }
   };

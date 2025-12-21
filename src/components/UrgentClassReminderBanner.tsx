@@ -88,7 +88,7 @@ export default function UrgentClassReminderBanner() {
   if (!showBanner) return null;
 
   return (
-    <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 text-white px-4 py-3 shadow-lg relative z-50">
+    <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 text-white px-4 py-3 shadow-lg relative z-50 lg:ml-72">
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
         <div className="flex items-center gap-3 flex-1">
           <AlertTriangle className="w-5 h-5 flex-shrink-0" />

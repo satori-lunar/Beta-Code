@@ -11,7 +11,7 @@ import {
   Clock
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { useJournalEntries, checkFirstTimeBadges } from '../hooks/useSupabaseData';
+import { useJournalEntries, checkFirstTimeBadges, checkJournalBadges } from '../hooks/useSupabaseData';
 import { useTrackJournal } from '../hooks/useActivityTracking';
 import { supabase } from '../lib/supabase';
 import { format, parseISO } from 'date-fns';
@@ -89,6 +89,12 @@ export default function Journal() {
       if (isNewEntry && journalEntries.length === 0) {
         checkFirstTimeBadges(user.id, 'journal_entry').catch(err => {
           console.error('Failed to check badges:', err);
+        });
+      }
+      // Check for journal milestone badges
+      if (isNewEntry) {
+        checkJournalBadges(user.id).catch(err => {
+          console.error('Failed to check journal badges:', err);
         });
       }
 

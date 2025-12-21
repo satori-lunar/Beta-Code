@@ -19,7 +19,21 @@ import {
   Palette,
   Sun,
   Moon,
-  ChevronRight
+  ChevronRight,
+  Crown,
+  Layers,
+  Edit3,
+  Brain,
+  Wind,
+  Utensils,
+  Droplet,
+  Dumbbell,
+  Activity,
+  GraduationCap,
+  Users,
+  Scale,
+  Shield,
+  UserPlus
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -34,66 +48,108 @@ const badgeIcons: Record<string, React.ElementType> = {
   star: Star,
   zap: Zap,
   trophy: Trophy,
+  'check-circle': CheckCircle2,
+  crown: Crown,
+  sun: Sun,
+  moon: Moon,
+  layers: Layers,
+  'trending-up': TrendingUp,
+  'book-open': BookOpen,
+  'pen-tool': Edit3,
+  book: BookOpen,
+  brain: Brain,
+  lotus: Sparkles,
+  wind: Wind,
+  utensils: Utensils,
+  calendar: Calendar,
+  droplet: Droplet,
+  dumbbell: Dumbbell,
+  activity: Activity,
+  'graduation-cap': GraduationCap,
+  users: Users,
+  scale: Scale,
+  shield: Shield,
+  'user-plus': UserPlus,
 };
 
 // All available badges in the system
 const allAvailableBadges = [
-  {
-    id: 'first-steps',
-    name: 'First Steps',
-    description: 'Complete your first habit',
-    icon: 'target',
-    category: 'habit'
-  },
-  {
-    id: 'week-warrior',
-    name: 'Week Warrior',
-    description: 'Maintain a 7-day streak',
-    icon: 'flame',
-    category: 'streak'
-  },
-  {
-    id: 'journaling-beginner',
-    name: 'Journaling Beginner',
-    description: 'Write your first journal entry',
-    icon: 'star',
-    category: 'journal'
-  },
-  {
-    id: 'wellness-champion',
-    name: 'Wellness Champion',
-    description: 'Track health metrics for 7 days',
-    icon: 'heart',
-    category: 'health'
-  },
-  {
-    id: 'fitness-enthusiast',
-    name: 'Fitness Enthusiast',
-    description: 'Complete 10 workouts',
-    icon: 'zap',
-    category: 'workout'
-  },
-  {
-    id: 'consistency-king',
-    name: 'Consistency King',
-    description: 'Maintain a 30-day streak',
-    icon: 'trophy',
-    category: 'streak'
-  },
-  {
-    id: 'habit-master',
-    name: 'Habit Master',
-    description: 'Complete all habits for 7 days straight',
-    icon: 'award',
-    category: 'habit'
-  },
-  {
-    id: 'mindful-soul',
-    name: 'Mindful Soul',
-    description: 'Complete 5 mindfulness sessions',
-    icon: 'sparkles',
-    category: 'mindfulness'
-  },
+  // Streak Badges
+  { id: 'week-warrior', name: 'Week Warrior', description: 'Maintain a 7-day streak', icon: 'flame', category: 'streak' },
+  { id: 'consistency-king', name: 'Consistency King', description: 'Maintain a 30-day streak', icon: 'trophy', category: 'streak' },
+  { id: 'century-club', name: 'Century Club', description: 'Maintain a 100-day streak', icon: 'zap', category: 'streak' },
+  { id: 'half-year-hero', name: 'Half Year Hero', description: 'Maintain a 180-day streak', icon: 'award', category: 'streak' },
+  { id: 'year-warrior', name: 'Year Warrior', description: 'Maintain a 365-day streak', icon: 'crown', category: 'streak' },
+  
+  // Habit Badges
+  { id: 'first-steps', name: 'First Steps', description: 'Complete your first habit', icon: 'target', category: 'habit' },
+  { id: 'habit-builder', name: 'Habit Builder', description: 'Complete 10 habits', icon: 'check-circle', category: 'habit' },
+  { id: 'habit-master', name: 'Habit Master', description: 'Complete 50 habits', icon: 'award', category: 'habit' },
+  { id: 'habit-legend', name: 'Habit Legend', description: 'Complete 100 habits', icon: 'trophy', category: 'habit' },
+  { id: 'perfect-week', name: 'Perfect Week', description: 'Complete all habits for 7 days straight', icon: 'star', category: 'habit' },
+  { id: 'perfect-month', name: 'Perfect Month', description: 'Complete all habits for 30 days straight', icon: 'crown', category: 'habit' },
+  { id: 'early-bird', name: 'Early Bird', description: 'Complete morning habits 10 times', icon: 'sun', category: 'habit' },
+  { id: 'night-owl', name: 'Night Owl', description: 'Complete evening habits 10 times', icon: 'moon', category: 'habit' },
+  { id: 'multi-tasker', name: 'Multi-Tasker', description: 'Maintain 5 active habits', icon: 'layers', category: 'habit' },
+  { id: 'consistency-champion', name: 'Consistency Champion', description: 'Complete habits with 80%+ rate for 30 days', icon: 'trending-up', category: 'habit' },
+  
+  // Journal/Mindfulness Badges
+  { id: 'journaling-beginner', name: 'Journaling Beginner', description: 'Write your first journal entry', icon: 'book-open', category: 'mindfulness' },
+  { id: 'reflective-writer', name: 'Reflective Writer', description: 'Write 5 journal entries', icon: 'pen-tool', category: 'mindfulness' },
+  { id: 'daily-diarist', name: 'Daily Diarist', description: 'Write 30 journal entries', icon: 'book', category: 'mindfulness' },
+  { id: 'gratitude-guru', name: 'Gratitude Guru', description: 'Write 10 gratitude entries', icon: 'heart', category: 'mindfulness' },
+  { id: 'mindful-writer', name: 'Mindful Writer', description: 'Write 100 journal entries', icon: 'sparkles', category: 'mindfulness' },
+  { id: 'journal-streak', name: 'Journal Streak', description: 'Write journal entries for 7 days straight', icon: 'flame', category: 'mindfulness' },
+  { id: 'mindful-beginner', name: 'Mindful Beginner', description: 'Complete your first mindfulness session', icon: 'brain', category: 'mindfulness' },
+  { id: 'zen-seeker', name: 'Zen Seeker', description: 'Complete 10 meditation sessions', icon: 'sparkles', category: 'mindfulness' },
+  { id: 'mindfulness-master', name: 'Mindfulness Master', description: 'Complete 50 meditation sessions', icon: 'lotus', category: 'mindfulness' },
+  { id: 'breathing-pro', name: 'Breathing Pro', description: 'Complete 20 breathing exercises', icon: 'wind', category: 'mindfulness' },
+  { id: 'calm-collector', name: 'Calm Collector', description: 'Complete 5 different mindfulness types', icon: 'heart', category: 'mindfulness' },
+  
+  // Nutrition Badges
+  { id: 'nutrition-starter', name: 'Nutrition Starter', description: 'Log your first meal', icon: 'utensils', category: 'nutrition' },
+  { id: 'meal-logger', name: 'Meal Logger', description: 'Log meals for 7 days', icon: 'calendar', category: 'nutrition' },
+  { id: 'balanced-eater', name: 'Balanced Eater', description: 'Log meals for 30 days', icon: 'check-circle', category: 'nutrition' },
+  { id: 'hydration-hero', name: 'Hydration Hero', description: 'Meet water goals for 10 days', icon: 'droplet', category: 'nutrition' },
+  { id: 'protein-power', name: 'Protein Power', description: 'Meet protein goals for 5 days', icon: 'zap', category: 'nutrition' },
+  { id: 'nutrition-master', name: 'Nutrition Master', description: 'Log meals for 100 days', icon: 'award', category: 'nutrition' },
+  { id: 'goal-getter', name: 'Goal Getter', description: 'Meet nutrition goals for 7 days straight', icon: 'target', category: 'nutrition' },
+  
+  // Workout/Session Badges
+  { id: 'fitness-enthusiast', name: 'Fitness Enthusiast', description: 'Complete your first workout', icon: 'dumbbell', category: 'workout' },
+  { id: 'active-starter', name: 'Active Starter', description: 'Complete 5 sessions', icon: 'activity', category: 'workout' },
+  { id: 'workout-warrior', name: 'Workout Warrior', description: 'Complete 25 sessions', icon: 'zap', category: 'workout' },
+  { id: 'fitness-champion', name: 'Fitness Champion', description: 'Complete 100 sessions', icon: 'trophy', category: 'workout' },
+  { id: 'course-completer', name: 'Course Completer', description: 'Finish your first course', icon: 'graduation-cap', category: 'special' },
+  { id: 'course-master', name: 'Course Master', description: 'Complete 5 courses', icon: 'award', category: 'special' },
+  { id: 'live-class-attendee', name: 'Live Class Attendee', description: 'Attend your first live class', icon: 'users', category: 'special' },
+  { id: 'regular-attendee', name: 'Regular Attendee', description: 'Attend 10 live classes', icon: 'calendar', category: 'special' },
+  { id: 'session-streak', name: 'Session Streak', description: 'Complete sessions for 7 days straight', icon: 'flame', category: 'workout' },
+  
+  // Points & Levels Badges
+  { id: 'point-collector', name: 'Point Collector', description: 'Earn 100 points', icon: 'star', category: 'special' },
+  { id: 'point-master', name: 'Point Master', description: 'Earn 500 points', icon: 'award', category: 'special' },
+  { id: 'point-legend', name: 'Point Legend', description: 'Earn 1000 points', icon: 'trophy', category: 'special' },
+  { id: 'level-up', name: 'Level Up', description: 'Reach level 5', icon: 'trending-up', category: 'special' },
+  { id: 'level-master', name: 'Level Master', description: 'Reach level 10', icon: 'crown', category: 'special' },
+  { id: 'level-legend', name: 'Level Legend', description: 'Reach level 20', icon: 'zap', category: 'special' },
+  
+  // Consistency & Achievement Badges
+  { id: 'track-star', name: 'Track Star', description: 'Log your first weight entry', icon: 'scale', category: 'special' },
+  { id: 'health-tracker', name: 'Health Tracker', description: 'Log health metrics for 7 days', icon: 'activity', category: 'special' },
+  { id: 'wellness-champion', name: 'Wellness Champion', description: 'Track health metrics for 30 days', icon: 'heart', category: 'special' },
+  { id: 'all-around', name: 'All Around', description: 'Earn badges in 5 different categories', icon: 'layers', category: 'special' },
+  { id: 'wellness-warrior', name: 'Wellness Warrior', description: 'Earn 10 different badges', icon: 'shield', category: 'special' },
+  { id: 'badge-collector', name: 'Badge Collector', description: 'Earn 20 different badges', icon: 'award', category: 'special' },
+  { id: 'badge-master', name: 'Badge Master', description: 'Earn 30 different badges', icon: 'trophy', category: 'special' },
+  
+  // Special Milestone Badges
+  { id: 'new-member', name: 'New Member', description: 'Join the platform', icon: 'user-plus', category: 'special' },
+  { id: 'week-one', name: 'Week One', description: 'Complete your first week', icon: 'calendar', category: 'special' },
+  { id: 'month-one', name: 'Month One', description: 'Complete your first month', icon: 'calendar', category: 'special' },
+  { id: 'quarter-champion', name: 'Quarter Champion', description: 'Complete 3 months', icon: 'award', category: 'special' },
+  { id: 'half-year-hero', name: 'Half Year Hero', description: 'Complete 6 months', icon: 'trophy', category: 'special' },
+  { id: 'year-warrior', name: 'Year Warrior', description: 'Complete 1 year', icon: 'crown', category: 'special' },
 ];
 
 const wellnessQuotes = [

@@ -1401,6 +1401,9 @@ export async function checkAndAwardStreakBadges(userId: string, streak: number) 
   const streakBadges = [
     { minStreak: 7, name: 'Week Warrior', description: 'Maintain a 7-day streak', icon: 'flame', category: 'streak' },
     { minStreak: 30, name: 'Consistency King', description: 'Maintain a 30-day streak', icon: 'trophy', category: 'streak' },
+    { minStreak: 100, name: 'Century Club', description: 'Maintain a 100-day streak', icon: 'zap', category: 'streak' },
+    { minStreak: 180, name: 'Half Year Hero', description: 'Maintain a 180-day streak', icon: 'award', category: 'streak' },
+    { minStreak: 365, name: 'Year Warrior', description: 'Maintain a 365-day streak', icon: 'crown', category: 'streak' },
   ]
 
   for (const badge of streakBadges) {
@@ -1418,7 +1421,7 @@ export async function checkAndAwardStreakBadges(userId: string, streak: number) 
 // Check and award first-time badges
 export async function checkFirstTimeBadges(
   userId: string,
-  action: 'habit_complete' | 'journal_entry' | 'weight_log' | 'workout_complete'
+  action: 'habit_complete' | 'journal_entry' | 'weight_log' | 'workout_complete' | 'session_complete' | 'nutrition_log' | 'mindfulness_complete'
 ) {
   const firstTimeBadges: Record<string, { name: string; description: string; icon: string; category: string }> = {
     habit_complete: {
@@ -1430,20 +1433,38 @@ export async function checkFirstTimeBadges(
     journal_entry: {
       name: 'Journaling Beginner',
       description: 'Write your first journal entry',
-      icon: 'star',
-      category: 'journal',
+      icon: 'book-open',
+      category: 'mindfulness',
     },
     weight_log: {
       name: 'Track Star',
       description: 'Log your first weight entry',
-      icon: 'star',
+      icon: 'scale',
       category: 'special',
     },
     workout_complete: {
       name: 'Fitness Enthusiast',
       description: 'Complete your first workout',
-      icon: 'zap',
+      icon: 'dumbbell',
       category: 'workout',
+    },
+    session_complete: {
+      name: 'Active Starter',
+      description: 'Complete your first session',
+      icon: 'activity',
+      category: 'workout',
+    },
+    nutrition_log: {
+      name: 'Nutrition Starter',
+      description: 'Log your first meal',
+      icon: 'utensils',
+      category: 'nutrition',
+    },
+    mindfulness_complete: {
+      name: 'Mindful Beginner',
+      description: 'Complete your first mindfulness session',
+      icon: 'brain',
+      category: 'mindfulness',
     },
   }
 
@@ -1455,6 +1476,61 @@ export async function checkFirstTimeBadges(
     return result;
   }
   return null;
+}
+
+// Check habit completion badges (milestones, consistency)
+export async function checkHabitCompletionBadges(userId: string) {
+  try {
+    await (supabase as any).rpc('check_habit_completion_badges', {
+      p_user_id: userId
+    });
+  } catch (error) {
+    console.error('Error checking habit completion badges:', error);
+  }
+}
+
+// Check journal badges
+export async function checkJournalBadges(userId: string) {
+  try {
+    await (supabase as any).rpc('check_journal_badges', {
+      p_user_id: userId
+    });
+  } catch (error) {
+    console.error('Error checking journal badges:', error);
+  }
+}
+
+// Check nutrition badges
+export async function checkNutritionBadges(userId: string) {
+  try {
+    await (supabase as any).rpc('check_nutrition_badges', {
+      p_user_id: userId
+    });
+  } catch (error) {
+    console.error('Error checking nutrition badges:', error);
+  }
+}
+
+// Check points/level badges
+export async function checkPointsBadges(userId: string) {
+  try {
+    await (supabase as any).rpc('check_points_badges', {
+      p_user_id: userId
+    });
+  } catch (error) {
+    console.error('Error checking points badges:', error);
+  }
+}
+
+// Comprehensive badge check (all categories)
+export async function checkAllBadges(userId: string) {
+  try {
+    await (supabase as any).rpc('check_all_badges', {
+      p_user_id: userId
+    });
+  } catch (error) {
+    console.error('Error checking all badges:', error);
+  }
 }
 
 // Hook for notification preferences

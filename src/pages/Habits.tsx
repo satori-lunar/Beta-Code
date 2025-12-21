@@ -30,7 +30,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { useHabits, checkAndAwardStreakBadges, checkFirstTimeBadges } from '../hooks/useSupabaseData';
+import { useHabits, checkAndAwardStreakBadges, checkFirstTimeBadges, checkHabitCompletionBadges, checkPointsBadges } from '../hooks/useSupabaseData';
 import { supabase } from '../lib/supabase';
 import { 
   format, 
@@ -470,6 +470,12 @@ export default function Habits() {
         if (newStreak > 0) {
           await checkAndAwardStreakBadges(user.id, newStreak);
         }
+
+        // Check for habit completion badges (milestones, consistency)
+        await checkHabitCompletionBadges(user.id);
+        
+        // Check for points badges
+        await checkPointsBadges(user.id);
       } catch (error) {
         console.error('Error awarding badges:', error);
       }

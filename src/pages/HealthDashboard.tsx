@@ -15,7 +15,6 @@ import {
   X,
   Edit3,
   ChevronRight,
-  Play,
   Flame,
   Target,
   Plus,
@@ -30,21 +29,12 @@ import {
   BookOpen,
   Coffee,
   Battery,
-  Lightbulb,
-  Star,
-  Clock,
-  Trophy,
-  Trash2,
-  Home,
-  Navigation
+  Lightbulb
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { useTheme } from '../contexts/ThemeContext';
-import { format, formatDistanceToNow } from 'date-fns';
+import { format } from 'date-fns';
 import ComingSoonModal from '../components/ComingSoonModal';
-import GuidedCardio from '../components/GuidedCardio';
-import type { WorkoutPreset, WorkoutData } from '../components/GuidedCardio';
-import { useWorkoutPresets, useWorkoutHistory } from '../hooks/useSupabaseData';
 import MindfulnessExercise from '../components/MindfulnessExercise';
 
 type MetricKey = 'heartRate' | 'bloodPressure' | 'bodyTemperature' | 'oxygenSaturation' |
@@ -69,14 +59,6 @@ const metricConfigs: MetricConfig[] = [
   { key: 'sleepHours', label: 'Sleep', icon: Moon, color: '#6366f1', position: { bottom: '25%', left: '15%' } },
   { key: 'steps', label: 'Steps', icon: Footprints, color: '#22c55e', position: { bottom: '15%', right: '15%' } },
 ];
-// Workout types - cardio focused
-const workoutTypes = [
-  { id: 'walking', name: 'Walking', icon: Footprints, color: '#22c55e' },
-  { id: 'jogging', name: 'Jogging', icon: PersonStanding, color: '#f59e0b' },
-  { id: 'running', name: 'Running', icon: Flame, color: '#ef4444' },
-  { id: 'intervals', name: 'Intervals', icon: Target, color: '#8b5cf6' },
-  { id: 'cardio', name: 'Free Cardio', icon: Zap, color: '#06b6d4' },
-];
 
 export default function HealthDashboard() {
   const navigate = useNavigate();
@@ -86,11 +68,6 @@ export default function HealthDashboard() {
   const [showDevicesPanel, setShowDevicesPanel] = useState(false);
   const [editValues, setEditValues] = useState<Record<string, string>>({});
   const [activeTab, setActiveTab] = useState<TabType>('mind');
-  const [showWorkoutCamera, setShowWorkoutCamera] = useState(false);
-  const [showModeSelection, setShowModeSelection] = useState(false);
-  const [showIndoorOptions, setShowIndoorOptions] = useState(false);
-  const [workoutMode, setWorkoutMode] = useState<'indoor' | 'outdoor' | null>(null);
-  const [selectedPreset, setSelectedPreset] = useState<WorkoutPreset | undefined>(undefined);
   const [activeMindfulness, setActiveMindfulness] = useState<'breathing' | 'bodyscan' | 'gratitude' | 'meditation' | null>(null);
   const [selfCareChecklist, setSelfCareChecklist] = useState<Record<string, boolean>>({
     'sleep': false,
@@ -100,10 +77,6 @@ export default function HealthDashboard() {
     'connected': false,
     'enjoy': false,
   });
-
-  // Workout presets and history from Supabase
-  const { presets, savePreset, deletePreset } = useWorkoutPresets();
-  const { history, saveWorkout } = useWorkoutHistory(5);
 
   const hasConnectedDevice = connectedDevices.some(d => d.connected);
 

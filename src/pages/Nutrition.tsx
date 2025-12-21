@@ -104,17 +104,6 @@ export default function Nutrition() {
     }
 
     try {
-      // Use upsert to handle create-or-update atomically
-      const entryData: any = {
-        user_id: user.id,
-        date: today,
-        total_calories: 0,
-        total_protein: 0,
-        total_carbs: 0,
-        total_fat: 0,
-        water_intake: 0,
-      };
-
       // First, try to get existing entry
       const { data: existing, error: fetchError } = await supabase
         .from('nutrition_entries')
@@ -136,10 +125,15 @@ export default function Nutrition() {
         }
       }
 
-      // If no existing entry, create one
+      // If no existing entry, create one - only use required fields
+      const insertData: any = {
+        user_id: user.id,
+        date: today,
+      };
+
       const { data: newEntry, error: createError } = await supabase
         .from('nutrition_entries')
-        .insert(entryData)
+        .insert(insertData)
         .select('*')
         .single();
 

@@ -1,15 +1,13 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import { format, formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow } from 'date-fns';
 import {
   Heart,
   MessageCircle,
   Send,
   Pin,
   Image as ImageIcon,
-  Plus,
-  MoreVertical,
   Users,
   BookOpen,
   Megaphone,
@@ -82,13 +80,13 @@ export default function Community() {
   useEffect(() => {
     async function fetchChannels() {
       try {
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
           .from('community_channels')
           .select('*')
           .order('name');
 
         if (error) throw error;
-        setChannels(data || []);
+        setChannels((data || []) as Channel[]);
         if (data && data.length > 0 && !selectedChannel) {
           setSelectedChannel(data[0].id);
         }
@@ -106,7 +104,7 @@ export default function Community() {
     async function fetchPosts() {
       try {
         setLoading(true);
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
           .from('community_posts')
           .select(`
             *,
@@ -121,20 +119,20 @@ export default function Community() {
 
         // Check which posts user has liked
         if (user && data) {
-          const postIds = data.map(p => p.id);
-          const { data: likes } = await supabase
+          const postIds = data.map((p: any) => p.id);
+          const { data: likes } = await (supabase as any)
             .from('community_post_likes')
             .select('post_id')
             .eq('user_id', user.id)
             .in('post_id', postIds);
 
-          const likedPostIds = new Set(likes?.map(l => l.post_id) || []);
-          data.forEach(post => {
+          const likedPostIds = new Set(likes?.map((l: any) => l.post_id) || []);
+          data.forEach((post: any) => {
             post.user_liked = likedPostIds.has(post.id);
           });
         }
 
-        setPosts(data || []);
+        setPosts((data || []) as Post[]);
       } catch (error) {
         console.error('Error fetching posts:', error);
       } finally {
@@ -150,7 +148,7 @@ export default function Community() {
 
     async function fetchComments() {
       try {
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
           .from('community_post_comments')
           .select(`
             *,
@@ -164,22 +162,22 @@ export default function Community() {
 
         // Check which comments user has liked
         if (user && data) {
-          const commentIds = data.map(c => c.id);
-          const { data: likes } = await supabase
+          const commentIds = data.map((c: any) => c.id);
+          const { data: likes } = await (supabase as any)
             .from('community_comment_likes')
             .select('comment_id')
             .eq('user_id', user.id)
             .in('comment_id', commentIds);
 
-          const likedCommentIds = new Set(likes?.map(l => l.comment_id) || []);
-          data.forEach(comment => {
+          const likedCommentIds = new Set(likes?.map((l: any) => l.comment_id) || []);
+          data.forEach((comment: any) => {
             comment.user_liked = likedCommentIds.has(comment.id);
           });
         }
 
         setPostComments(prev => ({
           ...prev,
-          [expandedPost]: data || []
+          [expandedPost]: (data || []) as Comment[]
         }));
       } catch (error) {
         console.error('Error fetching comments:', error);
@@ -209,7 +207,7 @@ export default function Community() {
         imageUrl = publicUrl;
       }
 
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('community_posts')
         .insert({
           channel_id: selectedChannel,
@@ -223,7 +221,7 @@ export default function Community() {
       setNewPostContent('');
       setNewPostImage(null);
       // Refresh posts
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from('community_posts')
         .select(`
           *,
@@ -249,14 +247,14 @@ export default function Community() {
 
     try {
       if (currentlyLiked) {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from('community_post_likes')
           .delete()
           .eq('post_id', postId)
           .eq('user_id', user.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from('community_post_likes')
           .insert({ post_id: postId, user_id: user.id });
         if (error) throw error;
@@ -282,7 +280,7 @@ export default function Community() {
     if (!user || !isAdmin) return;
 
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('community_posts')
         .update({
           is_pinned: !currentlyPinned,
@@ -294,7 +292,7 @@ export default function Community() {
       if (error) throw error;
 
       // Refresh posts to reorder
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from('community_posts')
         .select(`
           *,
@@ -307,19 +305,19 @@ export default function Community() {
 
       if (data) {
         // Check likes
-        const postIds = data.map(p => p.id);
-        const { data: likes } = await supabase
+        const postIds = data.map((p: any) => p.id);
+        const { data: likes } = await (supabase as any)
           .from('community_post_likes')
           .select('post_id')
           .eq('user_id', user.id)
           .in('post_id', postIds);
 
-        const likedPostIds = new Set(likes?.map(l => l.post_id) || []);
-        data.forEach(post => {
+        const likedPostIds = new Set(likes?.map((l: any) => l.post_id) || []);
+        data.forEach((post: any) => {
           post.user_liked = likedPostIds.has(post.id);
         });
 
-        setPosts(data);
+        setPosts(data as Post[]);
       }
     } catch (error) {
       console.error('Error pinning post:', error);
@@ -330,7 +328,7 @@ export default function Community() {
     if (!user || !newComment[postId]?.trim()) return;
 
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('community_post_comments')
         .insert({
           post_id: postId,
@@ -343,7 +341,7 @@ export default function Community() {
       setNewComment(prev => ({ ...prev, [postId]: '' }));
       
       // Refresh comments
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from('community_post_comments')
         .select(`
           *,
@@ -354,21 +352,21 @@ export default function Community() {
         .order('created_at', { ascending: true });
 
       if (data) {
-        const commentIds = data.map(c => c.id);
-        const { data: likes } = await supabase
+        const commentIds = data.map((c: any) => c.id);
+        const { data: likes } = await (supabase as any)
           .from('community_comment_likes')
           .select('comment_id')
           .eq('user_id', user.id)
           .in('comment_id', commentIds);
 
-        const likedCommentIds = new Set(likes?.map(l => l.comment_id) || []);
-        data.forEach(comment => {
+        const likedCommentIds = new Set(likes?.map((l: any) => l.comment_id) || []);
+        data.forEach((comment: any) => {
           comment.user_liked = likedCommentIds.has(comment.id);
         });
 
         setPostComments(prev => ({
           ...prev,
-          [postId]: data
+          [postId]: data as Comment[]
         }));
 
         // Update comments count
@@ -409,7 +407,6 @@ export default function Community() {
         <div className="mb-6 overflow-x-auto">
           <div className="flex gap-3 pb-2">
             {channels.map(channel => {
-              const IconComponent = channelIcons[channel.name] || Users;
               return (
                 <button
                   key={channel.id}
@@ -589,7 +586,7 @@ function PostCard({
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-semibold text-gray-900">{post.user?.full_name || post.user?.name || 'Anonymous'}</span>
+              <span className="font-semibold text-gray-900">{(post.user as any)?.full_name || post.user?.name || 'Anonymous'}</span>
               {post.is_pinned && (
                 <Pin className="w-4 h-4 text-coral-500" />
               )}
@@ -655,13 +652,13 @@ function PostCard({
                     />
                   ) : (
                     <span className="text-gray-600 text-sm font-semibold">
-                      {(comment.user?.name || 'U')[0].toUpperCase()}
+                      {((comment.user as any)?.name || 'U')[0].toUpperCase()}
                     </span>
                   )}
                 </div>
                 <div className="flex-1">
                   <div className="bg-gray-50 rounded-lg p-3">
-                    <span className="font-semibold text-sm text-gray-900">{comment.user?.full_name || comment.user?.name || 'Anonymous'}</span>
+                    <span className="font-semibold text-sm text-gray-900">{(comment.user as any)?.full_name || (comment.user as any)?.name || 'Anonymous'}</span>
                     <p className="text-gray-700 text-sm mt-1">{comment.content}</p>
                   </div>
                   <div className="text-xs text-gray-500 mt-1 ml-3">

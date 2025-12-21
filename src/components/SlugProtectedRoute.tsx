@@ -1,5 +1,5 @@
-import { Navigate, useParams } from 'react-router-dom';
-import { Loader2, Lock } from 'lucide-react';
+import { useParams } from 'react-router-dom';
+import { Lock } from 'lucide-react';
 
 interface SlugProtectedRouteProps {
   children: React.ReactNode;

@@ -24,8 +24,8 @@ import {
   Clock,
   Activity,
   Shield,
-  Flag,
-  Users
+  Flag
+  // Users // Hidden for now
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';

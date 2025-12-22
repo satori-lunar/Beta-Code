@@ -2,7 +2,8 @@
 -- This allows admins to view all user data in the admin dashboard
 
 -- Admin policy for weight_entries
-CREATE POLICY IF NOT EXISTS "Admins can view all weight entries"
+DROP POLICY IF EXISTS "Admins can view all weight entries" ON public.weight_entries;
+CREATE POLICY "Admins can view all weight entries"
   ON public.weight_entries FOR SELECT
   USING (
     EXISTS (
@@ -13,7 +14,8 @@ CREATE POLICY IF NOT EXISTS "Admins can view all weight entries"
   );
 
 -- Admin policy for habits
-CREATE POLICY IF NOT EXISTS "Admins can view all habits"
+DROP POLICY IF EXISTS "Admins can view all habits" ON public.habits;
+CREATE POLICY "Admins can view all habits"
   ON public.habits FOR SELECT
   USING (
     EXISTS (
@@ -24,7 +26,8 @@ CREATE POLICY IF NOT EXISTS "Admins can view all habits"
   );
 
 -- Admin policy for habit_completions
-CREATE POLICY IF NOT EXISTS "Admins can view all habit completions"
+DROP POLICY IF EXISTS "Admins can view all habit completions" ON public.habit_completions;
+CREATE POLICY "Admins can view all habit completions"
   ON public.habit_completions FOR SELECT
   USING (
     EXISTS (
@@ -35,7 +38,8 @@ CREATE POLICY IF NOT EXISTS "Admins can view all habit completions"
   );
 
 -- Admin policy for class_reminders
-CREATE POLICY IF NOT EXISTS "Admins can view all class reminders"
+DROP POLICY IF EXISTS "Admins can view all class reminders" ON public.class_reminders;
+CREATE POLICY "Admins can view all class reminders"
   ON public.class_reminders FOR SELECT
   USING (
     EXISTS (

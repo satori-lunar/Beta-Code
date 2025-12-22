@@ -86,7 +86,7 @@ BEGIN
   PERFORM cron.schedule(
     'send-email-reminders',
     '* * * * *', -- Every minute
-    $$SELECT public.trigger_email_reminders();$$
+    'SELECT public.trigger_email_reminders();'
   );
 EXCEPTION
   WHEN OTHERS THEN

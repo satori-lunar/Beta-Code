@@ -22,7 +22,7 @@ VALUES (
   'Test Class',
   'This is a test class for testing email reminders. You can set a reminder for this class to test the email notification system.',
   'Test Instructor',
-  '2025-12-22 04:15:00-05'::timestamptz, -- Monday, December 22, 2025 at 4:15 AM Eastern Time
+  '2025-12-22 04:50:00-05'::timestamptz, -- Monday, December 22, 2025 at 4:50 AM Eastern Time
   60, -- 60 minutes duration
   NULL, -- No zoom link for test
   'Testing'

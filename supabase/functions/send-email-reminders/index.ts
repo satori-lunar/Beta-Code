@@ -76,7 +76,13 @@ serve(async (req) => {
 
     console.log(`[${nowISO}] Checking for due email reminders...`)
 
-    // Find all email reminders that are due (scheduled_reminder_time <= now) and not sent
+    // Define a small time window so we don't send extremely old, past-due reminders.
+    // This makes manual runs safe: only reminders due in the last 10 minutes will send.
+    const windowMinutes = 10
+    const windowStart = new Date(now.getTime() - windowMinutes * 60 * 1000)
+    const windowStartISO = windowStart.toISOString()
+
+    // Find email reminders that are due "now" (within the recent window) and not sent
     const { data: dueReminders, error: remindersError } = await supabase
       .from('class_reminders')
       .select(`
@@ -95,6 +101,7 @@ serve(async (req) => {
       .eq('notification_type', 'email')
       .eq('sent', false)
       .lte('scheduled_reminder_time', nowISO)
+      .gt('scheduled_reminder_time', windowStartISO)
 
     if (remindersError) {
       console.error('Error fetching due reminders:', remindersError)

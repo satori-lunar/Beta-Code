@@ -52,6 +52,15 @@ export default function AdminDashboard() {
 
   const loading = usersLoading || analyticsLoading;
 
+  // Debug: Log admin status and data
+  console.log('Admin Dashboard State:', {
+    isAdmin,
+    usersLoading,
+    analyticsLoading,
+    usersCount: users.length,
+    hasAnalytics: !!analytics,
+  });
+
   // Debug: Log analytics data
   if (analytics && !analyticsLoading) {
     console.log('Admin Dashboard Analytics:', {
@@ -336,44 +345,68 @@ export default function AdminDashboard() {
 
       {/* Users Tab */}
       {selectedTab === 'users' && (
-        <div className="card">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">All Users</h2>
-          {loading ? (
-            <p className="text-gray-500">Loading users...</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-gray-200">
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Name</th>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Email</th>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Role</th>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Streak</th>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Joined</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {users.map((user) => (
-                    <tr key={user.id} className="border-b border-gray-100">
-                      <td className="py-3 px-4">{user.name}</td>
-                      <td className="py-3 px-4">{user.email}</td>
-                      <td className="py-3 px-4">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          user.role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-700'
-                        }`}>
-                          {user.role || 'member'}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4">{user.streak || 0}</td>
-                      <td className="py-3 px-4">
-                        {user.join_date ? format(parseISO(user.join_date), 'MMM d, yyyy') : 'N/A'}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+        <div className="space-y-4">
+          {/* Debug Info */}
+          <div className="card bg-blue-50 border-blue-200">
+            <h3 className="text-sm font-semibold text-blue-900 mb-2">Debug Information</h3>
+            <div className="text-xs text-blue-700 space-y-1">
+              <p>Admin Status: {isAdmin ? '✅ Yes' : '❌ No'}</p>
+              <p>Loading Users: {usersLoading ? '⏳ Yes' : '✅ No'}</p>
+              <p>Users Count: {users.length}</p>
+              <p>Analytics Loading: {analyticsLoading ? '⏳ Yes' : '✅ No'}</p>
+              <p>Total Users (from analytics): {analytics?.totalUsers || 'N/A'}</p>
+              <p className="mt-2 text-blue-600">Check browser console (F12) for detailed logs</p>
             </div>
-          )}
+          </div>
+
+          <div className="card">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+              All Users ({users.length})
+            </h2>
+            {loading ? (
+              <p className="text-gray-500">Loading users...</p>
+            ) : users.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-gray-500 mb-2">No users found</p>
+                <p className="text-sm text-gray-400">
+                  Check browser console for errors. Make sure you've run the admin policy migrations in Supabase.
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-gray-200">
+                      <th className="text-left py-3 px-4 font-semibold text-gray-700">Name</th>
+                      <th className="text-left py-3 px-4 font-semibold text-gray-700">Email</th>
+                      <th className="text-left py-3 px-4 font-semibold text-gray-700">Role</th>
+                      <th className="text-left py-3 px-4 font-semibold text-gray-700">Streak</th>
+                      <th className="text-left py-3 px-4 font-semibold text-gray-700">Joined</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {users.map((user) => (
+                      <tr key={user.id} className="border-b border-gray-100">
+                        <td className="py-3 px-4">{user.name}</td>
+                        <td className="py-3 px-4">{user.email}</td>
+                        <td className="py-3 px-4">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            user.role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-700'
+                          }`}>
+                            {user.role || 'member'}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4">{user.streak || 0}</td>
+                        <td className="py-3 px-4">
+                          {user.join_date ? format(parseISO(user.join_date), 'MMM d, yyyy') : 'N/A'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </div>
       )}
 

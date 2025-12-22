@@ -63,22 +63,42 @@ export function useAllUsers() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log('useAllUsers: isAdmin =', isAdmin);
+    
     if (!isAdmin) {
+      console.log('useAllUsers: Not admin, skipping fetch');
       setLoading(false);
       return;
     }
 
     const fetchUsers = async () => {
       try {
-        console.log('Fetching all users for admin dashboard...');
+        console.log('🔍 Fetching all users for admin dashboard...');
+        
+        // First, try a simple query to see if we can access the table
+        const { data: testData, error: testError } = await supabase
+          .from('users')
+          .select('id, email, name')
+          .limit(5);
+        
+        if (testError) {
+          console.error('❌ Test query error:', testError);
+          console.error('Error details:', JSON.stringify(testError, null, 2));
+        } else {
+          console.log('✅ Test query successful, found', testData?.length || 0, 'users');
+        }
         
         // Fetch all users without limit (Supabase default is 1000, but we'll handle pagination if needed)
         let allUsers: any[] = [];
         let from = 0;
         const pageSize = 1000;
         let hasMore = true;
+        let pageCount = 0;
         
-        while (hasMore) {
+        while (hasMore && pageCount < 10) { // Safety limit of 10 pages
+          pageCount++;
+          console.log(`📄 Fetching page ${pageCount} (range ${from} to ${from + pageSize - 1})...`);
+          
           const { data, error } = await supabase
             .from('users')
             .select('*')
@@ -86,9 +106,12 @@ export function useAllUsers() {
             .range(from, from + pageSize - 1);
 
           if (error) {
-            console.error('Error fetching users:', error);
+            console.error('❌ Error fetching users page:', error);
+            console.error('Error details:', JSON.stringify(error, null, 2));
             throw error;
           }
+          
+          console.log(`📊 Page ${pageCount}: Got ${data?.length || 0} users`);
           
           if (data && data.length > 0) {
             allUsers = [...allUsers, ...data];
@@ -99,10 +122,14 @@ export function useAllUsers() {
           }
         }
         
-        console.log(`✅ Fetched ${allUsers.length} total users from Supabase`);
+        console.log(`✅ Successfully fetched ${allUsers.length} total users from Supabase`);
+        if (allUsers.length > 0) {
+          console.log('Sample user:', allUsers[0]);
+        }
         setUsers(allUsers);
       } catch (error) {
-        console.error('❌ Error fetching users:', error);
+        console.error('❌ Fatal error fetching users:', error);
+        console.error('Error details:', JSON.stringify(error, null, 2));
         setUsers([]);
       } finally {
         setLoading(false);

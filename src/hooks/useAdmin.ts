@@ -70,15 +70,40 @@ export function useAllUsers() {
 
     const fetchUsers = async () => {
       try {
-        const { data, error } = await supabase
-          .from('users')
-          .select('*')
-          .order('created_at', { ascending: false });
+        console.log('Fetching all users for admin dashboard...');
+        
+        // Fetch all users without limit (Supabase default is 1000, but we'll handle pagination if needed)
+        let allUsers: any[] = [];
+        let from = 0;
+        const pageSize = 1000;
+        let hasMore = true;
+        
+        while (hasMore) {
+          const { data, error, count } = await supabase
+            .from('users')
+            .select('*', { count: 'exact' })
+            .order('created_at', { ascending: false })
+            .range(from, from + pageSize - 1);
 
-        if (error) throw error;
-        setUsers(data || []);
+          if (error) {
+            console.error('Error fetching users:', error);
+            throw error;
+          }
+          
+          if (data && data.length > 0) {
+            allUsers = [...allUsers, ...data];
+            from += pageSize;
+            hasMore = data.length === pageSize;
+          } else {
+            hasMore = false;
+          }
+        }
+        
+        console.log(`✅ Fetched ${allUsers.length} total users from Supabase`);
+        setUsers(allUsers);
       } catch (error) {
-        console.error('Error fetching users:', error);
+        console.error('❌ Error fetching users:', error);
+        setUsers([]);
       } finally {
         setLoading(false);
       }
@@ -113,67 +138,67 @@ export function useAdminAnalytics() {
           console.error('Error fetching total users:', usersError);
         }
 
-        // Get video views (increased limit for 182 users)
+        // Get video views (fetch all, no limit)
         const { data: videoViews, error: videoViewsError } = await supabase
           .from('video_views')
           .select('*')
           .order('viewed_at', { ascending: false })
-          .limit(500);
+          .limit(10000); // High limit to get all views
         
         if (videoViewsError) {
           console.error('Error fetching video views:', videoViewsError);
         }
 
-        // Get favorites
+        // Get favorites (fetch all)
         const { data: favorites, error: favoritesError } = await supabase
           .from('user_favorite_sessions')
           .select('*')
           .order('created_at', { ascending: false })
-          .limit(500);
+          .limit(10000);
         
         if (favoritesError) {
           console.error('Error fetching favorites:', favoritesError);
         }
 
-        // Get reminders
+        // Get reminders (fetch all)
         const { data: reminders, error: remindersError } = await supabase
           .from('class_reminders')
           .select('*')
           .order('created_at', { ascending: false })
-          .limit(500);
+          .limit(10000);
         
         if (remindersError) {
           console.error('Error fetching reminders:', remindersError);
         }
 
-        // Get weight logs
+        // Get weight logs (fetch all)
         const { data: weightLogs, error: weightLogsError } = await supabase
           .from('weight_entries')
           .select('*')
           .order('date', { ascending: false })
-          .limit(500);
+          .limit(10000);
         
         if (weightLogsError) {
           console.error('Error fetching weight logs:', weightLogsError);
         }
 
-        // Get habits
+        // Get habits (fetch all)
         const { data: habits, error: habitsError } = await supabase
           .from('habits')
           .select('*')
           .order('created_at', { ascending: false })
-          .limit(500);
+          .limit(10000);
         
         if (habitsError) {
           console.error('Error fetching habits:', habitsError);
         }
 
-        // Get habit completions
+        // Get habit completions (fetch all)
         const { data: habitCompletions, error: habitCompletionsError } = await (supabase as any)
           .from('habit_completions')
           .select('*')
           .order('completed_date', { ascending: false })
-          .limit(1000);
+          .limit(10000);
         
         if (habitCompletionsError) {
           console.error('Error fetching habit completions:', habitCompletionsError);

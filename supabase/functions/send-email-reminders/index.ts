@@ -49,12 +49,20 @@ serve(async (req) => {
 
   try {
     // Verify this is called with service role key (for cron jobs)
+    // Allow both Authorization header and apikey query parameter
     const authHeader = req.headers.get('Authorization')
+    const apiKey = req.headers.get('apikey')
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
     
-    if (!authHeader || !authHeader.includes(serviceRoleKey || '')) {
+    // Check authorization - allow service role key in header or apikey header
+    const isAuthorized = 
+      (authHeader && authHeader.includes(serviceRoleKey || '')) ||
+      (apiKey && apiKey === serviceRoleKey)
+    
+    if (!isAuthorized) {
+      console.error('Unauthorized request. Auth header:', authHeader ? 'present' : 'missing', 'API key:', apiKey ? 'present' : 'missing')
       return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
+        JSON.stringify({ error: 'Unauthorized. Service role key required.' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
@@ -65,6 +73,8 @@ serve(async (req) => {
 
     const now = new Date()
     const nowISO = now.toISOString()
+
+    console.log(`[${nowISO}] Checking for due email reminders...`)
 
     // Find all email reminders that are due (scheduled_reminder_time <= now) and not sent
     const { data: dueReminders, error: remindersError } = await supabase
@@ -89,21 +99,25 @@ serve(async (req) => {
     if (remindersError) {
       console.error('Error fetching due reminders:', remindersError)
       return new Response(
-        JSON.stringify({ error: 'Failed to fetch reminders' }),
+        JSON.stringify({ error: 'Failed to fetch reminders', details: remindersError.message }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
     if (!dueReminders || dueReminders.length === 0) {
+      console.log(`[${nowISO}] No due reminders found`)
       return new Response(
         JSON.stringify({ 
           success: true, 
           message: 'No due reminders to send',
-          count: 0
+          count: 0,
+          timestamp: nowISO
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
+
+    console.log(`[${nowISO}] Found ${dueReminders.length} due reminder(s)`)
 
     const appUrl = Deno.env.get('APP_URL') || 'https://your-app.com'
     const results = {
@@ -118,6 +132,8 @@ serve(async (req) => {
         const liveClass = reminder.live_classes as any
         if (!liveClass || !liveClass.scheduled_at) {
           console.error('Missing live class data for reminder:', reminder.id)
+          results.failed++
+          results.errors.push(`Reminder ${reminder.id}: Missing live class data`)
           continue
         }
 
@@ -195,7 +211,7 @@ serve(async (req) => {
         // Send email using Resend
         try {
           await sendEmailWithResend(userEmail, emailSubject, htmlBody)
-          console.log(`Email sent successfully to ${userEmail} for reminder ${reminder.id}`)
+          console.log(`✓ Email sent successfully to ${userEmail} for reminder ${reminder.id}`)
           results.sent++
 
           // Create notification in database
@@ -217,33 +233,38 @@ serve(async (req) => {
             .eq('id', reminder.id)
 
         } catch (emailError: any) {
-          console.error(`Error sending email to ${userEmail}:`, emailError)
+          console.error(`✗ Error sending email to ${userEmail}:`, emailError)
           results.failed++
           results.errors.push(`Reminder ${reminder.id}: ${emailError.message}`)
         }
 
       } catch (error: any) {
-        console.error(`Error processing reminder ${reminder.id}:`, error)
+        console.error(`✗ Error processing reminder ${reminder.id}:`, error)
         results.failed++
         results.errors.push(`Reminder ${reminder.id}: ${error.message}`)
       }
     }
 
+    const response = {
+      success: true,
+      message: `Processed ${dueReminders.length} reminders`,
+      sent: results.sent,
+      failed: results.failed,
+      errors: results.errors,
+      timestamp: nowISO
+    }
+
+    console.log(`[${nowISO}] Completed:`, response)
+
     return new Response(
-      JSON.stringify({ 
-        success: true,
-        message: `Processed ${dueReminders.length} reminders`,
-        sent: results.sent,
-        failed: results.failed,
-        errors: results.errors
-      }),
+      JSON.stringify(response),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 
   } catch (error: any) {
     console.error('Error in send-email-reminders:', error)
     return new Response(
-      JSON.stringify({ error: error?.message || 'Internal server error' }),
+      JSON.stringify({ error: error?.message || 'Internal server error', details: error?.stack }),
       { 
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -251,4 +272,3 @@ serve(async (req) => {
     )
   }
 })
-

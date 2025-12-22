@@ -21,7 +21,7 @@ export default function AdminDashboard() {
   const { isAdmin, loading: adminLoading } = useIsAdmin();
   const { users, loading: usersLoading } = useAllUsers();
   const { analytics, loading: analyticsLoading } = useAdminAnalytics();
-  const [selectedTab, setSelectedTab] = useState<'overview' | 'users' | 'videos' | 'reminders' | 'weight' | 'habits' | 'streaks' | 'logins' | 'support'>('overview');
+  const [selectedTab, setSelectedTab] = useState<'overview' | 'users' | 'videos' | 'reminders' | 'weight' | 'habits' | 'badges' | 'logins' | 'support'>('overview');
   const [selectedUserId, setSelectedUserId] = useState<string>(''); // Filter by user
   const [selectedClassId, setSelectedClassId] = useState<string>(''); // Filter reminders by class
   const [tickets, setTickets] = useState<any[]>([]);
@@ -244,7 +244,7 @@ export default function AdminDashboard() {
           { id: 'reminders', label: 'Reminders', icon: Bell },
           { id: 'weight', label: 'Weight Logs', icon: Scale },
           { id: 'habits', label: 'Habits', icon: Target },
-          { id: 'streaks', label: 'Streaks', icon: TrendingUp },
+          { id: 'badges', label: 'Badges', icon: Target },
           { id: 'support', label: 'Support', icon: MessageCircle },
         ].map((tab) => (
           <button
@@ -426,7 +426,7 @@ export default function AdminDashboard() {
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <p className="font-medium text-gray-900 mb-1">
-                        {view.recorded_sessions?.title || 'Unknown Session'}
+                        {view.entity_title || view.recorded_sessions?.title || view.activity_description || 'Unknown Session'}
                       </p>
                       <p className="text-sm text-gray-600 mt-1">
                         <span className="font-medium">{view.users?.name || view.users?.email || 'Unknown User'}</span>
@@ -436,7 +436,7 @@ export default function AdminDashboard() {
                         )}
                       </p>
                       <p className="text-xs text-gray-400 mt-1">
-                        Watched: {view.viewed_at ? format(parseISO(view.viewed_at), 'MMM d, yyyy h:mm a') : 'N/A'}
+                        Watched: {view.viewed_at || view.created_at ? format(parseISO(view.viewed_at || view.created_at), 'MMM d, yyyy h:mm a') : 'N/A'}
                       </p>
                     </div>
                     <Eye className="w-5 h-5 text-gray-400 flex-shrink-0 ml-4" />
@@ -792,39 +792,59 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {/* Streaks Tab */}
-      {selectedTab === 'streaks' && (
+      {/* Badges Tab */}
+      {selectedTab === 'badges' && (
         <div className="card">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">User Streaks</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">User Badges</h2>
           {loading ? (
-            <p className="text-gray-500">Loading streaks...</p>
+            <p className="text-gray-500">Loading badges...</p>
           ) : (
-            <div className="space-y-4">
-              {analytics?.activityStreaks
-                ?.sort((a: any, b: any) => (b.activityStreak || 0) - (a.activityStreak || 0))
+            <div className="space-y-6">
+              {analytics?.badges
+                ?.sort((a: any, b: any) => (b.badgeCount || 0) - (a.badgeCount || 0))
                 .map((user: any) => (
-                  <div key={user.id} className="border-b border-gray-100 pb-4 last:border-0">
-                    <div className="flex items-center justify-between">
+                  <div key={user.id} className="border border-gray-200 rounded-xl p-5 bg-gradient-to-br from-white to-gray-50">
+                    <div className="flex items-start justify-between mb-4">
                       <div>
-                        <p className="font-medium text-gray-900">{user.name || user.email}</p>
-                        <p className="text-sm text-gray-500 mt-1">
-                          {user.email}
-                          {user.lastActive && (
-                            <span className="ml-1 text-xs text-gray-400">
-                              • Last active {user.lastActive}
-                            </span>
-                          )}
-                        </p>
+                        <p className="font-semibold text-gray-900 text-lg">{user.name || user.email}</p>
+                        {user.email && user.name && (
+                          <p className="text-sm text-gray-500 mt-1">{user.email}</p>
+                        )}
+                        {user.lastActive && (
+                          <p className="text-xs text-gray-400 mt-1">
+                            Last active: {format(parseISO(user.lastActive), 'MMM d, yyyy')}
+                          </p>
+                        )}
                       </div>
                       <div className="text-right">
-                        <p className="text-2xl font-bold text-coral-600">{user.activityStreak || 0}</p>
-                        <p className="text-xs text-gray-500">day streak (any activity)</p>
+                        <p className="text-2xl font-bold text-coral-600">{user.badgeCount || 0}</p>
+                        <p className="text-xs text-gray-500">badges earned</p>
                       </div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {user.badges?.map((badge: any) => (
+                        <div key={badge.id || badge.name} className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-100">
+                          <div className="w-10 h-10 rounded-lg bg-coral-100 flex items-center justify-center text-lg">
+                            {badge.icon || '🏆'}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-gray-900 text-sm truncate">{badge.name || 'Badge'}</p>
+                            {badge.description && (
+                              <p className="text-xs text-gray-500 truncate">{badge.description}</p>
+                            )}
+                            {badge.earned_date && (
+                              <p className="text-xs text-gray-400 mt-1">
+                                {format(parseISO(badge.earned_date), 'MMM d, yyyy')}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 ))}
-              {(!analytics?.activityStreaks || analytics.activityStreaks.length === 0) && (
-                <p className="text-gray-500 text-center py-8">No streak data yet</p>
+              {(!analytics?.badges || analytics.badges.length === 0) && (
+                <p className="text-gray-500 text-center py-8">No badges earned yet</p>
               )}
             </div>
           )}

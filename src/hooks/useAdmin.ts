@@ -183,19 +183,17 @@ export function useAdminAnalytics() {
           console.error('Error fetching total users:', usersError);
         }
 
-        // Get video views (fetch all, no limit)
+        // Get video views from user_activity table where activity_type = 'video_view'
         let videoViews: any[] = [];
         const { data: videoViewsData, error: videoViewsError } = await supabase
-          .from('video_views')
+          .from('user_activity')
           .select('*')
-          .order('viewed_at', { ascending: false })
+          .eq('activity_type', 'video_view')
+          .order('created_at', { ascending: false })
           .limit(10000); // High limit to get all views
         
         if (videoViewsError) {
-          // 404 means table doesn't exist, which is OK
-          if (videoViewsError.code !== 'PGRST116') {
-            console.warn('Error fetching video views:', videoViewsError);
-          }
+          console.warn('Error fetching video views:', videoViewsError);
         } else {
           videoViews = videoViewsData || [];
         }
@@ -278,14 +276,18 @@ export function useAdminAnalytics() {
           logins = loginsData || [];
         }
 
-        // Get streaks
-        const { data: userStreaks } = await supabase
-          .from('users')
-          .select('id, email, name, streak')
-          .order('streak', { ascending: false })
-          .limit(50);
+        // Get badges from user_badges table
+        const { data: userBadges, error: badgesError } = await (supabase as any)
+          .from('user_badges')
+          .select('*')
+          .order('earned_date', { ascending: false })
+          .limit(10000);
+        
+        if (badgesError) {
+          console.warn('Error fetching badges:', badgesError);
+        }
 
-        // Get recent user activity to compute activity-based streaks and last active
+        // Get recent user activity to compute last active
         const { data: activityRows } = await (supabase as any)
           .from('user_activity')
           .select('user_id, created_at')
@@ -353,22 +355,34 @@ export function useAdminAnalytics() {
           return streak;
         };
 
-        const activityStreaks = Array.from(activityByUser.entries()).map(([userId, days]) => {
+        // Group badges by user
+        const badgesByUser = new Map<string, any[]>();
+        (userBadges || []).forEach((badge: any) => {
+          if (!badgesByUser.has(badge.user_id)) {
+            badgesByUser.set(badge.user_id, []);
+          }
+          badgesByUser.get(badge.user_id)!.push(badge);
+        });
+
+        // Create badges list with user info
+        const enrichedBadges = Array.from(badgesByUser.entries()).map(([userId, badges]) => {
           const userInfo = userMap.get(userId);
-          const streak = computeActivityStreak(days);
-          const lastActive = Array.from(days).sort().at(-1) || null;
+          const lastActive = Array.from(activityByUser.get(userId) || []).sort().at(-1) || null;
           return {
             id: userId,
             email: userInfo?.email || null,
             name: userInfo?.name || null,
-            activityStreak: streak,
+            badges: badges.sort((a: any, b: any) => 
+              new Date(b.earned_date || b.created_at).getTime() - new Date(a.earned_date || a.created_at).getTime()
+            ),
+            badgeCount: badges.length,
             lastActive,
           };
         });
 
-        // Get session info
+        // Get session info (for video views from user_activity, entity_id is the session_id)
         const sessionIds = new Set<string>();
-        videoViews?.forEach((v: any) => v.session_id && sessionIds.add(v.session_id));
+        videoViews?.forEach((v: any) => v.entity_id && sessionIds.add(v.entity_id));
         favorites?.forEach((f: any) => f.session_id && sessionIds.add(f.session_id));
 
         const { data: sessions } = sessionIds.size > 0 ? await supabase
@@ -393,7 +407,8 @@ export function useAdminAnalytics() {
         const enrichedVideoViews = (videoViews || []).map((v: any) => ({
           ...v,
           users: userMap.get(v.user_id),
-          recorded_sessions: sessionMap.get(v.session_id)
+          recorded_sessions: sessionMap.get(v.entity_id), // user_activity uses entity_id
+          viewed_at: v.created_at // user_activity uses created_at instead of viewed_at
         }));
 
         const enrichedFavorites = (favorites || []).map((f: any) => ({
@@ -446,8 +461,7 @@ export function useAdminAnalytics() {
           habits: enrichedHabits,
           habitCompletions: enrichedHabitCompletions,
           logins: enrichedLogins,
-          userStreaks: userStreaks || [],
-          activityStreaks,
+          badges: enrichedBadges,
         });
       } catch (error) {
         console.error('Error fetching analytics:', error);

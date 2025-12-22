@@ -79,9 +79,9 @@ export function useAllUsers() {
         let hasMore = true;
         
         while (hasMore) {
-          const { data, error, count } = await supabase
+          const { data, error } = await supabase
             .from('users')
-            .select('*', { count: 'exact' })
+            .select('*')
             .order('created_at', { ascending: false })
             .range(from, from + pageSize - 1);
 

@@ -11,7 +11,7 @@ async function sendEmailWithResend(
   to: string,
   subject: string,
   htmlBody: string,
-  fromEmail: string = 'noreply@birchandstone.com'
+  fromEmail: string = 'noreply@mybirchandstonecoaching.com'
 ) {
   const resendApiKey = Deno.env.get('RESEND_API_KEY')
   
@@ -52,7 +52,8 @@ serve(async (req) => {
   }
 
   try {
-    const { reminderId, userId, classTitle, scheduledAt, reminderMinutes } = await req.json()
+    const body = await req.json()
+    const { reminderId, userId, classTitle, scheduledAt, reminderMinutes, userEmail: passedEmail } = body
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!

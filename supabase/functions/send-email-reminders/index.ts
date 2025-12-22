@@ -126,7 +126,7 @@ serve(async (req) => {
       errors: [] as string[]
     }
 
-    // Process each reminder
+    // Process each reminder (and reschedule it weekly)
     for (const reminder of dueReminders) {
       try {
         const liveClass = reminder.live_classes as any
@@ -226,10 +226,21 @@ serve(async (req) => {
               read: false
             })
 
-          // Mark reminder as sent
+          // Reschedule this reminder for the same class time next week
+          // so users only have to click "email reminder" once.
+          const currentReminderTime = new Date(reminder.scheduled_reminder_time)
+          const nextReminderTime = new Date(
+            currentReminderTime.getTime() + 7 * 24 * 60 * 60 * 1000
+          )
+
+          // Update the existing reminder row to point to next week
           await supabase
             .from('class_reminders')
-            .update({ sent: true, updated_at: nowISO })
+            .update({
+              scheduled_reminder_time: nextReminderTime.toISOString(),
+              sent: false,
+              updated_at: nowISO
+            })
             .eq('id', reminder.id)
 
         } catch (emailError: any) {

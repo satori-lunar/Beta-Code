@@ -52,6 +52,18 @@ export default function AdminDashboard() {
 
   const loading = usersLoading || analyticsLoading;
 
+  // Debug: Log analytics data
+  if (analytics && !analyticsLoading) {
+    console.log('Admin Dashboard Analytics:', {
+      totalUsers: analytics.totalUsers,
+      videoViews: analytics.videoViews?.length || 0,
+      reminders: analytics.reminders?.length || 0,
+      weightLogs: analytics.weightLogs?.length || 0,
+      habits: analytics.habits?.length || 0,
+      habitCompletions: analytics.habitCompletions?.length || 0,
+    });
+  }
+
   // Load help tickets for the Support tab
   const loadTickets = async () => {
     if (!isAdmin) return;

@@ -20,10 +20,33 @@ export function useIsAdmin() {
       return;
     }
 
-    // Simple check: user email is one of the configured admin emails
-    const email = user.email || (user.user_metadata as any)?.email || '';
-    setIsAdmin(ADMIN_EMAILS.includes(email));
-    setLoading(false);
+    const checkAdmin = async () => {
+      try {
+        // First check: user email is one of the configured admin emails
+        const email = user.email || (user.user_metadata as any)?.email || '';
+        const isEmailAdmin = ADMIN_EMAILS.includes(email);
+
+        // Second check: check database role
+        const { data: userData, error } = await supabase
+          .from('users')
+          .select('role')
+          .eq('id', user.id)
+          .single();
+
+        const isRoleAdmin = userData?.role === 'admin';
+
+        setIsAdmin(isEmailAdmin || isRoleAdmin);
+      } catch (error) {
+        console.error('Error checking admin status:', error);
+        // Fallback to email check
+        const email = user.email || (user.user_metadata as any)?.email || '';
+        setIsAdmin(ADMIN_EMAILS.includes(email));
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkAdmin();
   }, [user]);
 
   return { isAdmin, loading };
@@ -78,58 +101,90 @@ export function useAdminAnalytics() {
     const fetchAnalytics = async () => {
       try {
         // Get total users
-        const { count: totalUsers } = await supabase
+        const { count: totalUsers, error: usersError } = await supabase
           .from('users')
           .select('*', { count: 'exact', head: true });
+        
+        if (usersError) {
+          console.error('Error fetching total users:', usersError);
+        }
 
         // Get video views (increased limit for 182 users)
-        const { data: videoViews } = await supabase
+        const { data: videoViews, error: videoViewsError } = await supabase
           .from('video_views')
           .select('*')
           .order('viewed_at', { ascending: false })
           .limit(500);
+        
+        if (videoViewsError) {
+          console.error('Error fetching video views:', videoViewsError);
+        }
 
         // Get favorites
-        const { data: favorites } = await supabase
+        const { data: favorites, error: favoritesError } = await supabase
           .from('user_favorite_sessions')
           .select('*')
           .order('created_at', { ascending: false })
           .limit(500);
+        
+        if (favoritesError) {
+          console.error('Error fetching favorites:', favoritesError);
+        }
 
         // Get reminders
-        const { data: reminders } = await supabase
+        const { data: reminders, error: remindersError } = await supabase
           .from('class_reminders')
           .select('*')
           .order('created_at', { ascending: false })
           .limit(500);
+        
+        if (remindersError) {
+          console.error('Error fetching reminders:', remindersError);
+        }
 
         // Get weight logs
-        const { data: weightLogs } = await supabase
+        const { data: weightLogs, error: weightLogsError } = await supabase
           .from('weight_entries')
           .select('*')
           .order('date', { ascending: false })
           .limit(500);
+        
+        if (weightLogsError) {
+          console.error('Error fetching weight logs:', weightLogsError);
+        }
 
         // Get habits
-        const { data: habits } = await supabase
+        const { data: habits, error: habitsError } = await supabase
           .from('habits')
           .select('*')
           .order('created_at', { ascending: false })
           .limit(500);
+        
+        if (habitsError) {
+          console.error('Error fetching habits:', habitsError);
+        }
 
         // Get habit completions
-        const { data: habitCompletions } = await (supabase as any)
+        const { data: habitCompletions, error: habitCompletionsError } = await (supabase as any)
           .from('habit_completions')
           .select('*')
           .order('completed_date', { ascending: false })
           .limit(1000);
+        
+        if (habitCompletionsError) {
+          console.error('Error fetching habit completions:', habitCompletionsError);
+        }
 
         // Get login activity
-        const { data: logins } = await supabase
+        const { data: logins, error: loginsError } = await supabase
           .from('user_logins')
           .select('*')
           .order('login_at', { ascending: false })
           .limit(100);
+        
+        if (loginsError) {
+          console.error('Error fetching logins:', loginsError);
+        }
 
         // Get streaks
         const { data: userStreaks } = await supabase
@@ -280,6 +335,15 @@ export function useAdminAnalytics() {
           ...hc,
           users: userMap.get(hc.user_id)
         }));
+
+        console.log('Analytics fetched:', {
+          totalUsers: totalUsers || 0,
+          videoViewsCount: enrichedVideoViews.length,
+          remindersCount: enrichedReminders.length,
+          weightLogsCount: enrichedWeightLogs.length,
+          habitsCount: enrichedHabits.length,
+          habitCompletionsCount: enrichedHabitCompletions.length,
+        });
 
         setAnalytics({
           totalUsers: totalUsers || 0,

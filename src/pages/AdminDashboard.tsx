@@ -476,7 +476,7 @@ export default function AdminDashboard() {
                       }
                       return acc;
                     }, [])
-                    .sort((a, b) => a.name.localeCompare(b.name))
+                    .sort((a: any, b: any) => a.name.localeCompare(b.name))
                     .map((classItem: any) => (
                       <option key={classItem.id} value={classItem.id}>
                         {classItem.name}

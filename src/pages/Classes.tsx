@@ -157,7 +157,8 @@ export default function Classes() {
       'The Heart of Nourishment',
       'Foundations in Motion',
       'Hatha Yoga',
-      'Seedlings'
+      'Seedlings',
+      'Test Class'
     ],
     'Tuesday': [
       'Inner Chords',

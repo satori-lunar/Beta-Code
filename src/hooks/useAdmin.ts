@@ -25,26 +25,44 @@ export function useIsAdmin() {
         // First check: user email is one of the configured admin emails
         const email = user.email || (user.user_metadata as any)?.email || '';
         const isEmailAdmin = ADMIN_EMAILS.includes(email);
+        
+        console.log('🔐 Admin check:', {
+          email,
+          isEmailAdmin,
+          adminEmails: ADMIN_EMAILS,
+        });
 
-        // Second check: check database role
-        const { data: userData, error: roleError } = await supabase
-          .from('users')
-          .select('role')
-          .eq('id', user.id)
-          .single();
+        // Second check: check database role (this might fail due to RLS, that's OK)
+        let isRoleAdmin = false;
+        try {
+          const { data: userData, error: roleError } = await supabase
+            .from('users')
+            .select('role')
+            .eq('id', user.id)
+            .single();
 
-        if (roleError) {
-          console.error('Error checking user role:', roleError);
+          if (roleError) {
+            console.warn('⚠️ Could not check user role (RLS might be blocking):', roleError);
+            // If RLS blocks this, we'll rely on email check
+          } else {
+            isRoleAdmin = userData?.role === 'admin';
+            console.log('📋 Database role check:', { role: userData?.role, isRoleAdmin });
+          }
+        } catch (roleCheckErr) {
+          console.warn('⚠️ Role check failed:', roleCheckErr);
+          // Continue with email check only
         }
 
-        const isRoleAdmin = userData?.role === 'admin';
-
-        setIsAdmin(isEmailAdmin || isRoleAdmin);
+        const finalIsAdmin = isEmailAdmin || isRoleAdmin;
+        console.log('✅ Final admin status:', finalIsAdmin);
+        setIsAdmin(finalIsAdmin);
       } catch (err) {
-        console.error('Error checking admin status:', err);
+        console.error('❌ Error checking admin status:', err);
         // Fallback to email check
         const email = user.email || (user.user_metadata as any)?.email || '';
-        setIsAdmin(ADMIN_EMAILS.includes(email));
+        const fallbackIsAdmin = ADMIN_EMAILS.includes(email);
+        console.log('🔄 Fallback to email check:', { email, isAdmin: fallbackIsAdmin });
+        setIsAdmin(fallbackIsAdmin);
       } finally {
         setLoading(false);
       }

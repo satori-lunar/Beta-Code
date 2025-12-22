@@ -59,12 +59,12 @@ export function useIsAdmin() {
       } catch (err) {
         console.error('❌ Error checking admin status:', err);
         // Fallback to email check
-        const email = user.email || (user.user_metadata as any)?.email || '';
+    const email = user.email || (user.user_metadata as any)?.email || '';
         const fallbackIsAdmin = ADMIN_EMAILS.includes(email);
         console.log('🔄 Fallback to email check:', { email, isAdmin: fallbackIsAdmin });
         setIsAdmin(fallbackIsAdmin);
       } finally {
-        setLoading(false);
+    setLoading(false);
       }
     };
 
@@ -117,9 +117,9 @@ export function useAllUsers() {
           pageCount++;
           console.log(`📄 Fetching page ${pageCount} (range ${from} to ${from + pageSize - 1})...`);
           
-          const { data, error } = await supabase
-            .from('users')
-            .select('*')
+        const { data, error } = await supabase
+          .from('users')
+          .select('*')
             .order('created_at', { ascending: false })
             .range(from, from + pageSize - 1);
 
@@ -178,7 +178,7 @@ export function useAdminAnalytics() {
         const { count: totalUsers, error: usersError } = await supabase
           .from('users')
           .select('*', { count: 'exact', head: true });
-        
+
         if (usersError) {
           console.error('Error fetching total users:', usersError);
         }
@@ -266,7 +266,7 @@ export function useAdminAnalytics() {
           .select('*')
           .order('login_at', { ascending: false })
           .limit(100);
-        
+
         if (loginsError) {
           // 404 means table doesn't exist, which is OK
           if (loginsError.code !== 'PGRST116') {
@@ -323,38 +323,6 @@ export function useAdminAnalytics() {
           }
           activityByUser.get(row.user_id)!.add(day);
         });
-
-        const today = new Date();
-        const todayStr = today.toISOString().slice(0, 10);
-
-        const computeActivityStreak = (days: Set<string>): number => {
-          if (!days.size) return 0;
-          // Sort days descending
-          const sorted = Array.from(days).sort((a, b) => (a < b ? 1 : a > b ? -1 : 0));
-          let streak = 0;
-          let cursor = new Date(todayStr);
-
-          for (const dayStr of sorted) {
-            const dayDate = new Date(dayStr);
-            // Skip future dates, just in case
-            if (dayDate > cursor) continue;
-
-            if (
-              dayDate.getUTCFullYear() === cursor.getUTCFullYear() &&
-              dayDate.getUTCMonth() === cursor.getUTCMonth() &&
-              dayDate.getUTCDate() === cursor.getUTCDate()
-            ) {
-              streak += 1;
-              // Move cursor back one day
-              cursor.setUTCDate(cursor.getUTCDate() - 1);
-            } else if (dayDate < cursor) {
-              // Gap detected – streak ends
-              break;
-            }
-          }
-
-          return streak;
-        };
 
         // Group badges by user
         const badgesByUser = new Map<string, any[]>();

@@ -5,7 +5,6 @@ import {
   Heart,
   Bell,
   Scale,
-  TrendingUp,
   BarChart3,
   Mail,
   Clock,

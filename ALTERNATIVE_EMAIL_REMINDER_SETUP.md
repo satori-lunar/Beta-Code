@@ -189,8 +189,8 @@ SELECT net.http_post(
    ```
 
 3. Check Edge Function logs for errors
-4. Verify `RESEND_API_KEY` is set in Edge Function secrets
-5. Verify email domain is verified in Resend
+4. Verify `MAILCHIMP_TRANSACTIONAL_API_KEY` and sender settings are set in Edge Function secrets
+5. Verify email domain is verified in Mailchimp Transactional
 
 ---
 

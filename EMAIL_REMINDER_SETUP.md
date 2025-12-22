@@ -1,6 +1,6 @@
 # Email Reminder Setup Guide
 
-This guide explains how to set up automatic email reminders for class reminders using the `mybirchandstonecoaching.com` domain.
+This guide explains how to set up automatic email reminders for class reminders using Mailchimp Transactional (Mandrill) with the `mybirchandstonecoaching.com` domain.
 
 ## Overview
 
@@ -8,18 +8,18 @@ The system automatically sends email reminders to users who have selected email 
 
 ## Components
 
-1. **Edge Function: `send-email-reminders`** - Checks for due reminders and sends emails
-2. **Edge Function: `send-class-reminder`** - Sends individual reminder emails (updated domain)
+1. **Edge Function: `send-email-reminders`** - Checks for due reminders and sends emails via Mailchimp Transactional
+2. **Edge Function: `send-class-reminder`** - Sends individual reminder emails via Mailchimp Transactional
 3. **Database Table: `class_reminders`** - Stores user reminders with scheduled times
 
 ## Setup Steps
 
-### 1. Configure Resend Domain
+### 1. Configure Mailchimp Transactional
 
-1. Go to [Resend Dashboard](https://resend.com/domains)
-2. Add your domain: `mybirchandstonecoaching.com`
-3. Add the DNS records provided by Resend to your domain's DNS settings
-4. Wait for domain verification (usually a few minutes)
+1. In your Mailchimp account, enable **Mailchimp Transactional (Mandrill)** for the account.
+2. In Mailchimp Transactional, add and verify the sending domain: `mybirchandstonecoaching.com`.
+3. Add the DNS records (SPF/DKIM) provided by Mailchimp to your domain's DNS.
+4. Wait for domain verification (usually a few minutes).
 
 ### 2. Set Environment Variables in Supabase
 
@@ -28,12 +28,15 @@ The system automatically sends email reminders to users who have selected email 
 3. Add the following secrets:
 
    ```
-   RESEND_API_KEY=re_your_api_key_here
+   MAILCHIMP_TRANSACTIONAL_API_KEY=your_mandrill_api_key_here
+   MAILCHIMP_FROM_EMAIL=noreply@mybirchandstonecoaching.com
+   MAILCHIMP_FROM_NAME=Birch & Stone
    APP_URL=https://your-app-domain.com
    ```
 
    Replace:
-   - `re_your_api_key_here` with your actual Resend API key
+   - `your_mandrill_api_key_here` with your actual Mailchimp Transactional API key
+   - `noreply@mybirchandstonecoaching.com` if you prefer a different verified sender
    - `https://your-app-domain.com` with your actual app URL
 
 ### 3. Deploy Edge Functions
@@ -99,9 +102,9 @@ Make sure this domain is verified in Resend before sending production emails.
    - Finds all reminders where `scheduled_reminder_time <= now()` and `sent = false`
    - For each reminder:
      - Fetches user email and class details
-     - Sends email via Resend
+     - Sends email via Mailchimp Transactional
      - Creates a notification in the database
-     - Marks reminder as `sent = true`
+     - Reschedules the reminder for the same class time next week (recurring weekly)
 
 3. **Email Content**: The email includes:
    - Class title
@@ -120,15 +123,15 @@ Make sure this domain is verified in Resend before sending production emails.
 
 ### Emails Not Sending
 
-1. **Check Resend API Key**: Verify `RESEND_API_KEY` is set correctly
-2. **Check Domain Verification**: Ensure `mybirchandstonecoaching.com` is verified in Resend
+1. **Check Mailchimp API Key**: Verify `MAILCHIMP_TRANSACTIONAL_API_KEY` is set correctly.
+2. **Check Domain Verification**: Ensure `mybirchandstonecoaching.com` is verified in Mailchimp Transactional.
 3. **Check Cron Job**: Verify the cron job is running (check Supabase logs)
-4. **Check Reminders**: Query `class_reminders` table to see if reminders are being created
-5. **Check Logs**: Go to Supabase Dashboard → Edge Functions → Logs
+4. **Check Reminders**: Query `class_reminders` table to see if reminders are being created.
+5. **Check Logs**: Go to Supabase Dashboard → Edge Functions → Logs and look for `Mailchimp API error` entries.
 
 ### Common Issues
 
-- **Domain not verified**: Emails won't send until domain is verified in Resend
+- **Domain not verified**: Emails won't send until domain is verified in Mailchimp Transactional.
 - **Cron job not running**: Check if cron job is enabled and scheduled correctly
 - **No reminders found**: Verify reminders are being created with correct `scheduled_reminder_time`
 - **Email in spam**: Check Resend deliverability settings and SPF/DKIM records

@@ -6,43 +6,54 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Resend API integration
-async function sendEmailWithResend(
+// Mailchimp Transactional (Mandrill) integration
+async function sendEmailWithMailchimp(
   to: string,
   subject: string,
-  htmlBody: string,
-  fromEmail: string = 'noreply@mybirchandstonecoaching.com'
+  htmlBody: string
 ) {
-  const resendApiKey = Deno.env.get('RESEND_API_KEY')
-  
-  if (!resendApiKey) {
-    throw new Error('RESEND_API_KEY environment variable is not set')
+  const apiKey = Deno.env.get('MAILCHIMP_TRANSACTIONAL_API_KEY')
+  const fromEmail = Deno.env.get('MAILCHIMP_FROM_EMAIL') || 'noreply@mybirchandstonecoaching.com'
+  const fromName = Deno.env.get('MAILCHIMP_FROM_NAME') || 'Birch & Stone'
+
+  if (!apiKey) {
+    throw new Error('MAILCHIMP_TRANSACTIONAL_API_KEY environment variable is not set')
   }
 
-  // Log email domain being used
-  const emailDomain = fromEmail.split('@')[1] || 'unknown'
-  console.log(`Sending email from domain: ${emailDomain} to: ${to}`)
-
-  const response = await fetch('https://api.resend.com/emails', {
+  const response = await fetch('https://mandrillapp.com/api/1.0/messages/send.json', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${resendApiKey}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      from: fromEmail,
-      to: [to],
-      subject: subject,
-      html: htmlBody,
+      key: apiKey,
+      message: {
+        html: htmlBody,
+        subject,
+        from_email: fromEmail,
+        from_name: fromName,
+        to: [
+          {
+            email: to,
+            type: 'to',
+          },
+        ],
+      },
     }),
   })
 
   if (!response.ok) {
     const error = await response.text()
-    throw new Error(`Resend API error: ${response.status} ${error}`)
+    throw new Error(`Mailchimp API error: ${response.status} ${error}`)
   }
 
-  return await response.json()
+  const data = await response.json()
+
+  if (!Array.isArray(data) || !data.length || data[0].status === 'rejected' || data[0].status === 'invalid') {
+    throw new Error(`Mailchimp send failed: ${JSON.stringify(data)}`)
+  }
+
+  return data
 }
 
 serve(async (req) => {
@@ -166,10 +177,10 @@ See you there!
 — Birch & Stone
     `.trim()
 
-    // Send email using Resend
+    // Send email using Mailchimp Transactional
     let emailSent = false
     try {
-      await sendEmailWithResend(userEmail, emailSubject, htmlBody)
+      await sendEmailWithMailchimp(userEmail, emailSubject, htmlBody)
       emailSent = true
       console.log(`Email sent successfully to ${userEmail}`)
     } catch (emailError) {

@@ -245,25 +245,37 @@ export function useAdminAnalytics() {
         }
 
         // Get habit completions (fetch all)
-        const { data: habitCompletions, error: habitCompletionsError } = await (supabase as any)
+        let habitCompletions: any[] = [];
+        const { data: habitCompletionsData, error: habitCompletionsError } = await (supabase as any)
           .from('habit_completions')
           .select('*')
           .order('completed_date', { ascending: false })
           .limit(10000);
         
         if (habitCompletionsError) {
-          console.error('Error fetching habit completions:', habitCompletionsError);
+          // 404 means table doesn't exist, which is OK
+          if (habitCompletionsError.code !== 'PGRST116') {
+            console.warn('Error fetching habit completions:', habitCompletionsError);
+          }
+        } else {
+          habitCompletions = habitCompletionsData || [];
         }
 
         // Get login activity
-        const { data: logins, error: loginsError } = await supabase
+        let logins: any[] = [];
+        const { data: loginsData, error: loginsError } = await supabase
           .from('user_logins')
           .select('*')
           .order('login_at', { ascending: false })
           .limit(100);
         
         if (loginsError) {
-          console.error('Error fetching logins:', loginsError);
+          // 404 means table doesn't exist, which is OK
+          if (loginsError.code !== 'PGRST116') {
+            console.warn('Error fetching logins:', loginsError);
+          }
+        } else {
+          logins = loginsData || [];
         }
 
         // Get streaks

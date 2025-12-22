@@ -184,14 +184,20 @@ export function useAdminAnalytics() {
         }
 
         // Get video views (fetch all, no limit)
-        const { data: videoViews, error: videoViewsError } = await supabase
+        let videoViews: any[] = [];
+        const { data: videoViewsData, error: videoViewsError } = await supabase
           .from('video_views')
           .select('*')
           .order('viewed_at', { ascending: false })
           .limit(10000); // High limit to get all views
         
         if (videoViewsError) {
-          console.error('Error fetching video views:', videoViewsError);
+          // 404 means table doesn't exist, which is OK
+          if (videoViewsError.code !== 'PGRST116') {
+            console.warn('Error fetching video views:', videoViewsError);
+          }
+        } else {
+          videoViews = videoViewsData || [];
         }
 
         // Get favorites (fetch all)

@@ -23,6 +23,7 @@ export default function AdminDashboard() {
   const { analytics, loading: analyticsLoading } = useAdminAnalytics();
   const [selectedTab, setSelectedTab] = useState<'overview' | 'users' | 'videos' | 'reminders' | 'weight' | 'habits' | 'streaks' | 'logins' | 'support'>('overview');
   const [selectedUserId, setSelectedUserId] = useState<string>(''); // Filter by user
+  const [selectedClassId, setSelectedClassId] = useState<string>(''); // Filter reminders by class
   const [tickets, setTickets] = useState<any[]>([]);
   const [ticketsLoading, setTicketsLoading] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<any | null>(null);
@@ -454,99 +455,248 @@ export default function AdminDashboard() {
 
       {/* Reminders Tab */}
       {selectedTab === 'reminders' && (
-        <div className="card">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Class Reminders Set</h2>
-          <p className="text-sm text-gray-500 mb-4">
-            Email domain: <span className="font-mono bg-gray-100 px-2 py-1 rounded">noreply@mybirchandstonecoaching.com</span>
-            <br />
-            <span className="text-xs text-gray-400">Configured in Supabase Edge Function</span>
-          </p>
-          {loading ? (
-            <p className="text-gray-500">Loading reminders...</p>
-          ) : (
-            <div className="space-y-4">
-              {analytics?.reminders
-                ?.filter((reminder: any) => !selectedUserId || reminder.user_id === selectedUserId)
-                .map((reminder: any) => (
-                <div key={reminder.id} className="border border-gray-200 rounded-lg p-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <p className="font-medium text-gray-900 mb-1">
-                        {reminder.live_classes?.title || 'Unknown Class'}
-                      </p>
-                      <p className="text-sm text-gray-600 mt-1">
-                        <span className="font-medium">{reminder.users?.name || reminder.users?.email || 'Unknown User'}</span>
-                        {' • '}
-                        {reminder.users?.email && reminder.users?.name && (
-                          <span className="text-gray-500">{reminder.users.email}</span>
-                        )}
-                      </p>
-                      <p className="text-xs text-gray-500 mt-2">
-                        <Bell className="w-3 h-3 inline mr-1" />
-                        Reminder: {reminder.reminder_minutes_before} minutes before class
-                      </p>
-                      <p className="text-xs text-gray-400 mt-1">
-                        Class time: {reminder.live_classes?.scheduled_at ? format(parseISO(reminder.live_classes.scheduled_at), 'EEEE, MMM d, h:mm a') : 'N/A'}
-                      </p>
-                      <p className="text-xs text-gray-400 mt-1">
-                        Reminder set: {reminder.created_at ? format(parseISO(reminder.created_at), 'MMM d, h:mm a') : 'N/A'}
-                      </p>
-                    </div>
-                    <div className="text-right ml-4">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        reminder.sent ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
-                      }`}>
-                        {reminder.sent ? 'Sent' : 'Pending'}
-                      </span>
+        <div className="space-y-4">
+          <div className="card">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">Class Reminders Set</h2>
+              <div className="flex items-center gap-3">
+                <label className="text-sm text-gray-600">Filter by class:</label>
+                <select
+                  value={selectedClassId}
+                  onChange={(e) => setSelectedClassId(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-coral-500 focus:border-transparent"
+                >
+                  <option value="">All Classes</option>
+                  {analytics?.reminders
+                    ?.reduce((acc: any[], reminder: any) => {
+                      const classId = reminder.class_id;
+                      const className = reminder.live_classes?.title || 'Unknown Class';
+                      if (classId && !acc.find(c => c.id === classId)) {
+                        acc.push({ id: classId, name: className });
+                      }
+                      return acc;
+                    }, [])
+                    .sort((a, b) => a.name.localeCompare(b.name))
+                    .map((classItem: any) => (
+                      <option key={classItem.id} value={classItem.id}>
+                        {classItem.name}
+                      </option>
+                    ))}
+                </select>
+              </div>
+            </div>
+            <p className="text-sm text-gray-500 mb-4">
+              Email domain: <span className="font-mono bg-gray-100 px-2 py-1 rounded">noreply@mybirchandstonecoaching.com</span>
+              <br />
+              <span className="text-xs text-gray-400">Configured in Supabase Edge Function</span>
+            </p>
+            {loading ? (
+              <p className="text-gray-500">Loading reminders...</p>
+            ) : (
+              <div className="space-y-4">
+                {analytics?.reminders
+                  ?.filter((reminder: any) => !selectedClassId || reminder.class_id === selectedClassId)
+                  .map((reminder: any) => (
+                  <div key={reminder.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <p className="font-medium text-gray-900 mb-1">
+                          {reminder.live_classes?.title || 'Unknown Class'}
+                        </p>
+                        <p className="text-sm text-gray-600 mt-1">
+                          <span className="font-medium">{reminder.users?.name || reminder.users?.email || 'Unknown User'}</span>
+                          {' • '}
+                          {reminder.users?.email && reminder.users?.name && (
+                            <span className="text-gray-500">{reminder.users.email}</span>
+                          )}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-2">
+                          <Bell className="w-3 h-3 inline mr-1" />
+                          Reminder: {reminder.reminder_minutes_before} minutes before class
+                        </p>
+                        <p className="text-xs text-gray-400 mt-1">
+                          Class time: {reminder.live_classes?.scheduled_at ? format(parseISO(reminder.live_classes.scheduled_at), 'EEEE, MMM d, h:mm a') : 'N/A'}
+                        </p>
+                        <p className="text-xs text-gray-400 mt-1">
+                          Reminder set: {reminder.created_at ? format(parseISO(reminder.created_at), 'MMM d, h:mm a') : 'N/A'}
+                        </p>
+                      </div>
+                      <div className="text-right ml-4">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          reminder.sent ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                        }`}>
+                          {reminder.sent ? 'Sent' : 'Pending'}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-              {(!analytics?.reminders || analytics.reminders.filter((r: any) => !selectedUserId || r.user_id === selectedUserId).length === 0) && (
-                <p className="text-gray-500 text-center py-8">
-                  {selectedUserId ? 'No reminders for this user' : 'No reminders set yet'}
-                </p>
-              )}
-            </div>
-          )}
+                ))}
+                {(!analytics?.reminders || analytics.reminders.filter((r: any) => !selectedClassId || r.class_id === selectedClassId).length === 0) && (
+                  <p className="text-gray-500 text-center py-8">
+                    {selectedClassId ? 'No reminders for this class' : 'No reminders set yet'}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
       {/* Weight Logs Tab */}
       {selectedTab === 'weight' && (
-        <div className="card">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Weight Logs</h2>
-          {loading ? (
-            <p className="text-gray-500">Loading weight logs...</p>
-          ) : (
-            <div className="space-y-4">
-              {analytics?.weightLogs
-                ?.filter((entry: any) => !selectedUserId || entry.user_id === selectedUserId)
-                .map((entry: any) => (
-                <div key={entry.id} className="border-b border-gray-100 pb-4 last:border-0">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-gray-900">
-                        {entry.users?.name || entry.users?.email || 'Unknown User'}
-                      </p>
-                      <p className="text-sm text-gray-500 mt-1">
-                        {entry.weight} {entry.unit || 'lbs'} • {format(parseISO(entry.date), 'MMM d, yyyy')}
-                      </p>
-                      {entry.notes && (
-                        <p className="text-xs text-gray-400 mt-1">Notes: {entry.notes}</p>
-                      )}
-                    </div>
-                    <Scale className="w-5 h-5 text-gray-400" />
-                  </div>
-                </div>
-              ))}
-              {(!analytics?.weightLogs || analytics.weightLogs.filter((w: any) => !selectedUserId || w.user_id === selectedUserId).length === 0) && (
-                <p className="text-gray-500 text-center py-8">
-                  {selectedUserId ? 'No weight logs for this user' : 'No weight logs yet'}
-                </p>
-              )}
+        <div className="space-y-4">
+          <div className="card">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">Weight Logs</h2>
+              <div className="flex items-center gap-3">
+                <label className="text-sm text-gray-600">Filter by user:</label>
+                <select
+                  value={selectedUserId}
+                  onChange={(e) => setSelectedUserId(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-coral-500 focus:border-transparent"
+                >
+                  <option value="">All Users</option>
+                  {users.map((user: any) => (
+                    <option key={user.id} value={user.id}>
+                      {user.name || user.email}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
-          )}
+            {loading ? (
+              <p className="text-gray-500">Loading weight logs...</p>
+            ) : (
+              <div className="space-y-6">
+                {(() => {
+                  // Group weight logs by user
+                  const filteredLogs = analytics?.weightLogs
+                    ?.filter((entry: any) => !selectedUserId || entry.user_id === selectedUserId) || [];
+                  
+                  const groupedByUser = filteredLogs.reduce((acc: any, entry: any) => {
+                    const userId = entry.user_id;
+                    if (!acc[userId]) {
+                      acc[userId] = {
+                        user: entry.users,
+                        entries: []
+                      };
+                    }
+                    acc[userId].entries.push(entry);
+                    return acc;
+                  }, {});
+
+                  const sortedEntries = Object.values(groupedByUser).map((group: any) => ({
+                    ...group,
+                    entries: group.entries.sort((a: any, b: any) => 
+                      new Date(b.date).getTime() - new Date(a.date).getTime()
+                    )
+                  }));
+
+                  if (sortedEntries.length === 0) {
+                    return (
+                      <p className="text-gray-500 text-center py-8">
+                        {selectedUserId ? 'No weight logs for this user' : 'No weight logs yet'}
+                      </p>
+                    );
+                  }
+
+                  return sortedEntries.map((group: any) => {
+                    const user = group.user;
+                    const entries = group.entries;
+                    const latestEntry = entries[0];
+                    const previousEntry = entries[1];
+                    const change = latestEntry && previousEntry 
+                      ? (latestEntry.weight - previousEntry.weight).toFixed(1)
+                      : null;
+
+                    return (
+                      <div key={user?.id || 'unknown'} className="border border-gray-200 rounded-xl p-5 bg-gradient-to-br from-white to-gray-50">
+                        <div className="flex items-start justify-between mb-4">
+                          <div>
+                            <h3 className="font-semibold text-gray-900 text-lg">
+                              {user?.name || user?.email || 'Unknown User'}
+                            </h3>
+                            {user?.email && user?.name && (
+                              <p className="text-sm text-gray-500 mt-1">{user.email}</p>
+                            )}
+                          </div>
+                          <div className="text-right">
+                            {latestEntry && (
+                              <>
+                                <p className="text-2xl font-bold text-gray-900">
+                                  {latestEntry.weight} {latestEntry.unit || 'lbs'}
+                                </p>
+                                {change && (
+                                  <p className={`text-sm font-medium mt-1 ${
+                                    parseFloat(change) < 0 ? 'text-green-600' : 
+                                    parseFloat(change) > 0 ? 'text-amber-600' : 'text-gray-500'
+                                  }`}>
+                                    {parseFloat(change) > 0 ? '+' : ''}{change} lbs
+                                  </p>
+                                )}
+                                <p className="text-xs text-gray-400 mt-1">
+                                  {format(parseISO(latestEntry.date), 'MMM d, yyyy')}
+                                </p>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2 mt-4 pt-4 border-t border-gray-200">
+                          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
+                            Recent Entries ({entries.length} total)
+                          </p>
+                          {entries.slice(0, 5).map((entry: any) => {
+                            const entryChange = entries.indexOf(entry) < entries.length - 1
+                              ? (entry.weight - entries[entries.indexOf(entry) + 1].weight).toFixed(1)
+                              : null;
+                            
+                            return (
+                              <div key={entry.id} className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-100">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                                    <Scale className="w-5 h-5 text-gray-400" />
+                                  </div>
+                                  <div>
+                                    <p className="font-medium text-gray-900">
+                                      {entry.weight} {entry.unit || 'lbs'}
+                                    </p>
+                                    <p className="text-xs text-gray-500">
+                                      {format(parseISO(entry.date), 'MMM d, yyyy')}
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  {entryChange && (
+                                    <p className={`text-sm font-medium ${
+                                      parseFloat(entryChange) < 0 ? 'text-green-600' : 
+                                      parseFloat(entryChange) > 0 ? 'text-amber-600' : 'text-gray-500'
+                                    }`}>
+                                      {parseFloat(entryChange) > 0 ? '+' : ''}{entryChange} lbs
+                                    </p>
+                                  )}
+                                  {entry.notes && (
+                                    <p className="text-xs text-gray-400 mt-1 max-w-xs truncate">
+                                      {entry.notes}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                          {entries.length > 5 && (
+                            <p className="text-xs text-gray-400 text-center pt-2">
+                              +{entries.length - 5} more entries
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
+            )}
+          </div>
         </div>
       )}
 

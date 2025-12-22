@@ -1,6 +1,10 @@
 -- Add admin policies for weight_entries, habits, habit_completions, and class_reminders
 -- This allows admins to view all user data in the admin dashboard
 
+-- First, ensure the role column exists in users table
+ALTER TABLE public.users 
+ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'member' CHECK (role IN ('member', 'admin'));
+
 -- Admin policy for weight_entries
 DROP POLICY IF EXISTS "Admins can view all weight entries" ON public.weight_entries;
 CREATE POLICY "Admins can view all weight entries"

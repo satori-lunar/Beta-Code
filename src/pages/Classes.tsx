@@ -157,7 +157,8 @@ export default function Classes() {
       'The Heart of Nourishment',
       'Foundations in Motion',
       'Hatha Yoga',
-      'Seedlings'
+      'Seedlings',
+      'Test Class'
     ],
     'Tuesday': [
       'Inner Chords',
@@ -230,6 +231,15 @@ export default function Classes() {
           }
         });
       });
+    });
+
+    // Also add any classes that aren't in the structure list to their appropriate weekday
+    uniqueClasses.forEach((classItem) => {
+      const classWeekday = format(parseISO(classItem.scheduledAt), 'EEEE');
+      // Only add if not already in the grouped list for that weekday
+      if (grouped[classWeekday] && !grouped[classWeekday].some(c => c.id === classItem.id)) {
+        grouped[classWeekday].push(classItem);
+      }
     });
 
     return grouped;

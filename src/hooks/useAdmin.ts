@@ -303,6 +303,7 @@ export function useAdminAnalytics() {
         habitCompletions?.forEach((hc: any) => userIds.add(hc.user_id));
         logins?.forEach((l: any) => userIds.add(l.user_id));
         activityRows?.forEach((a: any) => userIds.add(a.user_id));
+        (userBadges || []).forEach((b: any) => userIds.add(b.user_id));
 
         const { data: allUsers } = userIds.size > 0 ? await supabase
           .from('users')

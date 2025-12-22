@@ -82,47 +82,47 @@ export function useAdminAnalytics() {
           .from('users')
           .select('*', { count: 'exact', head: true });
 
-        // Get video views
+        // Get video views (increased limit for 182 users)
         const { data: videoViews } = await supabase
           .from('video_views')
           .select('*')
           .order('viewed_at', { ascending: false })
-          .limit(100);
+          .limit(500);
 
         // Get favorites
         const { data: favorites } = await supabase
           .from('user_favorite_sessions')
           .select('*')
           .order('created_at', { ascending: false })
-          .limit(100);
+          .limit(500);
 
         // Get reminders
         const { data: reminders } = await supabase
           .from('class_reminders')
           .select('*')
           .order('created_at', { ascending: false })
-          .limit(100);
+          .limit(500);
 
         // Get weight logs
         const { data: weightLogs } = await supabase
           .from('weight_entries')
           .select('*')
           .order('date', { ascending: false })
-          .limit(100);
+          .limit(500);
 
         // Get habits
         const { data: habits } = await supabase
           .from('habits')
           .select('*')
           .order('created_at', { ascending: false })
-          .limit(100);
+          .limit(500);
 
         // Get habit completions
         const { data: habitCompletions } = await (supabase as any)
           .from('habit_completions')
           .select('*')
           .order('completed_date', { ascending: false })
-          .limit(200);
+          .limit(1000);
 
         // Get login activity
         const { data: logins } = await supabase

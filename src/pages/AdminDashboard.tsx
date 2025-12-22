@@ -22,6 +22,7 @@ export default function AdminDashboard() {
   const { users, loading: usersLoading } = useAllUsers();
   const { analytics, loading: analyticsLoading } = useAdminAnalytics();
   const [selectedTab, setSelectedTab] = useState<'overview' | 'users' | 'videos' | 'reminders' | 'weight' | 'habits' | 'streaks' | 'logins' | 'support'>('overview');
+  const [selectedUserId, setSelectedUserId] = useState<string>(''); // Filter by user
   const [tickets, setTickets] = useState<any[]>([]);
   const [ticketsLoading, setTicketsLoading] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<any | null>(null);
@@ -239,6 +240,35 @@ export default function AdminDashboard() {
         ))}
       </div>
 
+      {/* User Filter - Show for tabs that have user-specific data */}
+      {(selectedTab === 'videos' || selectedTab === 'reminders' || selectedTab === 'weight' || selectedTab === 'habits') && (
+        <div className="card">
+          <div className="flex items-center gap-4">
+            <label className="text-sm font-medium text-gray-700">Filter by User:</label>
+            <select
+              value={selectedUserId}
+              onChange={(e) => setSelectedUserId(e.target.value)}
+              className="flex-1 max-w-xs input text-sm"
+            >
+              <option value="">All Users ({users.length})</option>
+              {users.map((user: any) => (
+                <option key={user.id} value={user.id}>
+                  {user.name || user.email} ({user.email})
+                </option>
+              ))}
+            </select>
+            {selectedUserId && (
+              <button
+                onClick={() => setSelectedUserId('')}
+                className="text-sm text-gray-500 hover:text-gray-700"
+              >
+                Clear Filter
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Overview Tab */}
       {selectedTab === 'overview' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -343,7 +373,9 @@ export default function AdminDashboard() {
             <p className="text-gray-500">Loading video views...</p>
           ) : (
             <div className="space-y-4">
-              {analytics?.videoViews?.map((view: any) => (
+              {analytics?.videoViews
+                ?.filter((view: any) => !selectedUserId || view.user_id === selectedUserId)
+                .map((view: any) => (
                 <div key={view.id} className="border border-gray-200 rounded-lg p-4">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -365,8 +397,10 @@ export default function AdminDashboard() {
                   </div>
                 </div>
               ))}
-              {(!analytics?.videoViews || analytics.videoViews.length === 0) && (
-                <p className="text-gray-500 text-center py-8">No video views yet</p>
+              {(!analytics?.videoViews || analytics.videoViews.filter((v: any) => !selectedUserId || v.user_id === selectedUserId).length === 0) && (
+                <p className="text-gray-500 text-center py-8">
+                  {selectedUserId ? 'No video views for this user' : 'No video views yet'}
+                </p>
               )}
             </div>
           )}
@@ -386,7 +420,9 @@ export default function AdminDashboard() {
             <p className="text-gray-500">Loading reminders...</p>
           ) : (
             <div className="space-y-4">
-              {analytics?.reminders?.map((reminder: any) => (
+              {analytics?.reminders
+                ?.filter((reminder: any) => !selectedUserId || reminder.user_id === selectedUserId)
+                .map((reminder: any) => (
                 <div key={reminder.id} className="border border-gray-200 rounded-lg p-4">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -421,8 +457,10 @@ export default function AdminDashboard() {
                   </div>
                 </div>
               ))}
-              {(!analytics?.reminders || analytics.reminders.length === 0) && (
-                <p className="text-gray-500 text-center py-8">No reminders set yet</p>
+              {(!analytics?.reminders || analytics.reminders.filter((r: any) => !selectedUserId || r.user_id === selectedUserId).length === 0) && (
+                <p className="text-gray-500 text-center py-8">
+                  {selectedUserId ? 'No reminders for this user' : 'No reminders set yet'}
+                </p>
               )}
             </div>
           )}
@@ -437,7 +475,9 @@ export default function AdminDashboard() {
             <p className="text-gray-500">Loading weight logs...</p>
           ) : (
             <div className="space-y-4">
-              {analytics?.weightLogs?.map((entry: any) => (
+              {analytics?.weightLogs
+                ?.filter((entry: any) => !selectedUserId || entry.user_id === selectedUserId)
+                .map((entry: any) => (
                 <div key={entry.id} className="border-b border-gray-100 pb-4 last:border-0">
                   <div className="flex items-center justify-between">
                     <div>
@@ -455,8 +495,10 @@ export default function AdminDashboard() {
                   </div>
                 </div>
               ))}
-              {(!analytics?.weightLogs || analytics.weightLogs.length === 0) && (
-                <p className="text-gray-500 text-center py-8">No weight logs yet</p>
+              {(!analytics?.weightLogs || analytics.weightLogs.filter((w: any) => !selectedUserId || w.user_id === selectedUserId).length === 0) && (
+                <p className="text-gray-500 text-center py-8">
+                  {selectedUserId ? 'No weight logs for this user' : 'No weight logs yet'}
+                </p>
               )}
             </div>
           )}
@@ -472,8 +514,10 @@ export default function AdminDashboard() {
             {loading ? (
               <p className="text-gray-500">Loading habits...</p>
             ) : (
-              <div className="space-y-4">
-                {analytics?.habits?.map((habit: any) => (
+            <div className="space-y-4">
+              {analytics?.habits
+                ?.filter((habit: any) => !selectedUserId || habit.user_id === selectedUserId)
+                .map((habit: any) => (
                   <div key={habit.id} className="border border-gray-200 rounded-lg p-4">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -505,8 +549,10 @@ export default function AdminDashboard() {
                     </div>
                   </div>
                 ))}
-                {(!analytics?.habits || analytics.habits.length === 0) && (
-                  <p className="text-gray-500 text-center py-8">No habits created yet</p>
+                {(!analytics?.habits || analytics.habits.filter((h: any) => !selectedUserId || h.user_id === selectedUserId).length === 0) && (
+                  <p className="text-gray-500 text-center py-8">
+                    {selectedUserId ? 'No habits for this user' : 'No habits created yet'}
+                  </p>
                 )}
               </div>
             )}
@@ -519,7 +565,9 @@ export default function AdminDashboard() {
               <p className="text-gray-500">Loading completions...</p>
             ) : (
               <div className="space-y-3">
-                {analytics?.habitCompletions?.map((completion: any) => (
+                {analytics?.habitCompletions
+                  ?.filter((completion: any) => !selectedUserId || completion.user_id === selectedUserId)
+                  .map((completion: any) => (
                   <div key={completion.id} className="border-b border-gray-100 pb-3 last:border-0">
                     <div className="flex items-center justify-between">
                       <div>
@@ -538,8 +586,10 @@ export default function AdminDashboard() {
                     </div>
                   </div>
                 ))}
-                {(!analytics?.habitCompletions || analytics.habitCompletions.length === 0) && (
-                  <p className="text-gray-500 text-center py-8">No habit completions yet</p>
+                {(!analytics?.habitCompletions || analytics.habitCompletions.filter((hc: any) => !selectedUserId || hc.user_id === selectedUserId).length === 0) && (
+                  <p className="text-gray-500 text-center py-8">
+                    {selectedUserId ? 'No habit completions for this user' : 'No habit completions yet'}
+                  </p>
                 )}
               </div>
             )}

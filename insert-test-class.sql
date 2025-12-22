@@ -1,8 +1,6 @@
--- Insert Test Class for Email Reminder Testing
--- This creates a test class on Monday, December 22 at 1:05 AM Eastern Time
--- Run this in Supabase SQL Editor
+-- Delete Test Class from database
+-- Run this in Supabase SQL Editor to remove the test class
 
--- First, delete any existing "Test Class" to avoid duplicates
 DELETE FROM public.live_classes WHERE title = 'Test Class';
 
 INSERT INTO public.live_classes (

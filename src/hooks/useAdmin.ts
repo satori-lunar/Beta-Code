@@ -110,6 +110,20 @@ export function useAdminAnalytics() {
           .order('date', { ascending: false })
           .limit(100);
 
+        // Get habits
+        const { data: habits } = await supabase
+          .from('habits')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(100);
+
+        // Get habit completions
+        const { data: habitCompletions } = await supabase
+          .from('habit_completions')
+          .select('*')
+          .order('completed_date', { ascending: false })
+          .limit(200);
+
         // Get login activity
         const { data: logins } = await supabase
           .from('user_logins')
@@ -136,6 +150,8 @@ export function useAdminAnalytics() {
         favorites?.forEach((f: any) => userIds.add(f.user_id));
         reminders?.forEach((r: any) => userIds.add(r.user_id));
         weightLogs?.forEach((w: any) => userIds.add(w.user_id));
+        habits?.forEach((h: any) => userIds.add(h.user_id));
+        habitCompletions?.forEach((hc: any) => userIds.add(hc.user_id));
         logins?.forEach((l: any) => userIds.add(l.user_id));
         activityRows?.forEach((a: any) => userIds.add(a.user_id));
 
@@ -255,12 +271,24 @@ export function useAdminAnalytics() {
           users: userMap.get(l.user_id)
         }));
 
+        const enrichedHabits = (habits || []).map((h: any) => ({
+          ...h,
+          users: userMap.get(h.user_id)
+        }));
+
+        const enrichedHabitCompletions = (habitCompletions || []).map((hc: any) => ({
+          ...hc,
+          users: userMap.get(hc.user_id)
+        }));
+
         setAnalytics({
           totalUsers: totalUsers || 0,
           videoViews: enrichedVideoViews,
           favorites: enrichedFavorites,
           reminders: enrichedReminders,
           weightLogs: enrichedWeightLogs,
+          habits: enrichedHabits,
+          habitCompletions: enrichedHabitCompletions,
           logins: enrichedLogins,
           userStreaks: userStreaks || [],
           activityStreaks,

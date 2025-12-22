@@ -10,7 +10,8 @@ import {
   Mail,
   Clock,
   Eye,
-  MessageCircle
+  MessageCircle,
+  Target
 } from 'lucide-react';
 import { useIsAdmin, useAllUsers, useAdminAnalytics } from '../hooks/useAdmin';
 import { supabase } from '../lib/supabase';
@@ -20,7 +21,7 @@ export default function AdminDashboard() {
   const { isAdmin, loading: adminLoading } = useIsAdmin();
   const { users, loading: usersLoading } = useAllUsers();
   const { analytics, loading: analyticsLoading } = useAdminAnalytics();
-  const [selectedTab, setSelectedTab] = useState<'overview' | 'users' | 'videos' | 'reminders' | 'weight' | 'streaks' | 'logins' | 'support'>('overview');
+  const [selectedTab, setSelectedTab] = useState<'overview' | 'users' | 'videos' | 'reminders' | 'weight' | 'habits' | 'streaks' | 'logins' | 'support'>('overview');
   const [tickets, setTickets] = useState<any[]>([]);
   const [ticketsLoading, setTicketsLoading] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<any | null>(null);
@@ -219,6 +220,7 @@ export default function AdminDashboard() {
           { id: 'videos', label: 'Video Views', icon: Video },
           { id: 'reminders', label: 'Reminders', icon: Bell },
           { id: 'weight', label: 'Weight Logs', icon: Scale },
+          { id: 'habits', label: 'Habits', icon: Target },
           { id: 'streaks', label: 'Streaks', icon: TrendingUp },
           { id: 'support', label: 'Support', icon: MessageCircle },
         ].map((tab) => (
@@ -336,23 +338,30 @@ export default function AdminDashboard() {
       {/* Video Views Tab */}
       {selectedTab === 'videos' && (
         <div className="card">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Video Views</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Recorded Classes Watched</h2>
           {loading ? (
             <p className="text-gray-500">Loading video views...</p>
           ) : (
             <div className="space-y-4">
               {analytics?.videoViews?.map((view: any) => (
-                <div key={view.id} className="border-b border-gray-100 pb-4 last:border-0">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-gray-900">
+                <div key={view.id} className="border border-gray-200 rounded-lg p-4">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <p className="font-medium text-gray-900 mb-1">
                         {view.recorded_sessions?.title || 'Unknown Session'}
                       </p>
-                      <p className="text-sm text-gray-500 mt-1">
-                        Viewed by: {view.users?.email || 'Unknown'} • {view.viewed_at ? format(parseISO(view.viewed_at), 'MMM d, h:mm a') : 'N/A'}
+                      <p className="text-sm text-gray-600 mt-1">
+                        <span className="font-medium">{view.users?.name || view.users?.email || 'Unknown User'}</span>
+                        {' • '}
+                        {view.users?.email && view.users?.name && (
+                          <span className="text-gray-500">{view.users.email}</span>
+                        )}
+                      </p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        Watched: {view.viewed_at ? format(parseISO(view.viewed_at), 'MMM d, yyyy h:mm a') : 'N/A'}
                       </p>
                     </div>
-                    <Eye className="w-5 h-5 text-gray-400" />
+                    <Eye className="w-5 h-5 text-gray-400 flex-shrink-0 ml-4" />
                   </div>
                 </div>
               ))}
@@ -367,9 +376,9 @@ export default function AdminDashboard() {
       {/* Reminders Tab */}
       {selectedTab === 'reminders' && (
         <div className="card">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Email Reminders</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Class Reminders Set</h2>
           <p className="text-sm text-gray-500 mb-4">
-            Email domain: <span className="font-mono bg-gray-100 px-2 py-1 rounded">noreply@birchandstone.com</span>
+            Email domain: <span className="font-mono bg-gray-100 px-2 py-1 rounded">noreply@mybirchandstonecoaching.com</span>
             <br />
             <span className="text-xs text-gray-400">Configured in Supabase Edge Function</span>
           </p>
@@ -380,22 +389,29 @@ export default function AdminDashboard() {
               {analytics?.reminders?.map((reminder: any) => (
                 <div key={reminder.id} className="border border-gray-200 rounded-lg p-4">
                   <div className="flex items-start justify-between">
-                    <div>
-                      <p className="font-medium text-gray-900">
+                    <div className="flex-1">
+                      <p className="font-medium text-gray-900 mb-1">
                         {reminder.live_classes?.title || 'Unknown Class'}
                       </p>
-                      <p className="text-sm text-gray-500 mt-1">
-                        <Mail className="w-4 h-4 inline mr-1" />
-                        {reminder.users?.email || reminder.users?.name || 'Unknown'} • {reminder.reminder_minutes_before} min before
+                      <p className="text-sm text-gray-600 mt-1">
+                        <span className="font-medium">{reminder.users?.name || reminder.users?.email || 'Unknown User'}</span>
+                        {' • '}
+                        {reminder.users?.email && reminder.users?.name && (
+                          <span className="text-gray-500">{reminder.users.email}</span>
+                        )}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-2">
+                        <Bell className="w-3 h-3 inline mr-1" />
+                        Reminder: {reminder.reminder_minutes_before} minutes before class
                       </p>
                       <p className="text-xs text-gray-400 mt-1">
-                        Class: {reminder.live_classes?.scheduled_at ? format(parseISO(reminder.live_classes.scheduled_at), 'EEEE, MMM d, h:mm a') : 'N/A'}
+                        Class time: {reminder.live_classes?.scheduled_at ? format(parseISO(reminder.live_classes.scheduled_at), 'EEEE, MMM d, h:mm a') : 'N/A'}
                       </p>
                       <p className="text-xs text-gray-400 mt-1">
-                        Set: {reminder.created_at ? format(parseISO(reminder.created_at), 'MMM d, h:mm a') : 'N/A'}
+                        Reminder set: {reminder.created_at ? format(parseISO(reminder.created_at), 'MMM d, h:mm a') : 'N/A'}
                       </p>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right ml-4">
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                         reminder.sent ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
                       }`}>
@@ -431,6 +447,9 @@ export default function AdminDashboard() {
                       <p className="text-sm text-gray-500 mt-1">
                         {entry.weight} {entry.unit || 'lbs'} • {format(parseISO(entry.date), 'MMM d, yyyy')}
                       </p>
+                      {entry.notes && (
+                        <p className="text-xs text-gray-400 mt-1">Notes: {entry.notes}</p>
+                      )}
                     </div>
                     <Scale className="w-5 h-5 text-gray-400" />
                   </div>
@@ -441,6 +460,90 @@ export default function AdminDashboard() {
               )}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Habits Tab */}
+      {selectedTab === 'habits' && (
+        <div className="space-y-6">
+          {/* User Habits */}
+          <div className="card">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">User Habits</h2>
+            {loading ? (
+              <p className="text-gray-500">Loading habits...</p>
+            ) : (
+              <div className="space-y-4">
+                {analytics?.habits?.map((habit: any) => (
+                  <div key={habit.id} className="border border-gray-200 rounded-lg p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-2xl">{habit.icon || '🎯'}</span>
+                          <p className="font-medium text-gray-900">{habit.name}</p>
+                          <span
+                            className="px-2 py-1 rounded-full text-xs font-medium"
+                            style={{
+                              backgroundColor: `${habit.color}20`,
+                              color: habit.color
+                            }}
+                          >
+                            {habit.frequency || 'daily'}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-500 mt-1">
+                          <span className="font-medium">{habit.users?.name || habit.users?.email || 'Unknown User'}</span>
+                          {' • '}
+                          Streak: {habit.streak || 0} days
+                          {' • '}
+                          Created: {habit.created_at ? format(parseISO(habit.created_at), 'MMM d, yyyy') : 'N/A'}
+                        </p>
+                        {habit.notes && (
+                          <p className="text-xs text-gray-400 mt-2">Notes: {habit.notes}</p>
+                        )}
+                      </div>
+                      <Target className="w-5 h-5 text-gray-400 flex-shrink-0 ml-4" />
+                    </div>
+                  </div>
+                ))}
+                {(!analytics?.habits || analytics.habits.length === 0) && (
+                  <p className="text-gray-500 text-center py-8">No habits created yet</p>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Habit Completions */}
+          <div className="card">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Habit Completions</h2>
+            {loading ? (
+              <p className="text-gray-500">Loading completions...</p>
+            ) : (
+              <div className="space-y-3">
+                {analytics?.habitCompletions?.map((completion: any) => (
+                  <div key={completion.id} className="border-b border-gray-100 pb-3 last:border-0">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium text-gray-900">
+                          {completion.users?.name || completion.users?.email || 'Unknown User'}
+                        </p>
+                        <p className="text-sm text-gray-500 mt-1">
+                          Completed on {format(parseISO(completion.completed_date), 'MMM d, yyyy')}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-xs text-gray-400">
+                          {completion.created_at ? format(parseISO(completion.created_at), 'h:mm a') : ''}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {(!analytics?.habitCompletions || analytics.habitCompletions.length === 0) && (
+                  <p className="text-gray-500 text-center py-8">No habit completions yet</p>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       )}
 

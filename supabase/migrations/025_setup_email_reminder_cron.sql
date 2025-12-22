@@ -1,12 +1,37 @@
 -- Setup Cron Job for Email Reminders
 -- This migration sets up a pg_cron job to automatically send email reminders
 -- The job runs every minute to check for due reminders
+--
+-- NOTE: pg_cron may not be available in all Supabase projects.
+-- If this migration fails, use Supabase's built-in Cron Jobs feature instead:
+-- Dashboard > Database > Cron Jobs > Create Cron Job
+--
+-- Alternative: Use an external cron service (cron-job.org, EasyCron, etc.)
+-- to call: https://YOUR_PROJECT.supabase.co/functions/v1/send-email-reminders
+-- with header: Authorization: Bearer YOUR_SERVICE_ROLE_KEY
 
--- Enable pg_cron extension if not already enabled
-CREATE EXTENSION IF NOT EXISTS pg_cron;
+-- Enable pg_cron extension if not already enabled (may fail if not available)
+DO $$
+BEGIN
+  CREATE EXTENSION IF NOT EXISTS pg_cron;
+EXCEPTION
+  WHEN OTHERS THEN
+    RAISE NOTICE 'pg_cron extension not available. Use Supabase Cron Jobs or external cron service instead.';
+END $$;
 
--- Drop existing job if it exists
-SELECT cron.unschedule('send-email-reminders');
+-- Drop existing job if it exists (handle gracefully if it doesn't)
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM cron.job WHERE jobname = 'send-email-reminders'
+  ) THEN
+    PERFORM cron.unschedule('send-email-reminders');
+  END IF;
+EXCEPTION
+  WHEN OTHERS THEN
+    -- Job doesn't exist or pg_cron not available, continue
+    NULL;
+END $$;
 
 -- Create a function to call the Edge Function via HTTP
 -- Note: This requires the Supabase Edge Function to be deployed
@@ -55,12 +80,18 @@ END;
 $$;
 
 -- Schedule the cron job to run every minute
--- Note: You may need to adjust the schedule based on your needs
-SELECT cron.schedule(
-  'send-email-reminders',
-  '* * * * *', -- Every minute
-  $$SELECT public.trigger_email_reminders();$$
-);
+-- Note: This will fail if pg_cron is not available - use alternative methods in that case
+DO $$
+BEGIN
+  PERFORM cron.schedule(
+    'send-email-reminders',
+    '* * * * *', -- Every minute
+    $$SELECT public.trigger_email_reminders();$$
+  );
+EXCEPTION
+  WHEN OTHERS THEN
+    RAISE NOTICE 'Could not schedule cron job. Use Supabase Cron Jobs or external cron service instead.';
+END $$;
 
 -- Alternative: If you prefer to use Supabase's built-in cron (recommended)
 -- You can set this up in the Supabase Dashboard under Database > Cron Jobs

@@ -27,17 +27,21 @@ export function useIsAdmin() {
         const isEmailAdmin = ADMIN_EMAILS.includes(email);
 
         // Second check: check database role
-        const { data: userData, error } = await supabase
+        const { data: userData, error: roleError } = await supabase
           .from('users')
           .select('role')
           .eq('id', user.id)
           .single();
 
+        if (roleError) {
+          console.error('Error checking user role:', roleError);
+        }
+
         const isRoleAdmin = userData?.role === 'admin';
 
         setIsAdmin(isEmailAdmin || isRoleAdmin);
-      } catch (error) {
-        console.error('Error checking admin status:', error);
+      } catch (err) {
+        console.error('Error checking admin status:', err);
         // Fallback to email check
         const email = user.email || (user.user_metadata as any)?.email || '';
         setIsAdmin(ADMIN_EMAILS.includes(email));

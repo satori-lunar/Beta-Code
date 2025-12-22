@@ -291,16 +291,21 @@ export default function Calendar() {
       // Get the time in Eastern (e.g., "07:30")
       const easternTimeStr = formatTz(originalDate, 'HH:mm', { timeZone: EASTERN_TIMEZONE });
       
-      // Get the day of week from Eastern - THIS IS THE DAY WE KEEP (e.g., "Sunday")
+      // Get the day of week from Eastern
       const easternDayName = formatTz(originalDate, 'EEEE', { timeZone: EASTERN_TIMEZONE });
       const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-      const dayOfWeek = dayNames.indexOf(easternDayName); // 0 = Sunday, 6 = Saturday
+      let dayOfWeek = dayNames.indexOf(easternDayName); // 0 = Sunday, 6 = Saturday
       
-      // Adjust ONLY the time by the hour offset (keep same day)
-      // Example: 7:30 AM Eastern + (-1) = 6:30 AM Central (still Sunday)
+      // If timezone is not Eastern, go back one day (e.g., Monday becomes Sunday)
+      if (timezone !== EASTERN_TIMEZONE) {
+        dayOfWeek = (dayOfWeek - 1 + 7) % 7; // Subtract 1 day, wrap around if needed
+      }
+      
+      // Adjust ONLY the time by the hour offset
+      // Example: 7:30 AM Eastern + (-1) = 6:30 AM Central
       const adjustedTime = adjustTimeByHours(easternTimeStr, hourOffset);
       
-      // Generate events for the next 6 months on the SAME day of week
+      // Generate events for the next 6 months on the adjusted day of week
       const today = new Date();
       // Get today's day of week in Eastern timezone to match the class day
       const todayEasternDayName = formatTz(today, 'EEEE', { timeZone: EASTERN_TIMEZONE });

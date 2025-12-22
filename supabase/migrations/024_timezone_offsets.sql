@@ -35,3 +35,4 @@ CREATE POLICY "Timezone offsets are viewable by all authenticated users"
   ON public.timezone_offsets FOR SELECT
   USING (auth.role() = 'authenticated');
 
+

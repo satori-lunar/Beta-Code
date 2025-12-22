@@ -118,7 +118,7 @@ export function useAdminAnalytics() {
           .limit(100);
 
         // Get habit completions
-        const { data: habitCompletions } = await supabase
+        const { data: habitCompletions } = await (supabase as any)
           .from('habit_completions')
           .select('*')
           .order('completed_date', { ascending: false })

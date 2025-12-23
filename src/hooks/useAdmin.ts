@@ -338,14 +338,36 @@ export function useAdminAnalytics() {
         }
 
         // Get badges from user_badges table
-        const { data: userBadges, error: badgesError } = await (supabase as any)
+        let userBadges: any[] = [];
+        const { data: badgesData, error: badgesError } = await (supabase as any)
           .from('user_badges')
           .select('*')
           .order('earned_date', { ascending: false })
           .limit(10000);
         
         if (badgesError) {
-          console.warn('Error fetching badges:', badgesError);
+          console.error('❌ Error fetching badges:', badgesError);
+          console.error('Error details:', {
+            code: badgesError.code,
+            message: badgesError.message,
+            details: badgesError.details,
+            hint: badgesError.hint
+          });
+          // If it's an RLS/permission error, provide helpful info
+          if (badgesError.message?.includes('permission') || badgesError.message?.includes('policy')) {
+            console.warn('⚠️ RLS policy might be blocking access. Check if migration 034_add_admin_policy_for_user_badges.sql has been run.');
+          }
+        } else {
+          userBadges = badgesData || [];
+          console.log(`✅ Fetched ${userBadges.length} badges from user_badges table`);
+          if (userBadges.length === 0) {
+            console.warn('⚠️ No badges found. This might be normal if no users have earned badges yet.');
+          } else {
+            // Count unique users with badges
+            const uniqueUsers = new Set(userBadges.map((b: any) => b.user_id));
+            console.log(`📊 Badges from ${uniqueUsers.size} unique users`);
+            console.log('📊 Sample badge:', userBadges[0]);
+          }
         }
 
         // Get recent user activity to compute last active
@@ -364,7 +386,7 @@ export function useAdminAnalytics() {
         habitCompletions?.forEach((hc: any) => userIds.add(hc.user_id));
         logins?.forEach((l: any) => userIds.add(l.user_id));
         activityRows?.forEach((a: any) => userIds.add(a.user_id));
-        (userBadges || []).forEach((b: any) => userIds.add(b.user_id));
+        userBadges?.forEach((b: any) => userIds.add(b.user_id));
 
         const { data: allUsers } = userIds.size > 0 ? await supabase
           .from('users')
@@ -387,12 +409,18 @@ export function useAdminAnalytics() {
 
         // Group badges by user
         const badgesByUser = new Map<string, any[]>();
-        (userBadges || []).forEach((badge: any) => {
+        userBadges?.forEach((badge: any) => {
+          if (!badge.user_id) {
+            console.warn('⚠️ Badge missing user_id:', badge);
+            return;
+          }
           if (!badgesByUser.has(badge.user_id)) {
             badgesByUser.set(badge.user_id, []);
           }
           badgesByUser.get(badge.user_id)!.push(badge);
         });
+        
+        console.log(`📊 Grouped badges into ${badgesByUser.size} users`);
 
         // Create badges list with user info
         const enrichedBadges = Array.from(badgesByUser.entries()).map(([userId, badges]) => {

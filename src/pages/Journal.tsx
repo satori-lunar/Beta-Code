@@ -100,7 +100,7 @@ export default function Journal() {
     if (!user || !newEntry.title.trim() || !newEntry.content.trim()) return;
 
     try {
-      const entryData = {
+      const entryData: any = {
         title: newEntry.title,
         content: newEntry.content,
         mood: newEntry.mood,
@@ -110,6 +110,11 @@ export default function Journal() {
         date: format(new Date(), 'yyyy-MM-dd'),
         user_id: user.id,
       };
+      
+      // Add emotional context if provided (store in metadata)
+      if (newEntry.emotionalContext) {
+        entryData.metadata = { emotionalContext: newEntry.emotionalContext };
+      }
 
       const isNewEntry = !editingEntry;
 

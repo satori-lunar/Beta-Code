@@ -9,7 +9,10 @@ import {
   Heart,
   Tag,
   Clock,
-  Sparkles
+  Sparkles,
+  Lightbulb,
+  Brain,
+  BookOpen
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useJournalEntries, checkFirstTimeBadges, checkJournalBadges } from '../hooks/useSupabaseData';
@@ -17,6 +20,7 @@ import { useTrackJournal } from '../hooks/useActivityTracking';
 import { supabase } from '../lib/supabase';
 import { format, parseISO } from 'date-fns';
 import FeelingsWheel from '../components/FeelingsWheel';
+import EmotionalPrompts from '../components/EmotionalPrompts';
 
 const moodOptions = [
   { 
@@ -79,8 +83,10 @@ export default function Journal() {
     specificEmotion: null as string | null,
     tags: '',
     gratitude: ['', '', ''],
+    emotionalContext: '', // New field for deeper emotional exploration
   });
   const [showFeelingsWheel, setShowFeelingsWheel] = useState(false);
+  const [showEmotionalCheckIn, setShowEmotionalCheckIn] = useState(false);
 
   const filteredEntries = journalEntries.filter((entry) => {
     const matchesSearch =
@@ -154,13 +160,16 @@ export default function Journal() {
       specificEmotion: null,
       tags: '',
       gratitude: ['', '', ''],
+      emotionalContext: '',
     });
     setShowAddModal(false);
     setEditingEntry(null);
     setShowFeelingsWheel(false);
+    setShowEmotionalCheckIn(false);
   };
 
   const handleEditEntry = (entry: typeof journalEntries[0]) => {
+    const metadata = (entry as any).metadata || {};
     setNewEntry({
       title: entry.title || '',
       content: entry.content,
@@ -172,9 +181,19 @@ export default function Journal() {
         entry.gratitude?.[1] || '',
         entry.gratitude?.[2] || '',
       ],
+      emotionalContext: metadata.emotionalContext || '',
     });
     setEditingEntry(entry.id);
     setShowAddModal(true);
+  };
+
+  const handlePromptSelect = (prompt: string) => {
+    // Add prompt to content or emotional context
+    if (newEntry.content) {
+      setNewEntry({ ...newEntry, content: newEntry.content + '\n\n' + prompt + '\n' });
+    } else {
+      setNewEntry({ ...newEntry, emotionalContext: newEntry.emotionalContext + (newEntry.emotionalContext ? '\n' : '') + prompt });
+    }
   };
 
   const getMoodIcon = (mood: string) => {

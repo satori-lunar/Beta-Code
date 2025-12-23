@@ -193,16 +193,70 @@ export function useAdminAnalytics() {
           .limit(10000); // High limit to get all views
         
         if (videoViewsError) {
-          console.error('Error fetching video views:', videoViewsError);
+          console.error('❌ Error fetching video views from user_activity:', videoViewsError);
           console.error('Error details:', {
             code: videoViewsError.code,
             message: videoViewsError.message,
             details: videoViewsError.details,
             hint: videoViewsError.hint
           });
+          // If it's a 404 or RLS error, try to provide helpful info
+          if (videoViewsError.code === 'PGRST116') {
+            console.warn('⚠️ user_activity table might not exist. Check migrations.');
+          } else if (videoViewsError.message?.includes('permission') || videoViewsError.message?.includes('policy')) {
+            console.warn('⚠️ RLS policy might be blocking access. Check if migration 033_fix_admin_user_activity_access.sql has been run.');
+            // Try fallback to video_views table
+            console.log('🔄 Attempting fallback to video_views table...');
+            const { data: fallbackData, error: fallbackError } = await supabase
+              .from('video_views')
+              .select('*')
+              .order('viewed_at', { ascending: false })
+              .limit(10000);
+            
+            if (!fallbackError && fallbackData) {
+              console.log(`✅ Fallback: Found ${fallbackData.length} video views in video_views table`);
+              // Convert video_views format to user_activity format
+              videoViews = fallbackData.map((vv: any) => ({
+                id: vv.id,
+                user_id: vv.user_id,
+                activity_type: 'video_view',
+                entity_type: 'recorded_session',
+                entity_id: vv.session_id,
+                created_at: vv.viewed_at || vv.created_at,
+                metadata: {}
+              }));
+            } else if (fallbackError) {
+              console.error('❌ Fallback to video_views also failed:', fallbackError);
+            }
+          }
         } else {
           videoViews = videoViewsData || [];
           console.log(`✅ Fetched ${videoViews.length} video views from user_activity table`);
+          if (videoViews.length === 0) {
+            console.warn('⚠️ No video views found in user_activity. Checking video_views table as fallback...');
+            // Try fallback to video_views table if user_activity is empty
+            const { data: fallbackData, error: fallbackError } = await supabase
+              .from('video_views')
+              .select('*')
+              .order('viewed_at', { ascending: false })
+              .limit(10000);
+            
+            if (!fallbackError && fallbackData && fallbackData.length > 0) {
+              console.log(`✅ Fallback: Found ${fallbackData.length} video views in video_views table`);
+              // Convert video_views format to user_activity format
+              videoViews = fallbackData.map((vv: any) => ({
+                id: vv.id,
+                user_id: vv.user_id,
+                activity_type: 'video_view',
+                entity_type: 'recorded_session',
+                entity_id: vv.session_id,
+                created_at: vv.viewed_at || vv.created_at,
+                metadata: {}
+              }));
+            }
+          } else {
+            console.log('📊 Sample video view:', videoViews[0]);
+          }
         }
 
         // Get favorites (fetch all)

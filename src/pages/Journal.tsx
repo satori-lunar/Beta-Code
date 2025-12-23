@@ -95,12 +95,25 @@ export default function Journal() {
   });
 
   const handleSaveEntry = async () => {
-    if (!user || !newEntry.title.trim() || !newEntry.content.trim()) return;
+    if (!user) {
+      alert('You must be logged in to save journal entries.');
+      return;
+    }
+
+    if (!newEntry.title.trim()) {
+      alert('Please enter a title for your journal entry.');
+      return;
+    }
+
+    if (!newEntry.content.trim()) {
+      alert('Please enter some content for your journal entry.');
+      return;
+    }
 
     try {
       const entryData: any = {
-        title: newEntry.title,
-        content: newEntry.content,
+        title: newEntry.title.trim(),
+        content: newEntry.content.trim(),
         mood: newEntry.mood,
         specific_emotion: newEntry.specificEmotion || null,
         tags: newEntry.tags.split(',').map((t) => t.trim()).filter(Boolean),
@@ -110,22 +123,46 @@ export default function Journal() {
       };
       
       // Add emotional context if provided (store in metadata)
-      if (newEntry.emotionalContext) {
-        entryData.metadata = { emotionalContext: newEntry.emotionalContext };
+      // Only include metadata if the column exists - wrap in try/catch to handle gracefully
+      if (newEntry.emotionalContext && newEntry.emotionalContext.trim()) {
+        entryData.metadata = { emotionalContext: newEntry.emotionalContext.trim() };
       }
 
       const isNewEntry = !editingEntry;
 
       if (editingEntry) {
-        const { error } = await supabase.from('journal_entries').update(entryData).eq('id', editingEntry);
-        if (error) throw error;
+        const { data, error } = await supabase
+          .from('journal_entries')
+          .update(entryData)
+          .eq('id', editingEntry)
+          .select()
+          .single();
+        
+        if (error) {
+          console.error('Error updating journal entry:', error);
+          throw new Error(`Failed to update journal entry: ${error.message || 'Unknown error'}`);
+        }
+        
+        console.log('Journal entry updated successfully:', data);
+        
         // Track journal update (fire and forget - don't block on tracking)
         trackJournalEntry(editingEntry, entryData.title, 'journal_entry_updated').catch(err => {
           console.error('Failed to track journal update:', err);
         });
       } else {
-        const { data: newEntryData, error } = await supabase.from('journal_entries').insert(entryData).select().single();
-        if (error) throw error;
+        const { data: newEntryData, error } = await supabase
+          .from('journal_entries')
+          .insert(entryData)
+          .select()
+          .single();
+        
+        if (error) {
+          console.error('Error creating journal entry:', error);
+          throw new Error(`Failed to create journal entry: ${error.message || 'Unknown error'}`);
+        }
+        
+        console.log('Journal entry created successfully:', newEntryData);
+        
         // Track journal creation (fire and forget - don't block on tracking)
         if (newEntryData) {
           trackJournalEntry(newEntryData.id, entryData.title, 'journal_entry_created').catch(err => {
@@ -147,11 +184,17 @@ export default function Journal() {
         });
       }
 
-      refetch();
+      // Reset form and close modal
       resetForm();
-    } catch (error) {
+      
+      // Refetch entries to show the new/updated entry
+      await refetch();
+      
+      console.log('Journal entry saved and list refreshed');
+    } catch (error: any) {
       console.error('Error saving journal entry:', error);
-      alert('Failed to save journal entry. Please try again.');
+      const errorMessage = error?.message || 'Failed to save journal entry. Please try again.';
+      alert(errorMessage);
     }
   };
 

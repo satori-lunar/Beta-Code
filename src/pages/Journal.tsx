@@ -10,7 +10,6 @@ import {
   Tag,
   Clock,
   Sparkles,
-  Lightbulb,
   Brain,
   BookOpen
 } from 'lucide-react';
@@ -86,7 +85,6 @@ export default function Journal() {
     emotionalContext: '', // New field for deeper emotional exploration
   });
   const [showFeelingsWheel, setShowFeelingsWheel] = useState(false);
-  const [showEmotionalCheckIn, setShowEmotionalCheckIn] = useState(false);
 
   const filteredEntries = journalEntries.filter((entry) => {
     const matchesSearch =
@@ -170,7 +168,6 @@ export default function Journal() {
     setShowAddModal(false);
     setEditingEntry(null);
     setShowFeelingsWheel(false);
-    setShowEmotionalCheckIn(false);
   };
 
   const handleEditEntry = (entry: typeof journalEntries[0]) => {
@@ -443,44 +440,102 @@ export default function Journal() {
             <div className="flex-1 overflow-y-auto p-6">
 
               <div className="space-y-6">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-3">
-                    How are you feeling?
-                  </label>
-                  <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-3 mb-4">
-                    {moodOptions.map((mood) => (
-                      <button
-                        key={mood.id}
-                        onClick={() => {
-                          setNewEntry({ ...newEntry, mood: mood.id as Mood, specificEmotion: null });
-                        }}
-                        className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl transition-all text-sm font-medium shadow-sm hover:shadow-md transform hover:scale-105 ${
-                          newEntry.mood === mood.id
-                            ? `${mood.color} ring-2 ring-offset-2 ring-coral-300 shadow-md scale-105`
-                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                        }`}
-                      >
-                        <span className="text-xl">{mood.icon}</span>
-                        <span>{mood.label}</span>
-                      </button>
-                    ))}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setShowFeelingsWheel(true)}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-purple-50 via-pink-50 to-rose-50 border-2 border-purple-200 text-purple-700 hover:from-purple-100 hover:via-pink-100 hover:to-rose-100 transition-all text-sm font-semibold shadow-sm hover:shadow-md"
-                  >
-                    <Sparkles className="w-4 h-4" />
-                    {newEntry.specificEmotion ? `Feeling: ${newEntry.specificEmotion}` : 'Explore deeper emotions'}
-                  </button>
-                  {newEntry.specificEmotion && (
-                    <div className="mt-3 p-3 bg-purple-50 rounded-lg border border-purple-200">
-                      <p className="text-xs text-purple-600 font-medium">
-                        Selected: <span className="font-semibold italic text-purple-700">{newEntry.specificEmotion}</span>
-                      </p>
+                {/* Emotional Check-In Section */}
+                <div className="p-5 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 rounded-2xl border-2 border-purple-200">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="p-2 bg-purple-100 rounded-lg">
+                      <Brain className="w-5 h-5 text-purple-600" />
                     </div>
-                  )}
+                    <div>
+                      <h4 className="font-bold text-gray-900">Emotional Check-In</h4>
+                      <p className="text-xs text-gray-600">Start by naming what you're feeling</p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-3">
+                      How are you feeling overall?
+                    </label>
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-4">
+                      {moodOptions.map((mood) => (
+                        <button
+                          key={mood.id}
+                          onClick={() => {
+                            setNewEntry({ ...newEntry, mood: mood.id as Mood, specificEmotion: null });
+                          }}
+                          className={`flex flex-col items-center justify-center gap-1 px-3 py-3 rounded-xl transition-all text-sm font-medium shadow-sm hover:shadow-md transform hover:scale-105 ${
+                            newEntry.mood === mood.id
+                              ? `${mood.color} ring-2 ring-offset-2 ring-coral-300 shadow-md scale-105`
+                              : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
+                          }`}
+                        >
+                          <span className="text-2xl">{mood.icon}</span>
+                          <span className="text-xs">{mood.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                    
+                    <button
+                      type="button"
+                      onClick={() => setShowFeelingsWheel(true)}
+                      className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl transition-all text-sm font-semibold shadow-sm hover:shadow-md ${
+                        newEntry.specificEmotion
+                          ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white border-2 border-purple-600'
+                          : 'bg-gradient-to-r from-purple-50 via-pink-50 to-rose-50 border-2 border-purple-300 text-purple-700 hover:from-purple-100 hover:via-pink-100 hover:to-rose-100'
+                      }`}
+                    >
+                      <Sparkles className="w-4 h-4" />
+                      {newEntry.specificEmotion ? `Feeling: ${newEntry.specificEmotion}` : '✨ Explore deeper emotions'}
+                    </button>
+                    
+                    {newEntry.specificEmotion && (
+                      <div className="mt-3 p-4 bg-white/80 backdrop-blur-sm rounded-xl border-2 border-purple-300 shadow-sm">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-xs text-purple-600 font-medium mb-1">Selected Emotion</p>
+                            <p className="text-lg font-bold text-purple-700 italic">{newEntry.specificEmotion}</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setNewEntry({ ...newEntry, specificEmotion: null })}
+                            className="p-1.5 text-purple-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
+
+                {/* Emotional Reflection Prompts */}
+                {(newEntry.specificEmotion || newEntry.mood) && (
+                  <EmotionalPrompts
+                    emotion={newEntry.specificEmotion}
+                    mood={newEntry.mood}
+                    onPromptSelect={handlePromptSelect}
+                  />
+                )}
+
+                {/* Emotional Context - Deeper Exploration */}
+                {newEntry.specificEmotion && (
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                      <BookOpen className="w-4 h-4 text-purple-500" />
+                      What's behind this feeling?
+                    </label>
+                    <textarea
+                      value={newEntry.emotionalContext}
+                      onChange={(e) => setNewEntry({ ...newEntry, emotionalContext: e.target.value })}
+                      placeholder={`Explore what's beneath ${newEntry.specificEmotion.toLowerCase()}. What thoughts, experiences, or needs are connected to this feeling?`}
+                      rows={4}
+                      className="input resize-none w-full focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Take time to explore the roots of this emotion
+                    </p>
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">

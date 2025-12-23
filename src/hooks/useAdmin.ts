@@ -25,12 +25,6 @@ export function useIsAdmin() {
         // First check: user email is one of the configured admin emails
         const email = user.email || (user.user_metadata as any)?.email || '';
         const isEmailAdmin = ADMIN_EMAILS.includes(email);
-        
-        console.log('🔐 Admin check:', {
-          email,
-          isEmailAdmin,
-          adminEmails: ADMIN_EMAILS,
-        });
 
         // Second check: check database role (this might fail due to RLS, that's OK)
         let isRoleAdmin = false;
@@ -41,27 +35,20 @@ export function useIsAdmin() {
             .eq('id', user.id)
             .single();
 
-          if (roleError) {
-            console.warn('⚠️ Could not check user role (RLS might be blocking):', roleError);
-            // If RLS blocks this, we'll rely on email check
-          } else {
+          if (!roleError) {
             isRoleAdmin = userData?.role === 'admin';
-            console.log('📋 Database role check:', { role: userData?.role, isRoleAdmin });
           }
         } catch (roleCheckErr) {
-          console.warn('⚠️ Role check failed:', roleCheckErr);
           // Continue with email check only
         }
 
         const finalIsAdmin = isEmailAdmin || isRoleAdmin;
-        console.log('✅ Final admin status:', finalIsAdmin);
         setIsAdmin(finalIsAdmin);
       } catch (err) {
-        console.error('❌ Error checking admin status:', err);
+        console.error('Error checking admin status:', err);
         // Fallback to email check
-    const email = user.email || (user.user_metadata as any)?.email || '';
+        const email = user.email || (user.user_metadata as any)?.email || '';
         const fallbackIsAdmin = ADMIN_EMAILS.includes(email);
-        console.log('🔄 Fallback to email check:', { email, isAdmin: fallbackIsAdmin });
         setIsAdmin(fallbackIsAdmin);
       } finally {
     setLoading(false);
@@ -81,30 +68,13 @@ export function useAllUsers() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log('useAllUsers: isAdmin =', isAdmin);
-    
     if (!isAdmin) {
-      console.log('useAllUsers: Not admin, skipping fetch');
       setLoading(false);
       return;
     }
 
     const fetchUsers = async () => {
       try {
-        console.log('🔍 Fetching all users for admin dashboard...');
-        
-        // First, try a simple query to see if we can access the table
-        const { data: testData, error: testError } = await supabase
-          .from('users')
-          .select('id, email, name')
-          .limit(5);
-        
-        if (testError) {
-          console.error('❌ Test query error:', testError);
-          console.error('Error details:', JSON.stringify(testError, null, 2));
-        } else {
-          console.log('✅ Test query successful, found', testData?.length || 0, 'users');
-        }
         
         // Fetch all users without limit (Supabase default is 1000, but we'll handle pagination if needed)
         let allUsers: any[] = [];
@@ -115,7 +85,6 @@ export function useAllUsers() {
         
         while (hasMore && pageCount < 10) { // Safety limit of 10 pages
           pageCount++;
-          console.log(`📄 Fetching page ${pageCount} (range ${from} to ${from + pageSize - 1})...`);
           
         const { data, error } = await supabase
           .from('users')
@@ -124,12 +93,10 @@ export function useAllUsers() {
             .range(from, from + pageSize - 1);
 
           if (error) {
-            console.error('❌ Error fetching users page:', error);
-            console.error('Error details:', JSON.stringify(error, null, 2));
+            console.error('Error fetching users page:', error);
             throw error;
           }
           
-          console.log(`📊 Page ${pageCount}: Got ${data?.length || 0} users`);
           
           if (data && data.length > 0) {
             allUsers = [...allUsers, ...data];
@@ -140,14 +107,9 @@ export function useAllUsers() {
           }
         }
         
-        console.log(`✅ Successfully fetched ${allUsers.length} total users from Supabase`);
-        if (allUsers.length > 0) {
-          console.log('Sample user:', allUsers[0]);
-        }
         setUsers(allUsers);
       } catch (error) {
-        console.error('❌ Fatal error fetching users:', error);
-        console.error('Error details:', JSON.stringify(error, null, 2));
+        console.error('Fatal error fetching users:', error);
         setUsers([]);
       } finally {
         setLoading(false);
@@ -193,20 +155,9 @@ export function useAdminAnalytics() {
           .limit(10000); // High limit to get all views
         
         if (videoViewsError) {
-          console.error('❌ Error fetching video views from user_activity:', videoViewsError);
-          console.error('Error details:', {
-            code: videoViewsError.code,
-            message: videoViewsError.message,
-            details: videoViewsError.details,
-            hint: videoViewsError.hint
-          });
-          // If it's a 404 or RLS error, try to provide helpful info
-          if (videoViewsError.code === 'PGRST116') {
-            console.warn('⚠️ user_activity table might not exist. Check migrations.');
-          } else if (videoViewsError.message?.includes('permission') || videoViewsError.message?.includes('policy')) {
-            console.warn('⚠️ RLS policy might be blocking access. Check if migration 033_fix_admin_user_activity_access.sql has been run.');
-            // Try fallback to video_views table
-            console.log('🔄 Attempting fallback to video_views table...');
+          console.error('Error fetching video views from user_activity:', videoViewsError);
+          // If it's an RLS error, try fallback to video_views table
+          if (videoViewsError.message?.includes('permission') || videoViewsError.message?.includes('policy')) {
             const { data: fallbackData, error: fallbackError } = await supabase
               .from('video_views')
               .select('*')
@@ -226,14 +177,12 @@ export function useAdminAnalytics() {
                 metadata: {}
               }));
             } else if (fallbackError) {
-              console.error('❌ Fallback to video_views also failed:', fallbackError);
+              console.error('Fallback to video_views also failed:', fallbackError);
             }
           }
         } else {
           videoViews = videoViewsData || [];
-          console.log(`✅ Fetched ${videoViews.length} video views from user_activity table`);
           if (videoViews.length === 0) {
-            console.warn('⚠️ No video views found in user_activity. Checking video_views table as fallback...');
             // Try fallback to video_views table if user_activity is empty
             const { data: fallbackData, error: fallbackError } = await supabase
               .from('video_views')
@@ -255,7 +204,6 @@ export function useAdminAnalytics() {
               }));
             }
           } else {
-            console.log('📊 Sample video view:', videoViews[0]);
           }
         }
 
@@ -346,28 +294,9 @@ export function useAdminAnalytics() {
           .limit(10000);
         
         if (badgesError) {
-          console.error('❌ Error fetching badges:', badgesError);
-          console.error('Error details:', {
-            code: badgesError.code,
-            message: badgesError.message,
-            details: badgesError.details,
-            hint: badgesError.hint
-          });
-          // If it's an RLS/permission error, provide helpful info
-          if (badgesError.message?.includes('permission') || badgesError.message?.includes('policy')) {
-            console.warn('⚠️ RLS policy might be blocking access. Check if migration 034_add_admin_policy_for_user_badges.sql has been run.');
-          }
+          console.error('Error fetching badges:', badgesError);
         } else {
           userBadges = badgesData || [];
-          console.log(`✅ Fetched ${userBadges.length} badges from user_badges table`);
-          if (userBadges.length === 0) {
-            console.warn('⚠️ No badges found. This might be normal if no users have earned badges yet.');
-          } else {
-            // Count unique users with badges
-            const uniqueUsers = new Set(userBadges.map((b: any) => b.user_id));
-            console.log(`📊 Badges from ${uniqueUsers.size} unique users`);
-            console.log('📊 Sample badge:', userBadges[0]);
-          }
         }
 
         // Get recent user activity to compute last active
@@ -411,7 +340,6 @@ export function useAdminAnalytics() {
         const badgesByUser = new Map<string, any[]>();
         userBadges?.forEach((badge: any) => {
           if (!badge.user_id) {
-            console.warn('⚠️ Badge missing user_id:', badge);
             return;
           }
           if (!badgesByUser.has(badge.user_id)) {
@@ -420,7 +348,6 @@ export function useAdminAnalytics() {
           badgesByUser.get(badge.user_id)!.push(badge);
         });
         
-        console.log(`📊 Grouped badges into ${badgesByUser.size} users`);
 
         // Create badges list with user info
         const enrichedBadges = Array.from(badgesByUser.entries()).map(([userId, badges]) => {
@@ -501,21 +428,9 @@ export function useAdminAnalytics() {
           users: userMap.get(hc.user_id)
         }));
 
-        console.log('Analytics fetched:', {
-          totalUsers: totalUsers || 0,
-          videoViewsCount: enrichedVideoViews.length,
-          rawVideoViewsCount: videoViews.length,
-          remindersCount: enrichedReminders.length,
-          weightLogsCount: enrichedWeightLogs.length,
-          habitsCount: enrichedHabits.length,
-          habitCompletionsCount: enrichedHabitCompletions.length,
-        });
         
         // Debug: Log sample video views
         if (enrichedVideoViews.length > 0) {
-          console.log('Sample video view:', enrichedVideoViews[0]);
-        } else {
-          console.warn('⚠️ No video views found. Check if user_activity table has video_view entries.');
         }
 
         setAnalytics({

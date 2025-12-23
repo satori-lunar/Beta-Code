@@ -52,27 +52,6 @@ export default function AdminDashboard() {
 
   const loading = usersLoading || analyticsLoading;
 
-  // Debug: Log admin status and data
-  console.log('Admin Dashboard State:', {
-    isAdmin,
-    usersLoading,
-    analyticsLoading,
-    usersCount: users.length,
-    hasAnalytics: !!analytics,
-  });
-
-  // Debug: Log analytics data
-  if (analytics && !analyticsLoading) {
-    console.log('Admin Dashboard Analytics:', {
-      totalUsers: analytics.totalUsers,
-      videoViews: analytics.videoViews?.length || 0,
-      reminders: analytics.reminders?.length || 0,
-      weightLogs: analytics.weightLogs?.length || 0,
-      habits: analytics.habits?.length || 0,
-      habitCompletions: analytics.habitCompletions?.length || 0,
-    });
-  }
-
   // Load help tickets for the Support tab
   const loadTickets = async () => {
     if (!isAdmin) return;
@@ -346,19 +325,6 @@ export default function AdminDashboard() {
       {/* Users Tab */}
       {selectedTab === 'users' && (
         <div className="space-y-4">
-          {/* Debug Info */}
-          <div className="card bg-blue-50 border-blue-200">
-            <h3 className="text-sm font-semibold text-blue-900 mb-2">Debug Information</h3>
-            <div className="text-xs text-blue-700 space-y-1">
-              <p>Admin Status: {isAdmin ? '✅ Yes' : '❌ No'}</p>
-              <p>Loading Users: {usersLoading ? '⏳ Yes' : '✅ No'}</p>
-              <p>Users Count: {users.length}</p>
-              <p>Analytics Loading: {analyticsLoading ? '⏳ Yes' : '✅ No'}</p>
-              <p>Total Users (from analytics): {analytics?.totalUsers || 'N/A'}</p>
-              <p className="mt-2 text-blue-600">Check browser console (F12) for detailed logs</p>
-            </div>
-          </div>
-
           <div className="card">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">
               All Users ({users.length})

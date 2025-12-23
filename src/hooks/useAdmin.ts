@@ -165,7 +165,6 @@ export function useAdminAnalytics() {
               .limit(10000);
             
             if (!fallbackError && fallbackData) {
-              console.log(`✅ Fallback: Found ${fallbackData.length} video views in video_views table`);
               // Convert video_views format to user_activity format
               videoViews = fallbackData.map((vv: any) => ({
                 id: vv.id,
@@ -191,7 +190,6 @@ export function useAdminAnalytics() {
               .limit(10000);
             
             if (!fallbackError && fallbackData && fallbackData.length > 0) {
-              console.log(`✅ Fallback: Found ${fallbackData.length} video views in video_views table`);
               // Convert video_views format to user_activity format
               videoViews = fallbackData.map((vv: any) => ({
                 id: vv.id,
@@ -262,7 +260,6 @@ export function useAdminAnalytics() {
         if (habitCompletionsError) {
           // 404 means table doesn't exist, which is OK
           if (habitCompletionsError.code !== 'PGRST116') {
-            console.warn('Error fetching habit completions:', habitCompletionsError);
           }
         } else {
           habitCompletions = habitCompletionsData || [];
@@ -279,7 +276,6 @@ export function useAdminAnalytics() {
         if (loginsError) {
           // 404 means table doesn't exist, which is OK
           if (loginsError.code !== 'PGRST116') {
-            console.warn('Error fetching logins:', loginsError);
           }
         } else {
           logins = loginsData || [];

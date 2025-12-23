@@ -30,17 +30,26 @@ BEGIN
     WHERE table_schema = 'public' 
     AND table_name = 'habits'
   ) THEN
-    -- Drop existing admin policy
-    DROP POLICY IF EXISTS "Admins can view all habits" ON public.habits;
+    -- Drop existing admin policy (if it exists)
+    BEGIN
+      DROP POLICY IF EXISTS "Admins can view all habits" ON public.habits;
+    EXCEPTION WHEN undefined_table THEN
+      NULL; -- Table doesn't exist, skip
+    END;
     
     -- Create new policy using is_admin() function
-    CREATE POLICY "Admins can view all habits, users can view own"
-      ON public.habits FOR SELECT
-      USING (
-        public.is_admin() -- Includes both admin and admin_lv2
-        OR
-        auth.uid() = user_id -- Users can see their own
-      );
+    BEGIN
+      CREATE POLICY "Admins can view all habits, users can view own"
+        ON public.habits FOR SELECT
+        USING (
+          public.is_admin() -- Includes both admin and admin_lv2
+          OR
+          auth.uid() = user_id -- Users can see their own
+        );
+    EXCEPTION WHEN duplicate_object THEN
+      -- Policy already exists, that's OK
+      NULL;
+    END;
   END IF;
 END $$;
 
@@ -52,17 +61,26 @@ BEGIN
     WHERE table_schema = 'public' 
     AND table_name = 'habit_completions'
   ) THEN
-    -- Drop existing admin policy
-    DROP POLICY IF EXISTS "Admins can view all habit completions" ON public.habit_completions;
+    -- Drop existing admin policy (if it exists)
+    BEGIN
+      DROP POLICY IF EXISTS "Admins can view all habit completions" ON public.habit_completions;
+    EXCEPTION WHEN undefined_table THEN
+      NULL; -- Table doesn't exist, skip
+    END;
     
     -- Create new policy using is_admin() function
-    CREATE POLICY "Admins can view all habit completions, users can view own"
-      ON public.habit_completions FOR SELECT
-      USING (
-        public.is_admin() -- Includes both admin and admin_lv2
-        OR
-        auth.uid() = user_id -- Users can see their own
-      );
+    BEGIN
+      CREATE POLICY "Admins can view all habit completions, users can view own"
+        ON public.habit_completions FOR SELECT
+        USING (
+          public.is_admin() -- Includes both admin and admin_lv2
+          OR
+          auth.uid() = user_id -- Users can see their own
+        );
+    EXCEPTION WHEN duplicate_object THEN
+      -- Policy already exists, that's OK
+      NULL;
+    END;
   END IF;
 END $$;
 
@@ -74,27 +92,42 @@ BEGIN
     WHERE table_schema = 'public' 
     AND table_name = 'class_reminders'
   ) THEN
-    -- Drop existing admin policy
-    DROP POLICY IF EXISTS "Admins can view all class reminders" ON public.class_reminders;
+    -- Drop existing admin policy (if it exists)
+    BEGIN
+      DROP POLICY IF EXISTS "Admins can view all class reminders" ON public.class_reminders;
+    EXCEPTION WHEN undefined_table THEN
+      NULL; -- Table doesn't exist, skip
+    END;
     
     -- Create new policy using is_admin() function
-    CREATE POLICY "Admins can view all class reminders, users can view own"
-      ON public.class_reminders FOR SELECT
-      USING (
-        public.is_admin() -- Includes both admin and admin_lv2
-        OR
-        auth.uid() = user_id -- Users can see their own
-      );
+    BEGIN
+      CREATE POLICY "Admins can view all class reminders, users can view own"
+        ON public.class_reminders FOR SELECT
+        USING (
+          public.is_admin() -- Includes both admin and admin_lv2
+          OR
+          auth.uid() = user_id -- Users can see their own
+        );
+    EXCEPTION WHEN duplicate_object THEN
+      -- Policy already exists, that's OK
+      NULL;
+    END;
   END IF;
 END $$;
 
--- Add comments
-COMMENT ON POLICY "Admins can view all habits, users can view own" ON public.habits IS 
-'Allows admins and admin_lv2 to view all habits, and users to view their own. Uses is_admin() function.';
-
-COMMENT ON POLICY "Admins can view all habit completions, users can view own" ON public.habit_completions IS 
-'Allows admins and admin_lv2 to view all habit completions, and users to view their own. Uses is_admin() function.';
-
-COMMENT ON POLICY "Admins can view all class reminders, users can view own" ON public.class_reminders IS 
-'Allows admins and admin_lv2 to view all class reminders, and users to view their own. Uses is_admin() function.';
+-- Add comments (only if tables exist)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'habits') THEN
+    EXECUTE 'COMMENT ON POLICY "Admins can view all habits, users can view own" ON public.habits IS ''Allows admins and admin_lv2 to view all habits, and users to view their own. Uses is_admin() function.''';
+  END IF;
+  
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'habit_completions') THEN
+    EXECUTE 'COMMENT ON POLICY "Admins can view all habit completions, users can view own" ON public.habit_completions IS ''Allows admins and admin_lv2 to view all habit completions, and users to view their own. Uses is_admin() function.''';
+  END IF;
+  
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'class_reminders') THEN
+    EXECUTE 'COMMENT ON POLICY "Admins can view all class reminders, users can view own" ON public.class_reminders IS ''Allows admins and admin_lv2 to view all class reminders, and users to view their own. Uses is_admin() function.''';
+  END IF;
+END $$;
 

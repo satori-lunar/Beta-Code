@@ -379,7 +379,7 @@ export default function Journal() {
             <h3 className="font-bold text-gray-900 mb-2 text-xl">No entries found</h3>
             <p className="text-gray-600 mb-6 max-w-md mx-auto">
               {searchQuery || filterMood
-                ? 'Try adjusting your search or filters to find what you're looking for'
+                ? "Try adjusting your search or filters to find what you're looking for"
                 : 'Start your journaling journey by capturing your thoughts and feelings'}
             </p>
             {!searchQuery && !filterMood && (

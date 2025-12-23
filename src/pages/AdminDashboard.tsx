@@ -13,14 +13,18 @@ import {
   Target
 } from 'lucide-react';
 import { useIsAdmin, useIsFullAdmin, useAllUsers, useAdminAnalytics } from '../hooks/useAdmin';
+import { useIsCoach, useCoachAnalytics, useCoachClasses } from '../hooks/useCoach';
 import { supabase } from '../lib/supabase';
 import { format, parseISO } from 'date-fns';
 
 export default function AdminDashboard() {
   const { isAdmin, loading: adminLoading } = useIsAdmin();
   const { isFullAdmin } = useIsFullAdmin();
+  const { isCoach, loading: coachLoading } = useIsCoach();
   const { users, loading: usersLoading } = useAllUsers();
   const { analytics, loading: analyticsLoading } = useAdminAnalytics();
+  const { analytics: coachAnalytics, loading: coachAnalyticsLoading } = useCoachAnalytics();
+  const { classTitles } = useCoachClasses();
   const [selectedTab, setSelectedTab] = useState<'overview' | 'users' | 'videos' | 'reminders' | 'weight' | 'habits' | 'badges' | 'logins' | 'support'>('overview');
   const [selectedUserId, setSelectedUserId] = useState<string>(''); // Filter by user
   const [selectedClassId, setSelectedClassId] = useState<string>(''); // Filter reminders by class
@@ -31,8 +35,9 @@ export default function AdminDashboard() {
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [replyText, setReplyText] = useState('');
   const [newConversationUserId, setNewConversationUserId] = useState<string>('');
+  const [reminderBannerDismissed, setReminderBannerDismissed] = useState(false);
 
-  if (adminLoading) {
+  if (adminLoading || coachLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <p className="text-gray-500">Loading...</p>
@@ -40,7 +45,7 @@ export default function AdminDashboard() {
     );
   }
 
-  if (!isAdmin) {
+  if (!isAdmin && !isCoach) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -51,7 +56,8 @@ export default function AdminDashboard() {
     );
   }
 
-  const loading = usersLoading || analyticsLoading;
+  const loading = usersLoading || analyticsLoading || (isCoach && coachAnalyticsLoading);
+  const isCoachView = isCoach && !isAdmin;
 
   // Load help tickets for the Support tab
   const loadTickets = async () => {
@@ -209,23 +215,56 @@ export default function AdminDashboard() {
       {/* Header */}
       <div>
         <h1 className="text-2xl lg:text-3xl font-display font-bold text-gray-900">
-          Admin Dashboard
+          {isCoachView ? 'Coach Dashboard' : 'Admin Dashboard'}
         </h1>
-        <p className="text-gray-500 mt-1">Real-time analytics and user insights</p>
+        <p className="text-gray-500 mt-1">
+          {isCoachView ? 'View engagement for your classes' : 'Real-time analytics and user insights'}
+        </p>
       </div>
+
+      {/* 24-Hour Reminder Banner for Coaches */}
+      {isCoachView && !reminderBannerDismissed && (
+        <div className="bg-gradient-to-r from-coral-500 to-coral-600 rounded-xl p-6 text-white shadow-lg relative">
+          <button
+            onClick={() => setReminderBannerDismissed(true)}
+            className="absolute top-4 right-4 text-white/80 hover:text-white transition-colors"
+            aria-label="Dismiss banner"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+          <div className="flex items-start gap-4">
+            <Bell className="w-6 h-6 flex-shrink-0 mt-1" />
+            <div>
+              <h3 className="text-lg font-semibold mb-2">Set Reminders to Receive Emails</h3>
+              <p className="text-white/90 leading-relaxed">
+                To receive email reminders for your classes, please click "Set a Reminder" on each class you'd like to be notified about. 
+                This ensures you'll receive email notifications 24 hours before each class.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="flex gap-2 border-b border-gray-100 overflow-x-auto scrollbar-hide">
-        {[
-          { id: 'overview', label: 'Overview', icon: BarChart3 },
-          { id: 'users', label: 'Users', icon: Users },
-          { id: 'videos', label: 'Video Views', icon: Video },
-          { id: 'reminders', label: 'Reminders', icon: Bell },
-          { id: 'weight', label: 'Weight Logs', icon: Scale, requiresFullAdmin: true },
-          { id: 'habits', label: 'Habits', icon: Target },
-          { id: 'badges', label: 'Badges', icon: Target },
-          { id: 'support', label: 'Support', icon: MessageCircle },
-        ]
+        {(isCoachView
+          ? [
+              { id: 'videos', label: 'Video Views', icon: Video },
+              { id: 'reminders', label: 'Reminders', icon: Bell },
+            ]
+          : [
+              { id: 'overview', label: 'Overview', icon: BarChart3 },
+              { id: 'users', label: 'Users', icon: Users },
+              { id: 'videos', label: 'Video Views', icon: Video },
+              { id: 'reminders', label: 'Reminders', icon: Bell },
+              { id: 'weight', label: 'Weight Logs', icon: Scale, requiresFullAdmin: true },
+              { id: 'habits', label: 'Habits', icon: Target },
+              { id: 'badges', label: 'Badges', icon: Target },
+              { id: 'support', label: 'Support', icon: MessageCircle },
+            ]
+        )
         .filter((tab) => !tab.requiresFullAdmin || isFullAdmin) // Hide weight tab for admin_lv2
         .map((tab) => (
           <button
@@ -243,8 +282,8 @@ export default function AdminDashboard() {
         ))}
       </div>
 
-      {/* User Filter - Show for tabs that have user-specific data */}
-      {(selectedTab === 'videos' || selectedTab === 'reminders' || (selectedTab === 'weight' && isFullAdmin) || selectedTab === 'habits') && (
+      {/* User Filter - Show for tabs that have user-specific data (only for admins, not coaches) */}
+      {!isCoachView && (selectedTab === 'videos' || selectedTab === 'reminders' || (selectedTab === 'weight' && isFullAdmin) || selectedTab === 'habits') && (
         <div className="card">
           <div className="flex items-center gap-4">
             <label className="text-sm font-medium text-gray-700">Filter by User:</label>
@@ -382,12 +421,19 @@ export default function AdminDashboard() {
       {/* Video Views Tab */}
       {selectedTab === 'videos' && (
         <div className="card">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Recorded Classes Watched</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+            {isCoachView ? 'Your Classes - Video Views' : 'Recorded Classes Watched'}
+          </h2>
+          {isCoachView && classTitles.length > 0 && (
+            <p className="text-sm text-gray-500 mb-4">
+              Showing views for: {classTitles.join(', ')}
+            </p>
+          )}
           {loading ? (
             <p className="text-gray-500">Loading video views...</p>
           ) : (
             <div className="space-y-4">
-              {analytics?.videoViews
+              {(isCoachView ? coachAnalytics?.videoViews : analytics?.videoViews)
                 ?.filter((view: any) => !selectedUserId || view.user_id === selectedUserId)
                 .map((view: any) => (
                 <div key={view.id} className="border border-gray-200 rounded-lg p-4">
@@ -411,9 +457,10 @@ export default function AdminDashboard() {
                   </div>
                 </div>
               ))}
-              {(!analytics?.videoViews || analytics.videoViews.filter((v: any) => !selectedUserId || v.user_id === selectedUserId).length === 0) && (
+              {(!(isCoachView ? coachAnalytics?.videoViews : analytics?.videoViews) || 
+                (isCoachView ? coachAnalytics?.videoViews : analytics?.videoViews)?.filter((v: any) => !selectedUserId || v.user_id === selectedUserId).length === 0) && (
                 <p className="text-gray-500 text-center py-8">
-                  {selectedUserId ? 'No video views for this user' : 'No video views yet'}
+                  {selectedUserId ? 'No video views for this user' : isCoachView ? 'No video views for your classes yet' : 'No video views yet'}
                 </p>
               )}
             </div>
@@ -426,7 +473,9 @@ export default function AdminDashboard() {
         <div className="space-y-4">
           <div className="card">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">Class Reminders Set</h2>
+              <h2 className="text-lg font-semibold text-gray-900">
+                {isCoachView ? 'Your Classes - Reminders Set' : 'Class Reminders Set'}
+              </h2>
               <div className="flex items-center gap-3">
                 <label className="text-sm text-gray-600">Filter by class:</label>
                 <select
@@ -435,15 +484,16 @@ export default function AdminDashboard() {
                   className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-coral-500 focus:border-transparent"
                 >
                   <option value="">All Classes</option>
-                  {analytics?.reminders
+                  {(isCoachView ? coachAnalytics?.reminders : analytics?.reminders)
                     ?.reduce((acc: any[], reminder: any) => {
-                      const classId = reminder.class_id;
+                      // Use live_class_id from the reminders table to group by class
+                      const classId = reminder.live_class_id;
                       const className = reminder.live_classes?.title || 'Unknown Class';
-                      if (classId && !acc.find(c => c.id === classId)) {
+                      if (classId && !acc.find((c) => c.id === classId)) {
                         acc.push({ id: classId, name: className });
                       }
                       return acc;
-                    }, [])
+                    }, [] as any[])
                     .sort((a: any, b: any) => a.name.localeCompare(b.name))
                     .map((classItem: any) => (
                       <option key={classItem.id} value={classItem.id}>
@@ -462,8 +512,8 @@ export default function AdminDashboard() {
               <p className="text-gray-500">Loading reminders...</p>
             ) : (
               <div className="space-y-4">
-                {analytics?.reminders
-                  ?.filter((reminder: any) => !selectedClassId || reminder.class_id === selectedClassId)
+                {(isCoachView ? coachAnalytics?.reminders : analytics?.reminders)
+                  ?.filter((reminder: any) => !selectedClassId || reminder.live_class_id === selectedClassId)
                   .map((reminder: any) => (
                   <div key={reminder.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
                     <div className="flex items-start justify-between">
@@ -499,9 +549,10 @@ export default function AdminDashboard() {
                     </div>
                   </div>
                 ))}
-                {(!analytics?.reminders || analytics.reminders.filter((r: any) => !selectedClassId || r.class_id === selectedClassId).length === 0) && (
+                {(!(isCoachView ? coachAnalytics?.reminders : analytics?.reminders) ||
+                  (isCoachView ? coachAnalytics?.reminders : analytics?.reminders)?.filter((r: any) => !selectedClassId || r.live_class_id === selectedClassId).length === 0) && (
                   <p className="text-gray-500 text-center py-8">
-                    {selectedClassId ? 'No reminders for this class' : 'No reminders set yet'}
+                    {selectedClassId ? 'No reminders for this class' : isCoachView ? 'No reminders set for your classes yet' : 'No reminders set yet'}
                   </p>
                 )}
               </div>

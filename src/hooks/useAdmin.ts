@@ -422,11 +422,19 @@ export function useAdminAnalytics() {
         console.log('Analytics fetched:', {
           totalUsers: totalUsers || 0,
           videoViewsCount: enrichedVideoViews.length,
+          rawVideoViewsCount: videoViews.length,
           remindersCount: enrichedReminders.length,
           weightLogsCount: enrichedWeightLogs.length,
           habitsCount: enrichedHabits.length,
           habitCompletionsCount: enrichedHabitCompletions.length,
         });
+        
+        // Debug: Log sample video views
+        if (enrichedVideoViews.length > 0) {
+          console.log('Sample video view:', enrichedVideoViews[0]);
+        } else {
+          console.warn('⚠️ No video views found. Check if user_activity table has video_view entries.');
+        }
 
         setAnalytics({
           totalUsers: totalUsers || 0,

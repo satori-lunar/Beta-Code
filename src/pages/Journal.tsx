@@ -182,11 +182,6 @@ export default function Journal() {
     return moodData?.icon || '😐';
   };
 
-  const getMoodColor = (mood: string) => {
-    const moodData = moodOptions.find((m) => m.id === mood);
-    return moodData?.color || 'bg-gray-100 text-gray-700';
-  };
-
   const getMoodGradient = (mood: string) => {
     const moodData = moodOptions.find((m) => m.id === mood);
     return moodData?.gradient || 'from-gray-400 to-slate-500';

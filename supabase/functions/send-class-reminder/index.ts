@@ -10,7 +10,12 @@ const corsHeaders = {
 async function sendEmailWithMailchimp(
   to: string,
   subject: string,
-  htmlBody: string
+  htmlBody: string,
+  metadata?: {
+    reminderId?: string
+    classId?: string
+    userId?: string
+  }
 ) {
   const apiKey = Deno.env.get('MAILCHIMP_TRANSACTIONAL_API_KEY')
   const fromEmail = Deno.env.get('MAILCHIMP_FROM_EMAIL') || 'noreply@mybirchandstonecoaching.com'
@@ -20,6 +25,37 @@ async function sendEmailWithMailchimp(
     throw new Error('MAILCHIMP_TRANSACTIONAL_API_KEY environment variable is not set')
   }
 
+  // Build Mandrill message payload with enhanced features
+  const messagePayload: any = {
+    html: htmlBody,
+    subject,
+    from_email: fromEmail,
+    from_name: fromName,
+    to: [
+      {
+        email: to,
+        type: 'to',
+      },
+    ],
+    // Enable tracking
+    track_opens: true,
+    track_clicks: true,
+    auto_text: true, // Automatically generate text version from HTML
+    // Add tags for better organization in Mandrill dashboard
+    tags: ['class-reminder', 'automated'],
+    // Add metadata for webhooks and tracking
+    metadata: {
+      reminder_type: 'class_reminder',
+      ...(metadata?.reminderId && { reminder_id: metadata.reminderId }),
+      ...(metadata?.classId && { class_id: metadata.classId }),
+      ...(metadata?.userId && { user_id: metadata.userId }),
+    },
+    // Important: Mark as important for better deliverability
+    important: false,
+    // Add merge vars if needed in the future
+    merge_vars: [],
+  }
+
   const response = await fetch('https://mandrillapp.com/api/1.0/messages/send.json', {
     method: 'POST',
     headers: {
@@ -27,33 +63,58 @@ async function sendEmailWithMailchimp(
     },
     body: JSON.stringify({
       key: apiKey,
-      message: {
-        html: htmlBody,
-        subject,
-        from_email: fromEmail,
-        from_name: fromName,
-        to: [
-          {
-            email: to,
-            type: 'to',
-          },
-        ],
-      },
+      message: messagePayload,
     }),
   })
 
   if (!response.ok) {
-    const error = await response.text()
-    throw new Error(`Mailchimp API error: ${response.status} ${error}`)
+    const errorText = await response.text()
+    let errorDetails
+    try {
+      errorDetails = JSON.parse(errorText)
+    } catch {
+      errorDetails = errorText
+    }
+    console.error('Mandrill API error:', {
+      status: response.status,
+      statusText: response.statusText,
+      error: errorDetails,
+    })
+    throw new Error(`Mailchimp Mandrill API error: ${response.status} - ${JSON.stringify(errorDetails)}`)
   }
 
   const data = await response.json()
 
-  if (!Array.isArray(data) || !data.length || data[0].status === 'rejected' || data[0].status === 'invalid') {
-    throw new Error(`Mailchimp send failed: ${JSON.stringify(data)}`)
+  // Mandrill returns an array with status for each recipient
+  if (!Array.isArray(data) || !data.length) {
+    throw new Error(`Mailchimp Mandrill returned unexpected response: ${JSON.stringify(data)}`)
   }
 
-  return data
+  const result = data[0]
+  
+  // Check for rejected or invalid status
+  if (result.status === 'rejected' || result.status === 'invalid') {
+    console.error('Mandrill send rejected:', {
+      email: to,
+      status: result.status,
+      reason: result.reject_reason,
+      id: result._id,
+    })
+    throw new Error(`Mailchimp Mandrill send failed: ${result.status} - ${result.reject_reason || 'Unknown reason'}`)
+  }
+
+  // Log successful send
+  console.log('Mandrill email sent successfully:', {
+    email: to,
+    status: result.status,
+    id: result._id,
+    messageId: result._id,
+  })
+
+  return {
+    ...result,
+    messageId: result._id, // Mandrill message ID for tracking
+  }
 }
 
 serve(async (req) => {
@@ -177,14 +238,26 @@ See you there!
 — Birch & Stone
     `.trim()
 
-    // Send email using Mailchimp Transactional
+    // Send email using Mailchimp Transactional (Mandrill)
     let emailSent = false
+    let emailResult: any = null
     try {
-      await sendEmailWithMailchimp(userEmail, emailSubject, htmlBody)
+      emailResult = await sendEmailWithMailchimp(userEmail, emailSubject, htmlBody, {
+        reminderId,
+        classId: body.classId,
+        userId,
+      })
       emailSent = true
-      console.log(`Email sent successfully to ${userEmail}`)
-    } catch (emailError) {
-      console.error('Error sending email:', emailError)
+      console.log(`✅ Mandrill email sent successfully to ${userEmail}`, {
+        messageId: emailResult.messageId,
+        status: emailResult.status,
+      })
+    } catch (emailError: any) {
+      console.error('❌ Error sending email via Mandrill:', {
+        email: userEmail,
+        error: emailError.message,
+        reminderId,
+      })
       // Continue to create notification even if email fails
     }
 

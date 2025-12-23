@@ -302,13 +302,31 @@ export default function Journal() {
               <div className="space-y-4">
                 {/* Title and Emotion */}
                 <div>
-                  <h3 className="font-bold text-gray-900 text-lg mb-1 group-hover:text-coral-600 transition-colors">
+                  <h3 className="font-bold text-gray-900 text-lg mb-2 group-hover:text-coral-600 transition-colors">
                     {entry.title}
                   </h3>
                   {(entry as any).specific_emotion && (
-                    <p className="text-sm text-gray-500 italic font-medium">
-                      {(entry as any).specific_emotion}
-                    </p>
+                    <div className="mb-3 p-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-200">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-purple-500" />
+                        <p className="text-sm text-purple-700 italic font-semibold">
+                          {(entry as any).specific_emotion}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  {((entry as any).metadata?.emotionalContext) && (
+                    <div className="mb-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                      <div className="flex items-start gap-2">
+                        <Brain className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-xs font-semibold text-blue-700 mb-1">Emotional Context</p>
+                          <p className="text-sm text-blue-800 whitespace-pre-wrap">
+                            {((entry as any).metadata?.emotionalContext)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
                   )}
                 </div>
 

@@ -8,13 +8,15 @@ import {
   Edit3,
   Heart,
   Tag,
-  Clock
+  Clock,
+  Sparkles
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useJournalEntries, checkFirstTimeBadges, checkJournalBadges } from '../hooks/useSupabaseData';
 import { useTrackJournal } from '../hooks/useActivityTracking';
 import { supabase } from '../lib/supabase';
 import { format, parseISO } from 'date-fns';
+import FeelingsWheel from '../components/FeelingsWheel';
 
 const moodOptions = [
   { id: 'great', label: 'Great', icon: '😊', color: 'bg-green-100 text-green-700' },

@@ -193,9 +193,16 @@ export function useAdminAnalytics() {
           .limit(10000); // High limit to get all views
         
         if (videoViewsError) {
-          console.warn('Error fetching video views:', videoViewsError);
+          console.error('Error fetching video views:', videoViewsError);
+          console.error('Error details:', {
+            code: videoViewsError.code,
+            message: videoViewsError.message,
+            details: videoViewsError.details,
+            hint: videoViewsError.hint
+          });
         } else {
           videoViews = videoViewsData || [];
+          console.log(`✅ Fetched ${videoViews.length} video views from user_activity table`);
         }
 
         // Get favorites (fetch all)

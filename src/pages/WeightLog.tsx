@@ -38,6 +38,9 @@ export default function WeightLog() {
   const [showGoalModal, setShowGoalModal] = useState(false);
   const [editingGoalType, setEditingGoalType] = useState<'ultimate' | 'weekly' | null>(null);
   const [goalWeight, setGoalWeight] = useState('');
+  const [goalWeightMin, setGoalWeightMin] = useState('');
+  const [goalWeightMax, setGoalWeightMax] = useState('');
+  const [goalType, setGoalType] = useState<'specific' | 'range'>('specific');
   const [newEntry, setNewEntry] = useState({
     weight: '',
     date: format(new Date(), 'yyyy-MM-dd'),
@@ -69,18 +72,52 @@ export default function WeightLog() {
   // Get goal weights from profile (default to null if not set)
   const userGoalWeight = (profile as any)?.goal_weight || null;
   const ultimateGoalWeight = (profile as any)?.ultimate_goal_weight || null;
+  const ultimateGoalWeightMin = (profile as any)?.ultimate_goal_weight_min || null;
+  const ultimateGoalWeightMax = (profile as any)?.ultimate_goal_weight_max || null;
   const weeklyGoalWeight = (profile as any)?.weekly_goal_weight || null;
+  const weeklyGoalWeightMin = (profile as any)?.weekly_goal_weight_min || null;
+  const weeklyGoalWeightMax = (profile as any)?.weekly_goal_weight_max || null;
   const goalWeightUnit = 'lbs'; // Goals are always in lbs
+  
+  // Check if goal is a range
+  const isUltimateGoalRange = ultimateGoalWeightMin !== null && ultimateGoalWeightMax !== null;
+  const isWeeklyGoalRange = weeklyGoalWeightMin !== null && weeklyGoalWeightMax !== null;
   
   const toGoal = latestWeight && userGoalWeight 
     ? (latestWeight.weight - userGoalWeight).toFixed(1) 
     : null;
+  
+  // Calculate distance to ultimate goal (for specific or range)
   const toUltimateGoal = latestWeight && ultimateGoalWeight 
     ? (latestWeight.weight - ultimateGoalWeight).toFixed(1) 
+    : latestWeight && isUltimateGoalRange
+    ? (latestWeight.weight < ultimateGoalWeightMin 
+        ? (latestWeight.weight - ultimateGoalWeightMin).toFixed(1)
+        : latestWeight.weight > ultimateGoalWeightMax
+        ? (latestWeight.weight - ultimateGoalWeightMax).toFixed(1)
+        : '0') // Within range
     : null;
+  
+  // Check if within ultimate goal range
+  const isWithinUltimateRange = latestWeight && isUltimateGoalRange
+    ? latestWeight.weight >= ultimateGoalWeightMin && latestWeight.weight <= ultimateGoalWeightMax
+    : false;
+  
+  // Calculate distance to weekly goal (for specific or range)
   const toWeeklyGoal = latestWeight && weeklyGoalWeight 
     ? (latestWeight.weight - weeklyGoalWeight).toFixed(1) 
+    : latestWeight && isWeeklyGoalRange
+    ? (latestWeight.weight < weeklyGoalWeightMin 
+        ? (latestWeight.weight - weeklyGoalWeightMin).toFixed(1)
+        : latestWeight.weight > weeklyGoalWeightMax
+        ? (latestWeight.weight - weeklyGoalWeightMax).toFixed(1)
+        : '0') // Within range
     : null;
+  
+  // Check if within weekly goal range
+  const isWithinWeeklyRange = latestWeight && isWeeklyGoalRange
+    ? latestWeight.weight >= weeklyGoalWeightMin && latestWeight.weight <= weeklyGoalWeightMax
+    : false;
 
   const handleAddEntry = async () => {
     if (!user || !newEntry.weight) return;
@@ -127,20 +164,62 @@ export default function WeightLog() {
   };
 
   const handleSetGoalWeight = async () => {
-    if (!user || !goalWeight || !editingGoalType) return;
+    if (!user || !editingGoalType) return;
 
     try {
-      const goalWeightValue = parseFloat(goalWeight);
-      if (isNaN(goalWeightValue)) {
-        alert('Please enter a valid weight');
-        return;
-      }
-
       const updateData: any = {};
-      if (editingGoalType === 'ultimate') {
-        updateData.ultimate_goal_weight = goalWeightValue;
-      } else if (editingGoalType === 'weekly') {
-        updateData.weekly_goal_weight = goalWeightValue;
+      
+      if (goalType === 'specific') {
+        // Specific weight goal
+        if (!goalWeight) {
+          alert('Please enter a goal weight');
+          return;
+        }
+        const goalWeightValue = parseFloat(goalWeight);
+        if (isNaN(goalWeightValue)) {
+          alert('Please enter a valid weight');
+          return;
+        }
+
+        if (editingGoalType === 'ultimate') {
+          updateData.ultimate_goal_weight = goalWeightValue;
+          // Clear range values
+          updateData.ultimate_goal_weight_min = null;
+          updateData.ultimate_goal_weight_max = null;
+        } else if (editingGoalType === 'weekly') {
+          updateData.weekly_goal_weight = goalWeightValue;
+          // Clear range values
+          updateData.weekly_goal_weight_min = null;
+          updateData.weekly_goal_weight_max = null;
+        }
+      } else {
+        // Range goal
+        if (!goalWeightMin || !goalWeightMax) {
+          alert('Please enter both minimum and maximum weights for the range');
+          return;
+        }
+        const minValue = parseFloat(goalWeightMin);
+        const maxValue = parseFloat(goalWeightMax);
+        if (isNaN(minValue) || isNaN(maxValue)) {
+          alert('Please enter valid weights');
+          return;
+        }
+        if (minValue >= maxValue) {
+          alert('Minimum weight must be less than maximum weight');
+          return;
+        }
+
+        if (editingGoalType === 'ultimate') {
+          updateData.ultimate_goal_weight_min = minValue;
+          updateData.ultimate_goal_weight_max = maxValue;
+          // Clear specific value
+          updateData.ultimate_goal_weight = null;
+        } else if (editingGoalType === 'weekly') {
+          updateData.weekly_goal_weight_min = minValue;
+          updateData.weekly_goal_weight_max = maxValue;
+          // Clear specific value
+          updateData.weekly_goal_weight = null;
+        }
       }
 
       const { error } = await supabase
@@ -153,6 +232,9 @@ export default function WeightLog() {
       setShowGoalModal(false);
       setEditingGoalType(null);
       setGoalWeight('');
+      setGoalWeightMin('');
+      setGoalWeightMax('');
+      setGoalType('specific');
       // Force a page refresh to update the profile data
       window.location.reload();
     } catch (error) {
@@ -262,6 +344,9 @@ export default function WeightLog() {
               <button
                 onClick={() => {
                   setGoalWeight('');
+                  setGoalWeightMin('');
+                  setGoalWeightMax('');
+                  setGoalType('specific');
                   setEditingGoalType(null);
                   setShowGoalModal(true);
                 }}
@@ -305,7 +390,17 @@ export default function WeightLog() {
               </div>
               <button
                 onClick={() => {
-                  setGoalWeight(ultimateGoalWeight?.toString() || '');
+                  if (isUltimateGoalRange) {
+                    setGoalType('range');
+                    setGoalWeightMin(ultimateGoalWeightMin?.toString() || '');
+                    setGoalWeightMax(ultimateGoalWeightMax?.toString() || '');
+                    setGoalWeight('');
+                  } else {
+                    setGoalType('specific');
+                    setGoalWeight(ultimateGoalWeight?.toString() || '');
+                    setGoalWeightMin('');
+                    setGoalWeightMax('');
+                  }
                   setEditingGoalType('ultimate');
                   setShowGoalModal(true);
                 }}
@@ -315,17 +410,29 @@ export default function WeightLog() {
                 <Edit2 className="w-4 h-4" />
               </button>
             </div>
-            {ultimateGoalWeight ? (
+            {ultimateGoalWeight || isUltimateGoalRange ? (
               <>
                 <p className="text-2xl font-bold text-gray-900 mb-1">
-                  {ultimateGoalWeight} {goalWeightUnit}
+                  {isUltimateGoalRange 
+                    ? `${ultimateGoalWeightMin} - ${ultimateGoalWeightMax} ${goalWeightUnit}`
+                    : `${ultimateGoalWeight} ${goalWeightUnit}`}
                 </p>
                 {latestWeight && (
-                  <p className={`text-sm ${Number(toUltimateGoal) <= 0 ? 'text-green-600' : 'text-gray-600'}`}>
-                    {Number(toUltimateGoal) > 0 ? '+' : ''}{toUltimateGoal} {goalWeightUnit} to go
-                    {Number(toUltimateGoal) <= 0 && (
-                      <span className="ml-1 font-medium">✓ Reached!</span>
-                    )}
+                  <p className={`text-sm ${
+                    isWithinUltimateRange || (toUltimateGoal && Number(toUltimateGoal) <= 0) 
+                      ? 'text-green-600' 
+                      : 'text-gray-600'
+                  }`}>
+                    {isWithinUltimateRange ? (
+                      <span className="font-medium">✓ Within goal range!</span>
+                    ) : toUltimateGoal ? (
+                      <>
+                        {Number(toUltimateGoal) > 0 ? '+' : ''}{toUltimateGoal} {goalWeightUnit} to go
+                        {Number(toUltimateGoal) <= 0 && (
+                          <span className="ml-1 font-medium">✓ Reached!</span>
+                        )}
+                      </>
+                    ) : null}
                   </p>
                 )}
               </>
@@ -354,7 +461,17 @@ export default function WeightLog() {
               </div>
               <button
                 onClick={() => {
-                  setGoalWeight(weeklyGoalWeight?.toString() || '');
+                  if (isWeeklyGoalRange) {
+                    setGoalType('range');
+                    setGoalWeightMin(weeklyGoalWeightMin?.toString() || '');
+                    setGoalWeightMax(weeklyGoalWeightMax?.toString() || '');
+                    setGoalWeight('');
+                  } else {
+                    setGoalType('specific');
+                    setGoalWeight(weeklyGoalWeight?.toString() || '');
+                    setGoalWeightMin('');
+                    setGoalWeightMax('');
+                  }
                   setEditingGoalType('weekly');
                   setShowGoalModal(true);
                 }}
@@ -364,17 +481,29 @@ export default function WeightLog() {
                 <Edit2 className="w-4 h-4" />
               </button>
             </div>
-            {weeklyGoalWeight ? (
+            {weeklyGoalWeight || isWeeklyGoalRange ? (
               <>
                 <p className="text-2xl font-bold text-gray-900 mb-1">
-                  {weeklyGoalWeight} {goalWeightUnit}
+                  {isWeeklyGoalRange 
+                    ? `${weeklyGoalWeightMin} - ${weeklyGoalWeightMax} ${goalWeightUnit}`
+                    : `${weeklyGoalWeight} ${goalWeightUnit}`}
                 </p>
                 {latestWeight && (
-                  <p className={`text-sm ${Number(toWeeklyGoal) <= 0 ? 'text-green-600' : 'text-gray-600'}`}>
-                    {Number(toWeeklyGoal) > 0 ? '+' : ''}{toWeeklyGoal} {goalWeightUnit} to go
-                    {Number(toWeeklyGoal) <= 0 && (
-                      <span className="ml-1 font-medium">✓ Reached!</span>
-                    )}
+                  <p className={`text-sm ${
+                    isWithinWeeklyRange || (toWeeklyGoal && Number(toWeeklyGoal) <= 0) 
+                      ? 'text-green-600' 
+                      : 'text-gray-600'
+                  }`}>
+                    {isWithinWeeklyRange ? (
+                      <span className="font-medium">✓ Within goal range!</span>
+                    ) : toWeeklyGoal ? (
+                      <>
+                        {Number(toWeeklyGoal) > 0 ? '+' : ''}{toWeeklyGoal} {goalWeightUnit} to go
+                        {Number(toWeeklyGoal) <= 0 && (
+                          <span className="ml-1 font-medium">✓ Reached!</span>
+                        )}
+                      </>
+                    ) : null}
                   </p>
                 )}
               </>
@@ -584,6 +713,9 @@ export default function WeightLog() {
                   setShowGoalModal(false);
                   setEditingGoalType(null);
                   setGoalWeight('');
+                  setGoalWeightMin('');
+                  setGoalWeightMax('');
+                  setGoalType('specific');
                 }}
                 className="p-2 hover:bg-gray-100 rounded-lg"
               >
@@ -595,24 +727,98 @@ export default function WeightLog() {
               {editingGoalType ? (
                 // Editing a specific goal
                 <>
+                  {/* Goal Type Selection */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Goal Weight (lbs)
+                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                      Goal Type
                     </label>
-                    <input
-                      type="number"
-                      step="0.1"
-                      value={goalWeight}
-                      onChange={(e) => setGoalWeight(e.target.value)}
-                      placeholder={`Enter your ${editingGoalType === 'ultimate' ? 'ultimate' : 'weekly'} goal weight (lbs)`}
-                      className="input text-2xl text-center font-bold"
-                      autoFocus
-                    />
-                    <p className="text-xs text-gray-500 mt-2">
-                      {editingGoalType === 'ultimate' && 'Set your long-term ultimate weight goal in lbs.'}
-                      {editingGoalType === 'weekly' && 'Set your goal weight for this week in lbs.'}
-                    </p>
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setGoalType('specific');
+                          setGoalWeightMin('');
+                          setGoalWeightMax('');
+                        }}
+                        className={`flex-1 px-4 py-3 rounded-xl border-2 transition-all ${
+                          goalType === 'specific'
+                            ? 'border-coral-500 bg-coral-50 text-coral-700 font-semibold'
+                            : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                        }`}
+                      >
+                        Specific Weight
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setGoalType('range');
+                          setGoalWeight('');
+                        }}
+                        className={`flex-1 px-4 py-3 rounded-xl border-2 transition-all ${
+                          goalType === 'range'
+                            ? 'border-coral-500 bg-coral-50 text-coral-700 font-semibold'
+                            : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                        }`}
+                      >
+                        Weight Range
+                      </button>
+                    </div>
                   </div>
+
+                  {goalType === 'specific' ? (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Goal Weight (lbs)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        value={goalWeight}
+                        onChange={(e) => setGoalWeight(e.target.value)}
+                        placeholder={`Enter your ${editingGoalType === 'ultimate' ? 'ultimate' : 'weekly'} goal weight (lbs)`}
+                        className="input text-2xl text-center font-bold"
+                        autoFocus
+                      />
+                      <p className="text-xs text-gray-500 mt-2">
+                        {editingGoalType === 'ultimate' && 'Set your long-term ultimate weight goal in lbs.'}
+                        {editingGoalType === 'weekly' && 'Set your goal weight for this week in lbs.'}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Minimum Weight (lbs)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={goalWeightMin}
+                          onChange={(e) => setGoalWeightMin(e.target.value)}
+                          placeholder="Min weight"
+                          className="input text-xl text-center font-bold"
+                          autoFocus
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Maximum Weight (lbs)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={goalWeightMax}
+                          onChange={(e) => setGoalWeightMax(e.target.value)}
+                          placeholder="Max weight"
+                          className="input text-xl text-center font-bold"
+                        />
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        {editingGoalType === 'ultimate' && 'Set a weight range for your ultimate goal. You\'ll reach your goal when your weight falls within this range.'}
+                        {editingGoalType === 'weekly' && 'Set a weight range for your weekly goal. You\'ll reach your goal when your weight falls within this range.'}
+                      </p>
+                    </div>
+                  )}
 
                   <div className="flex gap-3 pt-4">
                     <button
@@ -620,6 +826,9 @@ export default function WeightLog() {
                         setShowGoalModal(false);
                         setEditingGoalType(null);
                         setGoalWeight('');
+                        setGoalWeightMin('');
+                        setGoalWeightMax('');
+                        setGoalType('specific');
                       }}
                       className="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-gray-50"
                     >
@@ -628,16 +837,20 @@ export default function WeightLog() {
                     <button 
                       onClick={handleSetGoalWeight} 
                       className="flex-1 btn-primary flex items-center justify-center gap-2"
-                      disabled={!goalWeight || isNaN(parseFloat(goalWeight))}
+                      disabled={
+                        goalType === 'specific' 
+                          ? (!goalWeight || isNaN(parseFloat(goalWeight)))
+                          : (!goalWeightMin || !goalWeightMax || isNaN(parseFloat(goalWeightMin)) || isNaN(parseFloat(goalWeightMax)))
+                      }
                     >
                       <Check className="w-5 h-5" />
-                      {((editingGoalType === 'ultimate' && ultimateGoalWeight) ||
-                        (editingGoalType === 'weekly' && weeklyGoalWeight)) ? 'Update Goal' : 'Set Goal'}
+                      {((editingGoalType === 'ultimate' && (ultimateGoalWeight || isUltimateGoalRange)) ||
+                        (editingGoalType === 'weekly' && (weeklyGoalWeight || isWeeklyGoalRange))) ? 'Update Goal' : 'Set Goal'}
                     </button>
                   </div>
 
-                  {((editingGoalType === 'ultimate' && ultimateGoalWeight) ||
-                    (editingGoalType === 'weekly' && weeklyGoalWeight)) && (
+                  {((editingGoalType === 'ultimate' && (ultimateGoalWeight || isUltimateGoalRange)) ||
+                    (editingGoalType === 'weekly' && (weeklyGoalWeight || isWeeklyGoalRange))) && (
                     <button
                       onClick={async () => {
                         if (!user) return;
@@ -678,7 +891,17 @@ export default function WeightLog() {
                   
                   <button
                     onClick={() => {
-                      setGoalWeight(ultimateGoalWeight?.toString() || '');
+                      if (isUltimateGoalRange) {
+                        setGoalType('range');
+                        setGoalWeightMin(ultimateGoalWeightMin?.toString() || '');
+                        setGoalWeightMax(ultimateGoalWeightMax?.toString() || '');
+                        setGoalWeight('');
+                      } else {
+                        setGoalType('specific');
+                        setGoalWeight(ultimateGoalWeight?.toString() || '');
+                        setGoalWeightMin('');
+                        setGoalWeightMax('');
+                      }
                       setEditingGoalType('ultimate');
                     }}
                     className="w-full p-4 rounded-xl border-2 border-purple-200 hover:border-purple-400 bg-purple-50 hover:bg-purple-100 transition-colors text-left"
@@ -690,9 +913,11 @@ export default function WeightLog() {
                       <div className="flex-1">
                         <p className="font-semibold text-gray-900">Ultimate Goal</p>
                         <p className="text-sm text-gray-600">Your long-term weight goal</p>
-                        {ultimateGoalWeight && (
+                        {(ultimateGoalWeight || isUltimateGoalRange) && (
                           <p className="text-sm text-purple-600 font-medium mt-1">
-                            Current: {ultimateGoalWeight} {goalWeightUnit}
+                            Current: {isUltimateGoalRange 
+                              ? `${ultimateGoalWeightMin} - ${ultimateGoalWeightMax} ${goalWeightUnit}`
+                              : `${ultimateGoalWeight} ${goalWeightUnit}`}
                           </p>
                         )}
                       </div>
@@ -702,7 +927,17 @@ export default function WeightLog() {
 
                   <button
                     onClick={() => {
-                      setGoalWeight(weeklyGoalWeight?.toString() || '');
+                      if (isWeeklyGoalRange) {
+                        setGoalType('range');
+                        setGoalWeightMin(weeklyGoalWeightMin?.toString() || '');
+                        setGoalWeightMax(weeklyGoalWeightMax?.toString() || '');
+                        setGoalWeight('');
+                      } else {
+                        setGoalType('specific');
+                        setGoalWeight(weeklyGoalWeight?.toString() || '');
+                        setGoalWeightMin('');
+                        setGoalWeightMax('');
+                      }
                       setEditingGoalType('weekly');
                     }}
                     className="w-full p-4 rounded-xl border-2 border-blue-200 hover:border-blue-400 bg-blue-50 hover:bg-blue-100 transition-colors text-left"
@@ -714,9 +949,11 @@ export default function WeightLog() {
                       <div className="flex-1">
                         <p className="font-semibold text-gray-900">Weekly Goal</p>
                         <p className="text-sm text-gray-600">Your goal for this week</p>
-                        {weeklyGoalWeight && (
+                        {(weeklyGoalWeight || isWeeklyGoalRange) && (
                           <p className="text-sm text-blue-600 font-medium mt-1">
-                            Current: {weeklyGoalWeight} {goalWeightUnit}
+                            Current: {isWeeklyGoalRange 
+                              ? `${weeklyGoalWeightMin} - ${weeklyGoalWeightMax} ${goalWeightUnit}`
+                              : `${weeklyGoalWeight} ${goalWeightUnit}`}
                           </p>
                         )}
                       </div>

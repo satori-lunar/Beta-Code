@@ -32,28 +32,38 @@ BEGIN
   ) THEN
     -- Drop existing admin policy (if it exists)
     BEGIN
-      DROP POLICY IF EXISTS "Admins can view all habits" ON public.habits;
-    EXCEPTION WHEN undefined_table THEN
-      NULL; -- Table doesn't exist, skip
+      EXECUTE 'DROP POLICY IF EXISTS "Admins can view all habits" ON public.habits';
+    EXCEPTION WHEN OTHERS THEN
+      NULL; -- Ignore errors
+    END;
+    
+    -- Drop the new policy name if it exists (in case migration was partially run)
+    BEGIN
+      EXECUTE 'DROP POLICY IF EXISTS "Admins can view all habits, users can view own" ON public.habits';
+    EXCEPTION WHEN OTHERS THEN
+      NULL; -- Ignore errors
     END;
     
     -- Create new policy using is_admin() function
     BEGIN
-      CREATE POLICY "Admins can view all habits, users can view own"
-        ON public.habits FOR SELECT
-        USING (
-          public.is_admin() -- Includes both admin and admin_lv2
-          OR
-          auth.uid() = user_id -- Users can see their own
-        );
+      EXECUTE '
+        CREATE POLICY "Admins can view all habits, users can view own"
+          ON public.habits FOR SELECT
+          USING (
+            public.is_admin() -- Includes both admin and admin_lv2
+            OR
+            auth.uid() = user_id -- Users can see their own
+          )';
     EXCEPTION WHEN duplicate_object THEN
-      -- Policy already exists, that's OK
-      NULL;
+      NULL; -- Policy already exists, that's OK
     END;
   END IF;
+EXCEPTION WHEN OTHERS THEN
+  NULL; -- Ignore all errors if table doesn't exist
 END $$;
 
 -- Update habit_completions policy to use is_admin() function
+-- Only if table exists
 DO $$
 BEGIN
   IF EXISTS (
@@ -63,25 +73,34 @@ BEGIN
   ) THEN
     -- Drop existing admin policy (if it exists)
     BEGIN
-      DROP POLICY IF EXISTS "Admins can view all habit completions" ON public.habit_completions;
-    EXCEPTION WHEN undefined_table THEN
-      NULL; -- Table doesn't exist, skip
+      EXECUTE 'DROP POLICY IF EXISTS "Admins can view all habit completions" ON public.habit_completions';
+    EXCEPTION WHEN OTHERS THEN
+      NULL; -- Ignore errors
+    END;
+    
+    -- Drop the new policy name if it exists (in case migration was partially run)
+    BEGIN
+      EXECUTE 'DROP POLICY IF EXISTS "Admins can view all habit completions, users can view own" ON public.habit_completions';
+    EXCEPTION WHEN OTHERS THEN
+      NULL; -- Ignore errors
     END;
     
     -- Create new policy using is_admin() function
     BEGIN
-      CREATE POLICY "Admins can view all habit completions, users can view own"
-        ON public.habit_completions FOR SELECT
-        USING (
-          public.is_admin() -- Includes both admin and admin_lv2
-          OR
-          auth.uid() = user_id -- Users can see their own
-        );
+      EXECUTE '
+        CREATE POLICY "Admins can view all habit completions, users can view own"
+          ON public.habit_completions FOR SELECT
+          USING (
+            public.is_admin() -- Includes both admin and admin_lv2
+            OR
+            auth.uid() = user_id -- Users can see their own
+          )';
     EXCEPTION WHEN duplicate_object THEN
-      -- Policy already exists, that's OK
-      NULL;
+      NULL; -- Policy already exists, that's OK
     END;
   END IF;
+EXCEPTION WHEN OTHERS THEN
+  NULL; -- Ignore all errors if table doesn't exist
 END $$;
 
 -- Update class_reminders policy to use is_admin() function
@@ -94,25 +113,34 @@ BEGIN
   ) THEN
     -- Drop existing admin policy (if it exists)
     BEGIN
-      DROP POLICY IF EXISTS "Admins can view all class reminders" ON public.class_reminders;
-    EXCEPTION WHEN undefined_table THEN
-      NULL; -- Table doesn't exist, skip
+      EXECUTE 'DROP POLICY IF EXISTS "Admins can view all class reminders" ON public.class_reminders';
+    EXCEPTION WHEN OTHERS THEN
+      NULL; -- Ignore errors
+    END;
+    
+    -- Drop the new policy name if it exists (in case migration was partially run)
+    BEGIN
+      EXECUTE 'DROP POLICY IF EXISTS "Admins can view all class reminders, users can view own" ON public.class_reminders';
+    EXCEPTION WHEN OTHERS THEN
+      NULL; -- Ignore errors
     END;
     
     -- Create new policy using is_admin() function
     BEGIN
-      CREATE POLICY "Admins can view all class reminders, users can view own"
-        ON public.class_reminders FOR SELECT
-        USING (
-          public.is_admin() -- Includes both admin and admin_lv2
-          OR
-          auth.uid() = user_id -- Users can see their own
-        );
+      EXECUTE '
+        CREATE POLICY "Admins can view all class reminders, users can view own"
+          ON public.class_reminders FOR SELECT
+          USING (
+            public.is_admin() -- Includes both admin and admin_lv2
+            OR
+            auth.uid() = user_id -- Users can see their own
+          )';
     EXCEPTION WHEN duplicate_object THEN
-      -- Policy already exists, that's OK
-      NULL;
+      NULL; -- Policy already exists, that's OK
     END;
   END IF;
+EXCEPTION WHEN OTHERS THEN
+  NULL; -- Ignore all errors if table doesn't exist
 END $$;
 
 -- Add comments (only if tables exist)

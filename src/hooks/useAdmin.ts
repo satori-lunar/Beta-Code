@@ -36,7 +36,8 @@ export function useIsAdmin() {
             .single();
 
           if (!roleError) {
-            isRoleAdmin = userData?.role === 'admin';
+            // Check for both admin and admin_lv2
+            isRoleAdmin = userData?.role === 'admin' || userData?.role === 'admin_lv2';
           }
         } catch (roleCheckErr) {
           // Continue with email check only
@@ -59,6 +60,61 @@ export function useIsAdmin() {
   }, [user]);
 
   return { isAdmin, loading };
+}
+
+// Check if current user is a full admin (not admin_lv2)
+export function useIsFullAdmin() {
+  const { user } = useAuth();
+  const [isFullAdmin, setIsFullAdmin] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) {
+      setIsFullAdmin(false);
+      setLoading(false);
+      return;
+    }
+
+    const checkFullAdmin = async () => {
+      try {
+        // First check: user email is one of the configured admin emails
+        const email = user.email || (user.user_metadata as any)?.email || '';
+        const isEmailAdmin = ADMIN_EMAILS.includes(email);
+
+        // Second check: check database role (must be 'admin', not 'admin_lv2')
+        let isRoleAdmin = false;
+        try {
+          const { data: userData, error: roleError } = await supabase
+            .from('users')
+            .select('role')
+            .eq('id', user.id)
+            .single();
+
+          if (!roleError) {
+            // Only full admin, not admin_lv2
+            isRoleAdmin = userData?.role === 'admin';
+          }
+        } catch (roleCheckErr) {
+          // Continue with email check only
+        }
+
+        const finalIsFullAdmin = isEmailAdmin || isRoleAdmin;
+        setIsFullAdmin(finalIsFullAdmin);
+      } catch (err) {
+        console.error('Error checking full admin status:', err);
+        // Fallback to email check
+        const email = user.email || (user.user_metadata as any)?.email || '';
+        const fallbackIsFullAdmin = ADMIN_EMAILS.includes(email);
+        setIsFullAdmin(fallbackIsFullAdmin);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkFullAdmin();
+  }, [user]);
+
+  return { isFullAdmin, loading };
 }
 
 // Hook to get all users (admin only)

@@ -12,12 +12,13 @@ import {
   MessageCircle,
   Target
 } from 'lucide-react';
-import { useIsAdmin, useAllUsers, useAdminAnalytics } from '../hooks/useAdmin';
+import { useIsAdmin, useIsFullAdmin, useAllUsers, useAdminAnalytics } from '../hooks/useAdmin';
 import { supabase } from '../lib/supabase';
 import { format, parseISO } from 'date-fns';
 
 export default function AdminDashboard() {
   const { isAdmin, loading: adminLoading } = useIsAdmin();
+  const { isFullAdmin } = useIsFullAdmin();
   const { users, loading: usersLoading } = useAllUsers();
   const { analytics, loading: analyticsLoading } = useAdminAnalytics();
   const [selectedTab, setSelectedTab] = useState<'overview' | 'users' | 'videos' | 'reminders' | 'weight' | 'habits' | 'badges' | 'logins' | 'support'>('overview');
@@ -220,11 +221,13 @@ export default function AdminDashboard() {
           { id: 'users', label: 'Users', icon: Users },
           { id: 'videos', label: 'Video Views', icon: Video },
           { id: 'reminders', label: 'Reminders', icon: Bell },
-          { id: 'weight', label: 'Weight Logs', icon: Scale },
+          { id: 'weight', label: 'Weight Logs', icon: Scale, requiresFullAdmin: true },
           { id: 'habits', label: 'Habits', icon: Target },
           { id: 'badges', label: 'Badges', icon: Target },
           { id: 'support', label: 'Support', icon: MessageCircle },
-        ].map((tab) => (
+        ]
+        .filter((tab) => !tab.requiresFullAdmin || isFullAdmin) // Hide weight tab for admin_lv2
+        .map((tab) => (
           <button
             key={tab.id}
             onClick={() => setSelectedTab(tab.id as any)}
@@ -241,7 +244,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* User Filter - Show for tabs that have user-specific data */}
-      {(selectedTab === 'videos' || selectedTab === 'reminders' || selectedTab === 'weight' || selectedTab === 'habits') && (
+      {(selectedTab === 'videos' || selectedTab === 'reminders' || (selectedTab === 'weight' && isFullAdmin) || selectedTab === 'habits') && (
         <div className="card">
           <div className="flex items-center gap-4">
             <label className="text-sm font-medium text-gray-700">Filter by User:</label>
@@ -507,8 +510,8 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {/* Weight Logs Tab */}
-      {selectedTab === 'weight' && (
+      {/* Weight Logs Tab - Only visible to full admins */}
+      {selectedTab === 'weight' && isFullAdmin && (
         <div className="space-y-4">
           <div className="card">
             <div className="flex items-center justify-between mb-4">

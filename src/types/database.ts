@@ -745,7 +745,7 @@ export type Database = {
           avatar_url: string | null
           join_date: string | null
           streak: number | null
-          role: 'member' | 'admin'
+          role: 'member' | 'admin' | 'admin_lv2'
           created_at: string | null
           updated_at: string | null
         }

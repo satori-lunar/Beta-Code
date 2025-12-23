@@ -39,9 +39,11 @@ export default function Journal() {
     title: '',
     content: '',
     mood: 'good' as Mood,
+    specificEmotion: null as string | null,
     tags: '',
     gratitude: ['', '', ''],
   });
+  const [showFeelingsWheel, setShowFeelingsWheel] = useState(false);
 
   const filteredEntries = journalEntries.filter((entry) => {
     const matchesSearch =
@@ -59,6 +61,7 @@ export default function Journal() {
         title: newEntry.title,
         content: newEntry.content,
         mood: newEntry.mood,
+        specific_emotion: newEntry.specificEmotion || null,
         tags: newEntry.tags.split(',').map((t) => t.trim()).filter(Boolean),
         gratitude: newEntry.gratitude.filter(Boolean),
         date: format(new Date(), 'yyyy-MM-dd'),
@@ -111,11 +114,13 @@ export default function Journal() {
       title: '',
       content: '',
       mood: 'good',
+      specificEmotion: null,
       tags: '',
       gratitude: ['', '', ''],
     });
     setShowAddModal(false);
     setEditingEntry(null);
+    setShowFeelingsWheel(false);
   };
 
   const handleEditEntry = (entry: typeof journalEntries[0]) => {
@@ -123,6 +128,7 @@ export default function Journal() {
       title: entry.title || '',
       content: entry.content,
       mood: (entry.mood as Mood) || 'good',
+      specificEmotion: (entry as any).specific_emotion || null,
       tags: Array.isArray(entry.tags) ? entry.tags.join(', ') : '',
       gratitude: [
         entry.gratitude?.[0] || '',
@@ -210,6 +216,11 @@ export default function Journal() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold text-gray-900 truncate text-sm sm:text-base">{entry.title}</h3>
+                  {(entry as any).specific_emotion && (
+                    <p className="text-xs sm:text-sm text-gray-500 mt-1 italic">
+                      {(entry as any).specific_emotion}
+                    </p>
+                  )}
                   <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-xs sm:text-sm text-gray-500">
                     <div className="flex items-center gap-1">
                       <Calendar className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
@@ -313,11 +324,13 @@ export default function Journal() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   How are you feeling?
                 </label>
-                <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
+                <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 mb-3">
                   {moodOptions.map((mood) => (
                     <button
                       key={mood.id}
-                      onClick={() => setNewEntry({ ...newEntry, mood: mood.id as Mood })}
+                      onClick={() => {
+                        setNewEntry({ ...newEntry, mood: mood.id as Mood, specificEmotion: null });
+                      }}
                       className={`flex items-center justify-center gap-2 px-3 sm:px-4 py-2 rounded-xl transition-all text-sm ${
                         newEntry.mood === mood.id
                           ? `${mood.color} ring-2 ring-offset-2 ring-gray-300`
@@ -329,6 +342,19 @@ export default function Journal() {
                     </button>
                   ))}
                 </div>
+                <button
+                  type="button"
+                  onClick={() => setShowFeelingsWheel(true)}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 text-purple-700 hover:from-purple-100 hover:to-pink-100 transition-all text-sm font-medium"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  {newEntry.specificEmotion ? `Feeling: ${newEntry.specificEmotion}` : 'Explore deeper emotions'}
+                </button>
+                {newEntry.specificEmotion && (
+                  <p className="text-xs text-gray-500 mt-2">
+                    Selected: <span className="font-medium italic">{newEntry.specificEmotion}</span>
+                  </p>
+                )}
               </div>
 
               <div>
@@ -407,6 +433,16 @@ export default function Journal() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Feelings Wheel Modal */}
+      {showFeelingsWheel && (
+        <FeelingsWheel
+          mainMood={newEntry.mood}
+          selectedEmotion={newEntry.specificEmotion}
+          onSelect={(emotion) => setNewEntry({ ...newEntry, specificEmotion: emotion })}
+          onClose={() => setShowFeelingsWheel(false)}
+        />
       )}
     </div>
   );

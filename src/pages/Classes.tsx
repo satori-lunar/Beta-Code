@@ -36,6 +36,31 @@ import { useTrackVideoView, useTrackFavorite, useTrackReminder } from '../hooks/
 import { format, parseISO, isAfter, isBefore, addHours } from 'date-fns';
 import ReminderModal from '../components/ReminderModal';
 
+// Class URL mapping - maps class names to their respective URLs
+const classUrls: Record<string, string> = {
+  'Plan Your Week': 'https://www.birchandstonecoaching.com/7-30-am-et-plan-your-week',
+  'Rooted Weight Health': 'https://www.birchandstonecoaching.com/8-30-am-et-rooted-weight-health', // Sunday class
+  'The Heart of Nourishment': 'https://www.birchandstonecoaching.com/9am-et-the-heart-of-nourishment',
+  'Foundations in Motion': 'https://www.birchandstonecoaching.com/9am-et-energy-in-motion',
+  'Strength in Motion': 'https://www.birchandstonecoaching.com/9am-et-energy-in-motion',
+  'Energy in Motion': 'https://www.birchandstonecoaching.com/9am-et-energy-in-motion',
+  'Hatha Yoga': 'https://www.birchandstonecoaching.com/4pm-et-hatha-yoga',
+  'Seedlings': 'https://www.birchandstonecoaching.com/5-30pm-et-seedlings',
+  'Inner Chords': 'https://www.birchandstonecoaching.com/8am-et-inner-chords',
+  'The Reflecting Pool': 'https://www.birchandstonecoaching.com/10am-et-the-reflecting-pool',
+  'Wisdom Rising': 'https://www.birchandstonecoaching.com/4pm-et-wisdom-rising',
+  '2-Bite Tuesdays': 'https://us02web.zoom.us/j/82693227525',
+  'Refreshed & Ready': 'https://us02web.zoom.us/j/82732085104',
+  'Refreshed and Ready': 'https://us02web.zoom.us/j/82732085104',
+  'Grief & Growth': 'https://us02web.zoom.us/j/81574095006',
+  'Tangled: Challenging Relationships': 'https://www.birchandstonecoaching.com/1-30pm-et-tangled',
+  'Tangled': 'https://www.birchandstonecoaching.com/1-30pm-et-tangled',
+  'Evenings with Emily B': 'https://us02web.zoom.us/j/86769218463',
+  'Evenings with Emily B.': 'https://us02web.zoom.us/j/86769218463',
+  'The Habit Lab': 'https://www.birchandstonecoaching.com/8am-et-the-habit-lab',
+  'Habit Lab': 'https://www.birchandstonecoaching.com/8am-et-the-habit-lab',
+  'Nighttime Nurturing': 'https://us02web.zoom.us/j/87954176691',
+};
 
 const classImages: Record<string, string> = {
   'Yoga': 'from-pink-400 to-rose-500',
@@ -99,14 +124,82 @@ export default function Classes() {
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  const now = new Date();
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
+  const notifiedClassesRef = useRef<Set<string>>(new Set());
+
+  // Get current time - update every minute to keep live status accurate
+  const [currentTime, setCurrentTime] = useState(new Date());
+  
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000); // Update every minute
+    
+    return () => clearInterval(interval);
+  }, []);
+
+  // Check notification permission on mount
+  useEffect(() => {
+    if ('Notification' in window) {
+      setNotificationPermission(Notification.permission);
+      // Request permission if not already granted or denied
+      if (Notification.permission === 'default') {
+        Notification.requestPermission().then(setNotificationPermission);
+      }
+    }
+  }, []);
 
   // Helper functions
   const isClassLive = (scheduledAt: string, duration: number) => {
     const startTime = parseISO(scheduledAt);
     const endTime = addHours(startTime, duration / 60);
-    return isAfter(now, startTime) && isBefore(now, endTime);
+    return isAfter(currentTime, startTime) && isBefore(currentTime, endTime);
   };
+
+  // Get currently live classes
+  const currentlyLiveClasses = useMemo(() => {
+    return filteredLiveClasses.filter((c) => {
+      const startTime = parseISO(c.scheduledAt);
+      const endTime = addHours(startTime, c.duration / 60);
+      return isAfter(currentTime, startTime) && isBefore(currentTime, endTime);
+    });
+  }, [filteredLiveClasses, currentTime]);
+
+  // Check for newly live classes and send notifications
+  useEffect(() => {
+    if (notificationPermission === 'granted') {
+      currentlyLiveClasses.forEach(classItem => {
+        if (!notifiedClassesRef.current.has(classItem.id)) {
+          try {
+            const notification = new Notification(`🎉 ${classItem.title} is Live Now!`, {
+              body: `Click to join ${classItem.title}`,
+              icon: '/favicon.ico',
+              tag: `class-${classItem.id}`,
+              requireInteraction: false,
+            });
+
+            notification.onclick = () => {
+              window.focus();
+              if (classItem.zoomLink && classItem.zoomLink !== '#') {
+                window.open(classItem.zoomLink, '_blank', 'noopener,noreferrer');
+              }
+              notification.close();
+            };
+
+            notifiedClassesRef.current.add(classItem.id);
+            
+            // Remove from notified set after class duration expires
+            const durationMs = Math.max(classItem.duration * 60 * 1000, 60000);
+            setTimeout(() => {
+              notifiedClassesRef.current.delete(classItem.id);
+            }, durationMs);
+          } catch (error) {
+            console.error('Error sending notification:', error);
+          }
+        }
+      });
+    }
+  }, [currentlyLiveClasses, notificationPermission]);
 
   // Map Supabase data to component format
   const mappedRecordedSessions = useMemo(() => {
@@ -129,18 +222,36 @@ export default function Classes() {
   }, [recordedSessions, favoriteIds, completedIds]);
 
   const mappedLiveClasses = useMemo(() => {
-    return (liveClasses || []).map(cls => ({
-      id: cls.id,
-      title: cls.title,
-      description: cls.description || '',
-      instructor: cls.instructor,
-      scheduledAt: cls.scheduled_at,
-      duration: cls.duration,
-      zoomLink: cls.zoom_link || '#',
-      thumbnail: cls.thumbnail_url || '',
-      category: cls.category,
-      isLive: isClassLive(cls.scheduled_at, cls.duration),
-    }));
+    return (liveClasses || []).map(cls => {
+      // Get URL from mapping - handle special case for Rooted Weight Health
+      let classUrl = classUrls[cls.title];
+      
+      // Rooted Weight Health has different URLs for Sunday vs Thursday
+      if (cls.title === 'Rooted Weight Health') {
+        const classWeekday = format(parseISO(cls.scheduled_at), 'EEEE');
+        if (classWeekday === 'Thursday') {
+          classUrl = 'https://us02web.zoom.us/j/89878609955';
+        } else {
+          classUrl = classUrls['Rooted Weight Health'];
+        }
+      }
+      
+      // Use class URL from mapping, fallback to zoom_link from database, then fallback to #
+      const finalUrl = classUrl || cls.zoom_link || '#';
+      
+      return {
+        id: cls.id,
+        title: cls.title,
+        description: cls.description || '',
+        instructor: cls.instructor,
+        scheduledAt: cls.scheduled_at,
+        duration: cls.duration,
+        zoomLink: finalUrl,
+        thumbnail: cls.thumbnail_url || '',
+        category: cls.category,
+        isLive: isClassLive(cls.scheduled_at, cls.duration),
+      };
+    });
   }, [liveClasses]);
 
   // Filtered data - no filters for live classes, just use all classes
@@ -236,7 +347,6 @@ export default function Classes() {
   }, [filteredLiveClasses]);
 
   const weekdayOrder = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  const currentlyLiveClasses = filteredLiveClasses.filter((c) => isClassLive(c.scheduledAt, c.duration));
   
   // Track if we've initialized the selected weekday for the live tab
   const hasInitializedWeekday = useRef(false);
@@ -399,7 +509,35 @@ export default function Classes() {
       {/* Live Classes */}
       {activeTab === 'live' && (
         <div className="space-y-6">
-          {/* Live Now */}
+          {/* Live Now Banner */}
+          {currentlyLiveClasses.length > 0 && (
+            <div className="bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg p-4 shadow-lg animate-pulse">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="w-3 h-3 bg-white rounded-full animate-pulse" />
+                  <div>
+                    <h2 className="text-lg font-semibold">Class{currentlyLiveClasses.length > 1 ? 'es' : ''} Live Now!</h2>
+                    <p className="text-sm text-red-50">
+                      {currentlyLiveClasses.length} class{currentlyLiveClasses.length > 1 ? 'es are' : ' is'} currently in session
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    // Scroll to live classes or open first live class
+                    if (currentlyLiveClasses.length > 0 && currentlyLiveClasses[0].zoomLink && currentlyLiveClasses[0].zoomLink !== '#') {
+                      window.open(currentlyLiveClasses[0].zoomLink, '_blank', 'noopener,noreferrer');
+                    }
+                  }}
+                  className="px-4 py-2 bg-white text-red-600 font-semibold rounded-lg hover:bg-red-50 transition-colors"
+                >
+                  Join Now
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Live Now Classes */}
           {currentlyLiveClasses.length > 0 && (
             <div>
               <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
@@ -725,22 +863,36 @@ function LiveClassCard({ classItem, isLive }: LiveClassCardProps) {
     }
   };
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Don't trigger if clicking on the button
+    if ((e.target as HTMLElement).closest('button')) {
+      return;
+    }
+    
+    if (isLive && classItem.zoomLink && classItem.zoomLink !== '#') {
+      window.open(classItem.zoomLink, '_blank', 'noopener,noreferrer');
+    }
+  };
+
   const handleButtonClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (isLive) {
       // If live, open zoom link
-      if (classItem.zoomLink) {
+      if (classItem.zoomLink && classItem.zoomLink !== '#') {
         window.open(classItem.zoomLink, '_blank', 'noopener,noreferrer');
       }
     } else {
       // If not live, show reminder modal
-      e.preventDefault();
       setShowReminderModal(true);
     }
   };
 
   return (
     <>
-      <div className="card overflow-hidden hover:shadow-elevated transition-shadow group">
+      <div 
+        className={`card overflow-hidden hover:shadow-elevated transition-shadow group ${isLive && classItem.zoomLink && classItem.zoomLink !== '#' ? 'cursor-pointer' : ''}`}
+        onClick={handleCardClick}
+      >
         <div className={`h-32 bg-gradient-to-br ${classStyle.gradient} -mx-6 -mt-6 mb-4 relative overflow-hidden`}>
         {isLive && (
             <div className="absolute top-3 left-3 px-3 py-1 bg-red-500 text-white text-xs font-medium rounded-full flex items-center gap-1 z-10">

@@ -21,13 +21,13 @@ INSERT INTO public.courses (
   'A supportive coaching program for navigating grief and finding growth through loss. Join us every Wednesday at 10:00 AM ET.',
   'Birch & Stone Coaching',
   '60 minutes per session',
-  42,
+  45,
   'Grief & Growth',
   'intermediate',
   ARRAY['grief', 'growth', 'loss', 'healing', 'coaching', 'support']
 );
 
--- Step 2: Insert all 42 sessions linked to the course
+-- Step 2: Insert all 45 sessions linked to the course
 INSERT INTO public.recorded_sessions (
   title,
   description,
@@ -63,8 +63,8 @@ INSERT INTO public.recorded_sessions (
   ('Thanksgiving Grief & Growth 11/26', 'Grief & Growth - Session Recording', 'Birch & Stone Coaching', CURRENT_DATE, 60, 'https://www.birchandstonecoaching.com/coaching/groups/grief-growth-wednesdays-10am-et/sessions/763296/details', 'Grief & Growth', 0, ARRAY['grief', 'growth', 'thanksgiving', 'holidays'], '00000000-0000-0000-0000-000000000003'::uuid, true),
   ('12-3 The 5 Stepping Stones', 'Grief & Growth - Session Recording', 'Birch & Stone Coaching', CURRENT_DATE, 60, 'https://www.birchandstonecoaching.com/coaching/groups/grief-growth-wednesdays-10am-et/sessions/763297/details', 'Grief & Growth', 0, ARRAY['grief', 'growth', 'stepping stones', 'process'], '00000000-0000-0000-0000-000000000003'::uuid, true),
   ('12-10 Just for now...I will _____________.', 'Grief & Growth - Session Recording', 'Birch & Stone Coaching', CURRENT_DATE, 60, 'https://www.birchandstonecoaching.com/coaching/groups/grief-growth-wednesdays-10am-et/sessions/763298/details', 'Grief & Growth', 0, ARRAY['grief', 'growth', 'present moment', 'intention'], '00000000-0000-0000-0000-000000000003'::uuid, true),
-  ('Session 34', 'Grief & Growth - Session Recording', 'Birch & Stone Coaching', CURRENT_DATE, 60, 'https://www.birchandstonecoaching.com/coaching/groups/grief-growth-wednesdays-10am-et/sessions/763299/details', 'Grief & Growth', 0, ARRAY['grief', 'growth'], '00000000-0000-0000-0000-000000000003'::uuid, true),
-  ('Session 35', 'Grief & Growth - Session Recording', 'Birch & Stone Coaching', CURRENT_DATE, 60, 'https://www.birchandstonecoaching.com/coaching/groups/grief-growth-wednesdays-10am-et/sessions/763300/details', 'Grief & Growth', 0, ARRAY['grief', 'growth'], '00000000-0000-0000-0000-000000000003'::uuid, true),
+  ('12-17 Grief in our Bodies', 'Grief & Growth - Session Recording', 'Birch & Stone Coaching', CURRENT_DATE, 60, 'https://www.birchandstonecoaching.com/coaching/groups/grief-growth-wednesdays-10am-et/sessions/763299/details', 'Grief & Growth', 0, ARRAY['grief', 'growth', 'body', 'somatic'], '00000000-0000-0000-0000-000000000003'::uuid, true),
+  ('12-24 A Love Letter To Yourself', 'Grief & Growth - Session Recording', 'Birch & Stone Coaching', CURRENT_DATE, 60, 'https://www.birchandstonecoaching.com/coaching/groups/grief-growth-wednesdays-10am-et/sessions/763300/details', 'Grief & Growth', 0, ARRAY['grief', 'growth', 'self-love', 'compassion'], '00000000-0000-0000-0000-000000000003'::uuid, true),
   ('Session 36', 'Grief & Growth - Session Recording', 'Birch & Stone Coaching', CURRENT_DATE, 60, 'https://www.birchandstonecoaching.com/coaching/groups/grief-growth-wednesdays-10am-et/sessions/763301/details', 'Grief & Growth', 0, ARRAY['grief', 'growth'], '00000000-0000-0000-0000-000000000003'::uuid, true),
   ('Session 37', 'Grief & Growth - Session Recording', 'Birch & Stone Coaching', CURRENT_DATE, 60, 'https://www.birchandstonecoaching.com/coaching/groups/grief-growth-wednesdays-10am-et/sessions/763302/details', 'Grief & Growth', 0, ARRAY['grief', 'growth'], '00000000-0000-0000-0000-000000000003'::uuid, true),
   ('Session 38', 'Grief & Growth - Session Recording', 'Birch & Stone Coaching', CURRENT_DATE, 60, 'https://www.birchandstonecoaching.com/coaching/groups/grief-growth-wednesdays-10am-et/sessions/763303/details', 'Grief & Growth', 0, ARRAY['grief', 'growth'], '00000000-0000-0000-0000-000000000003'::uuid, true),

@@ -14,7 +14,6 @@ import {
   CheckCircle2,
   ChevronRight,
   Moon,
-  UtensilsCrossed,
   Sparkles,
   Target,
   Sunrise,
@@ -28,6 +27,7 @@ import {
   Flame,
   Waves,
   Flower2,
+  Cookie,
 } from 'lucide-react';
 import { useRecordedSessions, useLiveClasses, useFavoriteSessions, useSessionCompletions, useClassReminders } from '../hooks/useSupabaseData';
 import { useCourses } from '../hooks/useCourses';
@@ -82,7 +82,8 @@ const courseStyles: Record<string, { gradient: string; icon: any }> = {
   'Foundations in Motion': { gradient: 'from-green-500 to-emerald-600', icon: Activity },
   'Nighttime Nurturing': { gradient: 'from-indigo-500 to-purple-600', icon: Moon },
   'Nighttime Nurturing- Fridays @ 11pm ET': { gradient: 'from-indigo-500 to-purple-600', icon: Moon },
-  '2-Bite Tuesdays': { gradient: 'from-orange-400 to-amber-500', icon: UtensilsCrossed },
+  '2-Bite Tuesdays': { gradient: 'from-orange-400 to-amber-500', icon: Cookie },
+  '2-Bite Tuesday at 10pm ET': { gradient: 'from-orange-400 to-amber-500', icon: Cookie },
   'Refreshed & Ready': { gradient: 'from-yellow-400 to-orange-500', icon: Sunrise },
   'Refreshed and Ready': { gradient: 'from-yellow-400 to-orange-500', icon: Sunrise },
   'Evenings with Emily B': { gradient: 'from-pink-500 to-rose-600', icon: Sunset },

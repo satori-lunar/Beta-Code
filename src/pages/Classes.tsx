@@ -635,6 +635,7 @@ export default function Classes() {
                     <RecordedSessionCard
                       key={session.id}
                       session={session}
+                      courses={courseList}
                       onToggleFavorite={async () => {
                         const wasFavorite = favoriteIds.has(session.id);
                         toggleFavorite(session.id);
@@ -746,6 +747,7 @@ export default function Classes() {
               <RecordedSessionCard
                 key={session.id}
                 session={session}
+                courses={courseList}
                 onToggleFavorite={async () => {
                   const wasFavorite = favoriteIds.has(session.id);
                   toggleFavorite(session.id);
@@ -786,6 +788,7 @@ export default function Classes() {
               <RecordedSessionCard
                 key={session.id}
                 session={session}
+                courses={courseList}
                 onToggleFavorite={async () => {
                   const wasFavorite = favoriteIds.has(session.id);
                   toggleFavorite(session.id);
@@ -984,25 +987,41 @@ interface RecordedSessionCardProps {
     isFavorite: boolean;
     isCompleted: boolean;
     tags: string[];
+    courseId?: string | null;
   };
+  courses?: Array<{ id: string; title: string }>;
   onToggleFavorite: () => void;
   onToggleComplete: () => void;
   onClick?: () => void;
 }
 
-function RecordedSessionCard({ session, onToggleFavorite, onToggleComplete, onClick }: RecordedSessionCardProps) {
-  // Generate a consistent gradient based on session ID for visual variety
-  const gradients = [
-    'from-coral-400 to-pink-500',
-    'from-blue-400 to-indigo-500',
-    'from-purple-400 to-pink-500',
-    'from-green-400 to-teal-500',
-    'from-orange-400 to-red-500',
-    'from-indigo-400 to-purple-500',
-    'from-teal-400 to-cyan-500',
-    'from-rose-400 to-pink-500',
-  ];
-  const sessionGradient = gradients[parseInt(session.id.slice(-1), 16) % gradients.length];
+function RecordedSessionCard({ session, courses = [], onToggleFavorite, onToggleComplete, onClick }: RecordedSessionCardProps) {
+  // Find the course for this session
+  const course = session.courseId ? courses.find(c => c.id === session.courseId) : null;
+  
+  // Get course-specific styles - try exact match first, then try matching course title start
+  let courseStyle = null;
+  if (course) {
+    // Try exact match first
+    courseStyle = courseStyles[course.title] || null;
+    
+    // If no exact match, extract the base course title (before any " - " separator)
+    // and try to find a matching style key that matches the base title
+    if (!courseStyle) {
+      const baseTitle = course.title.split(' - ')[0].trim();
+      const matchingKey = Object.keys(courseStyles).find(key => {
+        const keyBase = key.split(' - ')[0].trim();
+        return baseTitle === keyBase || baseTitle === key || course.title.startsWith(key);
+      });
+      if (matchingKey) {
+        courseStyle = courseStyles[matchingKey];
+      }
+    }
+  }
+  
+  // Use course gradient if available, otherwise fallback to category-based or default
+  const sessionGradient = courseStyle?.gradient || 'from-gray-400 to-gray-600';
+  const CourseIcon = courseStyle?.icon || null;
 
   const handleCardClick = (e: React.MouseEvent) => {
     // Only trigger onClick if the click wasn't on a button
@@ -1019,10 +1038,25 @@ function RecordedSessionCard({ session, onToggleFavorite, onToggleComplete, onCl
     >
       {/* Thumbnail/Image Area */}
       <div className={`h-48 bg-gradient-to-br ${sessionGradient} -mx-6 -mt-6 mb-4 relative overflow-hidden`} onClick={(e) => e.stopPropagation()}>
-        {/* Play overlay */}
-        <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity">
-          <div className="bg-white/20 backdrop-blur-sm rounded-full p-4 transform group-hover:scale-110 transition-transform">
-            <PlayCircle className="w-12 h-12 text-white" />
+        {/* Course Icon - displayed prominently */}
+        {CourseIcon && (
+          <div className="absolute inset-0 flex items-center justify-center opacity-20 group-hover:opacity-30 transition-opacity">
+            <CourseIcon className="w-24 h-24 text-white" />
+          </div>
+        )}
+        
+        {/* Session Title overlay - shown on hover */}
+        <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="text-center px-4">
+            <h4 className="text-white font-semibold text-lg mb-2 line-clamp-2 drop-shadow-lg">
+              {session.title}
+            </h4>
+            <div className="flex items-center justify-center gap-2">
+              {CourseIcon && (
+                <CourseIcon className="w-6 h-6 text-white" />
+              )}
+              <PlayCircle className="w-8 h-8 text-white" />
+            </div>
           </div>
         </div>
         

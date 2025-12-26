@@ -156,51 +156,6 @@ export default function Classes() {
     return isAfter(currentTime, startTime) && isBefore(currentTime, endTime);
   };
 
-  // Get currently live classes
-  const currentlyLiveClasses = useMemo(() => {
-    return filteredLiveClasses.filter((c) => {
-      const startTime = parseISO(c.scheduledAt);
-      const endTime = addHours(startTime, c.duration / 60);
-      return isAfter(currentTime, startTime) && isBefore(currentTime, endTime);
-    });
-  }, [filteredLiveClasses, currentTime]);
-
-  // Check for newly live classes and send notifications
-  useEffect(() => {
-    if (notificationPermission === 'granted') {
-      currentlyLiveClasses.forEach(classItem => {
-        if (!notifiedClassesRef.current.has(classItem.id)) {
-          try {
-            const notification = new Notification(`🎉 ${classItem.title} is Live Now!`, {
-              body: `Click to join ${classItem.title}`,
-              icon: '/favicon.ico',
-              tag: `class-${classItem.id}`,
-              requireInteraction: false,
-            });
-
-            notification.onclick = () => {
-              window.focus();
-              if (classItem.zoomLink && classItem.zoomLink !== '#') {
-                window.open(classItem.zoomLink, '_blank', 'noopener,noreferrer');
-              }
-              notification.close();
-            };
-
-            notifiedClassesRef.current.add(classItem.id);
-            
-            // Remove from notified set after class duration expires
-            const durationMs = Math.max(classItem.duration * 60 * 1000, 60000);
-            setTimeout(() => {
-              notifiedClassesRef.current.delete(classItem.id);
-            }, durationMs);
-          } catch (error) {
-            console.error('Error sending notification:', error);
-          }
-        }
-      });
-    }
-  }, [currentlyLiveClasses, notificationPermission]);
-
   // Map Supabase data to component format
   const mappedRecordedSessions = useMemo(() => {
     return (recordedSessions || []).map(session => ({
@@ -256,6 +211,51 @@ export default function Classes() {
 
   // Filtered data - no filters for live classes, just use all classes
   const filteredLiveClasses = mappedLiveClasses;
+
+  // Get currently live classes
+  const currentlyLiveClasses = useMemo(() => {
+    return filteredLiveClasses.filter((c) => {
+      const startTime = parseISO(c.scheduledAt);
+      const endTime = addHours(startTime, c.duration / 60);
+      return isAfter(currentTime, startTime) && isBefore(currentTime, endTime);
+    });
+  }, [filteredLiveClasses, currentTime]);
+
+  // Check for newly live classes and send notifications
+  useEffect(() => {
+    if (notificationPermission === 'granted') {
+      currentlyLiveClasses.forEach(classItem => {
+        if (!notifiedClassesRef.current.has(classItem.id)) {
+          try {
+            const notification = new Notification(`🎉 ${classItem.title} is Live Now!`, {
+              body: `Click to join ${classItem.title}`,
+              icon: '/favicon.ico',
+              tag: `class-${classItem.id}`,
+              requireInteraction: false,
+            });
+
+            notification.onclick = () => {
+              window.focus();
+              if (classItem.zoomLink && classItem.zoomLink !== '#') {
+                window.open(classItem.zoomLink, '_blank', 'noopener,noreferrer');
+              }
+              notification.close();
+            };
+
+            notifiedClassesRef.current.add(classItem.id);
+            
+            // Remove from notified set after class duration expires
+            const durationMs = Math.max(classItem.duration * 60 * 1000, 60000);
+            setTimeout(() => {
+              notifiedClassesRef.current.delete(classItem.id);
+            }, durationMs);
+          } catch (error) {
+            console.error('Error sending notification:', error);
+          }
+        }
+      });
+    }
+  }, [currentlyLiveClasses, notificationPermission]);
 
   // Define class structure matching the SQL file exactly
   // This ensures the same order and grouping as defined in insert-live-classes.sql

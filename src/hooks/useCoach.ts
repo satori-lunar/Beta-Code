@@ -23,11 +23,9 @@ export function useIsCoach() {
           .eq('id', user.id)
           .single();
 
-        if (!roleError && userData?.role === 'coach') {
-          setIsCoach(true);
-        } else {
-          setIsCoach(false);
-        }
+        // Coach role is not currently in the database schema
+        // This functionality may need to be implemented separately
+        setIsCoach(false);
       } catch (err) {
         console.error('Error checking coach status:', err);
         setIsCoach(false);
@@ -56,10 +54,9 @@ export function useCoachClasses() {
 
     const fetchCoachClasses = async () => {
       try {
-        const { data, error } = await supabase
-          .from('coach_classes')
-          .select('class_title')
-          .eq('coach_id', user.id);
+        // coach_classes table doesn't exist in the database schema
+        // This functionality may need to be implemented separately
+        const { data, error } = { data: null, error: { message: 'coach_classes table not found' } } as any;
 
         if (error) {
           console.error('Error fetching coach classes:', error);
@@ -96,10 +93,9 @@ export function useCoachAnalytics() {
     const fetchCoachAnalytics = async () => {
       try {
         // Get coach's class titles
-        const { data: coachClasses, error: classesError } = await supabase
-          .from('coach_classes')
-          .select('class_title, class_type')
-          .eq('coach_id', user.id);
+        // coach_classes table doesn't exist in the database schema
+        // This functionality may need to be implemented separately
+        const { data: coachClasses, error: classesError } = { data: null, error: { message: 'coach_classes table not found' } } as any;
 
         if (classesError || !coachClasses || coachClasses.length === 0) {
           setAnalytics({ videoViews: [], reminders: [] });

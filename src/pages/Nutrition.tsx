@@ -88,7 +88,8 @@ export default function Nutrition() {
     fat: '',
   });
 
-  const waterGoal = 2000;
+  // Convert to American units: 2000ml = ~68oz (2000 * 0.033814)
+  const waterGoal = 68; // ounces
   const calorieGoal = 2000;
 
   const totalCalories = meals.reduce((sum, meal) => sum + meal.calories, 0);
@@ -276,11 +277,13 @@ export default function Nutrition() {
   }, [meals, waterIntake, nutritionEntryId, user]);
 
   const addWater = async (amount: number) => {
+    // Amount is in ounces
     const newAmount = Math.max(0, waterIntake + amount);
     setWaterIntake(newAmount);
     
     if (nutritionEntryId && user) {
       try {
+        // Store in oz (database value will be in oz)
         const { error } = await supabase
           .from('nutrition_entries')
           .update({ water_intake: newAmount } as any)
@@ -556,7 +559,7 @@ export default function Nutrition() {
                 <span className="font-medium text-gray-900">3. Set Goals</span>
               </div>
               <p className="text-sm text-gray-600">
-                Your daily goals are set to 2000 kcal and 2000ml water by default.
+                Your daily goals are set to 2000 kcal and 68oz water by default.
               </p>
             </div>
           </div>
@@ -626,14 +629,14 @@ export default function Nutrition() {
             <h2 className="text-xl font-display font-semibold text-gray-900">Water Intake</h2>
             <div className="flex items-center gap-2 text-sm">
               <span className="text-gray-500">Today</span>
-              <span className="font-bold text-blue-600">{waterIntake}ml</span>
-              <span className="text-gray-400">/ {waterGoal}ml</span>
+              <span className="font-bold text-blue-600">{waterIntake}oz</span>
+              <span className="text-gray-400">/ {waterGoal}oz</span>
             </div>
           </div>
 
           <div className="flex items-center gap-4 mb-6">
             <button
-              onClick={() => addWater(-250)}
+              onClick={() => addWater(-8)}
               className="p-3 rounded-xl bg-gray-100 hover:bg-gray-200 transition-colors"
             >
               <Minus className="w-5 h-5 text-gray-600" />
@@ -649,11 +652,11 @@ export default function Nutrition() {
                 className="absolute -top-8 transform -translate-x-1/2 bg-blue-600 text-white text-xs px-2 py-1 rounded"
                 style={{ left: `${Math.min((waterIntake / waterGoal) * 100, 100)}%` }}
               >
-                {waterIntake}ml
+                {waterIntake}oz
               </div>
             </div>
             <button
-              onClick={() => addWater(250)}
+              onClick={() => addWater(8)}
               className="p-3 rounded-xl bg-blue-100 hover:bg-blue-200 transition-colors"
             >
               <Plus className="w-5 h-5 text-blue-600" />
@@ -661,14 +664,15 @@ export default function Nutrition() {
           </div>
 
           <div className="flex justify-center gap-3 mb-6">
-            {[150, 250, 350, 500].map((amount) => (
+            {/* Convert to oz: 150ml=5oz, 250ml=8oz, 350ml=12oz, 500ml=17oz */}
+            {[5, 8, 12, 17].map((amount) => (
               <button
                 key={amount}
                 onClick={() => addWater(amount)}
                 className="flex items-center gap-1 px-3 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-600 text-sm font-medium transition-colors"
               >
                 <Droplet className="w-4 h-4" />
-                +{amount}ml
+                +{amount}oz
               </button>
             ))}
           </div>

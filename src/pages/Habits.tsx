@@ -519,7 +519,7 @@ export default function Habits() {
       name: newHabit.name,
       icon: newHabit.icon,
       color: newHabit.color,
-      frequency: 'daily',
+      frequency: 'weekly', // Default to weekly for better reliability
       completed_dates: []
     });
     

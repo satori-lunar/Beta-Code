@@ -130,45 +130,62 @@ export default function Journal() {
 
       const isNewEntry = !editingEntry;
 
-      if (editingEntry) {
-        const { data, error } = await supabase
-          .from('journal_entries')
-          .update(entryData)
-          .eq('id', editingEntry)
-          .select()
-          .single();
+      // Retry logic for saving journal entries
+      const saveWithRetry = async (maxRetries = 3): Promise<any> => {
+        let lastError: any = null;
         
-        if (error) {
-          console.error('Error updating journal entry:', error);
-          throw new Error(`Failed to update journal entry: ${error.message || 'Unknown error'}`);
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+          try {
+            if (editingEntry) {
+              const { data, error } = await supabase
+                .from('journal_entries')
+                .update(entryData)
+                .eq('id', editingEntry)
+                .select()
+                .single();
+              
+              if (error) throw error;
+              return { data, isNew: false };
+            } else {
+              const { data: newEntryData, error } = await supabase
+                .from('journal_entries')
+                .insert(entryData)
+                .select()
+                .single();
+              
+              if (error) throw error;
+              return { data: newEntryData, isNew: true };
+            }
+          } catch (error: any) {
+            lastError = error;
+            console.warn(`Journal save attempt ${attempt}/${maxRetries} failed:`, error);
+            
+            // Wait before retrying (exponential backoff)
+            if (attempt < maxRetries) {
+              await new Promise(resolve => setTimeout(resolve, 500 * attempt));
+            }
+          }
         }
         
-        console.log('Journal entry updated successfully:', data);
-        
-        // Track journal update (fire and forget - don't block on tracking)
-        trackJournalEntry(editingEntry, entryData.title, 'journal_entry_updated').catch(err => {
-          console.error('Failed to track journal update:', err);
-        });
-      } else {
-        const { data: newEntryData, error } = await supabase
-          .from('journal_entries')
-          .insert(entryData)
-          .select()
-          .single();
-        
-        if (error) {
-          console.error('Error creating journal entry:', error);
-          throw new Error(`Failed to create journal entry: ${error.message || 'Unknown error'}`);
-        }
-        
-        console.log('Journal entry created successfully:', newEntryData);
-        
+        throw lastError || new Error('Failed to save journal entry after retries');
+      };
+
+      const result = await saveWithRetry();
+      
+      if (result.isNew) {
+        console.log('Journal entry created successfully:', result.data);
         // Track journal creation (fire and forget - don't block on tracking)
-        if (newEntryData) {
-          trackJournalEntry(newEntryData.id, entryData.title, 'journal_entry_created').catch(err => {
+        if (result.data) {
+          trackJournalEntry(result.data.id, entryData.title, 'journal_entry_created').catch(err => {
             console.error('Failed to track journal creation:', err);
           });
         }
+      } else {
+        console.log('Journal entry updated successfully:', result.data);
+        // Track journal update (fire and forget - don't block on tracking)
+        trackJournalEntry(editingEntry!, entryData.title, 'journal_entry_updated').catch(err => {
+          console.error('Failed to track journal update:', err);
+        });
       }
 
       // Check for first journal entry badge (only for new entries)

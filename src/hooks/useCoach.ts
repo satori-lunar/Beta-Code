@@ -17,14 +17,15 @@ export function useIsCoach() {
 
     const checkCoach = async () => {
       try {
-        const { data: userData, error: roleError } = await supabase
-          .from('users')
-          .select('role')
-          .eq('id', user.id)
-          .single();
-
         // Coach role is not currently in the database schema
         // This functionality may need to be implemented separately
+        // Commented out to avoid unused variable error
+        // const { data: userData, error: roleError } = await supabase
+        //   .from('users')
+        //   .select('role')
+        //   .eq('id', user.id)
+        //   .single();
+        
         setIsCoach(false);
       } catch (err) {
         console.error('Error checking coach status:', err);

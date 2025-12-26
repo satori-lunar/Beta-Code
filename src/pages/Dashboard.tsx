@@ -39,7 +39,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useHabits, useJournalEntries, useUserBadges, useNewYearResolutions } from '../hooks/useSupabaseData';
 import { supabase } from '../lib/supabase';
-import { format, isToday, parseISO } from 'date-fns';
+import { format, isToday, parseISO, startOfWeek, addDays } from 'date-fns';
 const badgeIcons: Record<string, React.ElementType> = {
   flame: Flame,
   target: Target,
@@ -197,13 +197,18 @@ export default function Dashboard() {
     setDailyQuote(wellnessQuotes[quoteIndex]);
   }, []);
 
-  // Calculate streak (count habits completed today)
-  const todayCompletedCount = habits.filter(habit => {
+  // Calculate weekly completion (count habits completed this week)
+  const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
+  const weekEnd = addDays(weekStart, 6);
+  const thisWeekCompletedCount = habits.filter(habit => {
     const completedDates = habit.completed_dates as string[] || [];
-    return completedDates.some(date => isToday(parseISO(date)));
+    return completedDates.some(date => {
+      const dateObj = parseISO(date);
+      return dateObj >= weekStart && dateObj <= weekEnd;
+    });
   }).length;
 
-  const totalHabitsToday = habits.length;
+  const totalHabitsThisWeek = habits.length;
 
   // Get latest journal entry
   const latestJournal = journalEntries.length > 0 ? journalEntries[0] : null;
@@ -393,7 +398,7 @@ export default function Dashboard() {
               <div className="flex items-center gap-3">
                 <Target className="w-8 h-8" style={{ color: primaryColor }} />
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  Today's Habits
+                  This Week's Habits
                 </h2>
               </div>
               <Link
@@ -408,31 +413,31 @@ export default function Dashboard() {
             <div className="mb-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-gray-600 dark:text-gray-400">
-                  {todayCompletedCount} of {totalHabitsToday} completed
+                  {thisWeekCompletedCount} of {totalHabitsThisWeek} completed
                 </span>
                 <span className="text-2xl font-bold" style={{ color: primaryColor }}>
-                  {totalHabitsToday > 0 ? Math.round((todayCompletedCount / totalHabitsToday) * 100) : 0}%
+                  {totalHabitsThisWeek > 0 ? Math.round((thisWeekCompletedCount / totalHabitsThisWeek) * 100) : 0}%
                 </span>
               </div>
               <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
                 <div
                   className="h-3 rounded-full transition-all duration-500"
                   style={{
-                    width: `${totalHabitsToday > 0 ? (todayCompletedCount / totalHabitsToday) * 100 : 0}%`,
+                    width: `${totalHabitsThisWeek > 0 ? (thisWeekCompletedCount / totalHabitsThisWeek) * 100 : 0}%`,
                     background: `linear-gradient(to right, ${primaryColor}, ${colorPresets[colorPreset].colors[1]})`
                   }}
                 />
               </div>
             </div>
 
-            {totalHabitsToday === 0 ? (
+            {totalHabitsThisWeek === 0 ? (
               <p className="text-gray-500 dark:text-gray-400 text-sm">
                 No habits set up yet. Start building positive routines!
               </p>
-            ) : todayCompletedCount === totalHabitsToday ? (
+            ) : thisWeekCompletedCount === totalHabitsThisWeek ? (
               <p className="text-green-600 dark:text-green-400 font-medium flex items-center gap-2">
                 <CheckCircle2 className="w-5 h-5" />
-                Amazing! All habits completed today!
+                Amazing! All habits completed this week!
               </p>
             ) : (
               <p className="text-gray-600 dark:text-gray-300 text-sm">

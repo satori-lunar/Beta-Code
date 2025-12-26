@@ -56,7 +56,7 @@ const navigation = [
 const pages = [
   { name: 'Dashboard', description: 'View your wellness overview', href: '/' },
   { name: 'Health', description: 'Track health metrics and BMI', href: '/health' },
-  { name: 'Habits', description: 'Track your daily habits', href: '/habits' },
+  { name: 'Habits', description: 'Track your weekly habits', href: '/habits' },
   { name: 'Nutrition', description: 'Log meals and water intake', href: '/nutrition' },
   { name: 'Weight Log', description: 'Track your weight progress', href: '/weight' },
   { name: 'Journal', description: 'Write and reflect', href: '/journal' },
@@ -123,7 +123,7 @@ export default function Layout() {
         id: 'nav-habits',
         selector: '[data-tour="nav-habits"]',
         title: 'Habits',
-        description: 'Use the Habits page to track the daily routines you want to build.',
+        description: 'Use the Habits page to track the weekly routines you want to build.',
       },
       {
         id: 'nav-classes',

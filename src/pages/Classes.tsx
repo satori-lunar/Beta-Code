@@ -81,6 +81,7 @@ const courseStyles: Record<string, { gradient: string; icon: any }> = {
   'Time Management Replay': { gradient: 'from-blue-500 to-cyan-600', icon: Timer },
   'Foundations in Motion': { gradient: 'from-green-500 to-emerald-600', icon: Activity },
   'Nighttime Nurturing': { gradient: 'from-indigo-500 to-purple-600', icon: Moon },
+  'Nighttime Nurturing- Fridays @ 11pm ET': { gradient: 'from-indigo-500 to-purple-600', icon: Moon },
   '2-Bite Tuesdays': { gradient: 'from-orange-400 to-amber-500', icon: UtensilsCrossed },
   'Refreshed & Ready': { gradient: 'from-yellow-400 to-orange-500', icon: Sunrise },
   'Refreshed and Ready': { gradient: 'from-yellow-400 to-orange-500', icon: Sunrise },
@@ -201,16 +202,16 @@ export default function Classes() {
       const finalUrl = classUrl || cls.zoom_link || '#';
       
       return {
-        id: cls.id,
-        title: cls.title,
-        description: cls.description || '',
-        instructor: cls.instructor,
-        scheduledAt: cls.scheduled_at,
-        duration: cls.duration,
+      id: cls.id,
+      title: cls.title,
+      description: cls.description || '',
+      instructor: cls.instructor,
+      scheduledAt: cls.scheduled_at,
+      duration: cls.duration,
         zoomLink: finalUrl,
-        thumbnail: cls.thumbnail_url || '',
-        category: cls.category,
-        isLive: isClassLive(cls.scheduled_at, cls.duration),
+      thumbnail: cls.thumbnail_url || '',
+      category: cls.category,
+      isLive: isClassLive(cls.scheduled_at, cls.duration),
       };
     });
   }, [liveClasses]);
@@ -1011,13 +1012,14 @@ function RecordedSessionCard({ session, courses = [], onToggleFavorite, onToggle
     // Try exact match first
     courseStyle = courseStyles[course.title] || null;
     
-    // If no exact match, extract the base course title (before any " - " separator)
+    // If no exact match, extract the base course title (before any " - " or "- " separator)
     // and try to find a matching style key that matches the base title
     if (!courseStyle) {
-      const baseTitle = course.title.split(' - ')[0].trim();
+      // Handle both " - " and "- " separators
+      const baseTitle = course.title.split(/ - |^-/)[0].trim();
       const matchingKey = Object.keys(courseStyles).find(key => {
-        const keyBase = key.split(' - ')[0].trim();
-        return baseTitle === keyBase || baseTitle === key || course.title.startsWith(key);
+        const keyBase = key.split(/ - |^-/)[0].trim();
+        return baseTitle === keyBase || baseTitle === key || course.title.startsWith(key) || key === baseTitle;
       });
       if (matchingKey) {
         courseStyle = courseStyles[matchingKey];
@@ -1078,7 +1080,7 @@ function RecordedSessionCard({ session, courses = [], onToggleFavorite, onToggle
             )}
             {!CourseIcon && (
               <div className="flex items-center justify-center">
-                <PlayCircle className="w-12 h-12 text-white" />
+            <PlayCircle className="w-12 h-12 text-white" />
               </div>
             )}
           </div>

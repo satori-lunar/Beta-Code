@@ -1016,9 +1016,9 @@ function RecordedSessionCard({ session, courses = [], onToggleFavorite, onToggle
     // and try to find a matching style key that matches the base title
     if (!courseStyle) {
       // Handle both " - " (space-dash-space) and "- " (dash-space) separators
-      const baseTitle = course.title.split(/ - | -/)[0].trim();
+      const baseTitle = course.title.split(/ - |- /)[0].trim();
       const matchingKey = Object.keys(courseStyles).find(key => {
-        const keyBase = key.split(/ - | -/)[0].trim();
+        const keyBase = key.split(/ - |- /)[0].trim();
         return baseTitle === keyBase || baseTitle === key || course.title.startsWith(key);
       });
       if (matchingKey) {

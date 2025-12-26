@@ -74,7 +74,9 @@ const classImages: Record<string, string> = {
 // Course-specific gradients and icons for visual variety
 const courseStyles: Record<string, { gradient: string; icon: any }> = {
   'Wisdom Rising': { gradient: 'from-purple-500 to-indigo-600', icon: Sparkles },
+  'Wisdom Rising - Tuesdays 4pm ET': { gradient: 'from-purple-500 to-indigo-600', icon: Sparkles },
   'Hatha Yoga with Meghan': { gradient: 'from-pink-400 to-rose-500', icon: Flower2 },
+  'Hatha Yoga with Meghan - Mon/Thurs 4pm ET': { gradient: 'from-pink-400 to-rose-500', icon: Flower2 },
   'Hatha Yoga': { gradient: 'from-pink-400 to-rose-500', icon: Flower2 },
   'Time Management Replay': { gradient: 'from-blue-500 to-cyan-600', icon: Timer },
   'Foundations in Motion': { gradient: 'from-green-500 to-emerald-600', icon: Activity },
@@ -90,14 +92,18 @@ const courseStyles: Record<string, { gradient: string; icon: any }> = {
   'Strength in Motion': { gradient: 'from-slate-600 to-gray-700', icon: Dumbbell },
   'Made 2 Move: Group Exercise Replays': { gradient: 'from-green-500 to-teal-600', icon: Activity },
   'Inner Chords': { gradient: 'from-violet-500 to-purple-600', icon: Waves },
+  'Inner Chords - Tuesdays 8am ET': { gradient: 'from-violet-500 to-purple-600', icon: Waves },
   'Instinctive Meditation': { gradient: 'from-indigo-400 to-blue-500', icon: Brain },
+  'Instinctive Meditation - Wednesdays 7pm ET': { gradient: 'from-indigo-400 to-blue-500', icon: Brain },
   'The Reflecting Pool': { gradient: 'from-blue-400 to-indigo-500', icon: Activity },
   'Tangled: Challenging Relationships': { gradient: 'from-rose-500 to-pink-600', icon: Users },
+  'Tangled: Challenging Relationships - Thursdays 1:30pm ET': { gradient: 'from-rose-500 to-pink-600', icon: Users },
   'The Heart of Nourishment': { gradient: 'from-amber-400 to-orange-500', icon: Heart },
   'Grief & Growth': { gradient: 'from-gray-500 to-slate-600', icon: Flower2 },
   'Rooted Weight Health': { gradient: 'from-emerald-500 to-green-600', icon: Leaf },
   'Declutter to Breathe': { gradient: 'from-sky-400 to-blue-500', icon: Waves },
   'Seedlings': { gradient: 'from-lime-400 to-green-500', icon: Leaf },
+  'Seedlings - Mondays 5:30pm ET': { gradient: 'from-lime-400 to-green-500', icon: Leaf },
   'Plan Your Week': { gradient: 'from-cyan-500 to-blue-600', icon: Calendar },
 };
 
@@ -1019,6 +1025,20 @@ function RecordedSessionCard({ session, courses = [], onToggleFavorite, onToggle
     }
   }
   
+  // Fallback: try to match by category as last resort (e.g., "Yoga" category -> "Hatha Yoga" style)
+  if (!courseStyle && session.category) {
+    // Map common categories to course styles
+    const categoryMap: Record<string, string> = {
+      'Yoga': 'Hatha Yoga',
+      'Meditation': 'Instinctive Meditation',
+      'Wisdom': 'Wisdom Rising',
+    };
+    const mappedCourse = categoryMap[session.category];
+    if (mappedCourse && courseStyles[mappedCourse]) {
+      courseStyle = courseStyles[mappedCourse];
+    }
+  }
+  
   // Use course gradient if available, otherwise fallback to category-based or default
   const sessionGradient = courseStyle?.gradient || 'from-gray-400 to-gray-600';
   const CourseIcon = courseStyle?.icon || null;
@@ -1038,10 +1058,10 @@ function RecordedSessionCard({ session, courses = [], onToggleFavorite, onToggle
     >
       {/* Thumbnail/Image Area */}
       <div className={`h-48 bg-gradient-to-br ${sessionGradient} -mx-6 -mt-6 mb-4 relative overflow-hidden`} onClick={(e) => e.stopPropagation()}>
-        {/* Course Icon - displayed prominently */}
+        {/* Course Icon - displayed prominently in background */}
         {CourseIcon && (
-          <div className="absolute inset-0 flex items-center justify-center opacity-20 group-hover:opacity-30 transition-opacity">
-            <CourseIcon className="w-24 h-24 text-white" />
+          <div className="absolute inset-0 flex items-center justify-center opacity-30 group-hover:opacity-40 transition-opacity">
+            <CourseIcon className="w-32 h-32 text-white" />
           </div>
         )}
         
@@ -1051,12 +1071,16 @@ function RecordedSessionCard({ session, courses = [], onToggleFavorite, onToggle
             <h4 className="text-white font-semibold text-lg mb-2 line-clamp-2 drop-shadow-lg">
               {session.title}
             </h4>
-            <div className="flex items-center justify-center gap-2">
-              {CourseIcon && (
-                <CourseIcon className="w-6 h-6 text-white" />
-              )}
-              <PlayCircle className="w-8 h-8 text-white" />
-            </div>
+            {CourseIcon && (
+              <div className="flex items-center justify-center">
+                <CourseIcon className="w-12 h-12 text-white" />
+              </div>
+            )}
+            {!CourseIcon && (
+              <div className="flex items-center justify-center">
+                <PlayCircle className="w-12 h-12 text-white" />
+              </div>
+            )}
           </div>
         </div>
         

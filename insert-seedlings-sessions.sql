@@ -21,7 +21,7 @@ INSERT INTO public.courses (
   'In this gentle, guided class, you''ll learn how to recognize your thoughts, understand your emotions, and begin practicing the tools that help you grow stronger roots. Whether you''re brand new to coaching or simply looking for a refresher in the model, this is a safe, supportive space to ask questions, explore your inner landscape, and build confidence one practice at a time. Together, we''ll revisit and relearn the model, deepen our understanding, and most importantly — connect in community. Come hang out, grow alongside others, and nurture the resilience that helps you thrive.',
   'Birch & Stone Coaching',
   '60 minutes per session',
-  53,
+  52,
   'Coaching Fundamentals',
   'beginner',
   ARRAY['seedlings', 'coaching', 'beginner', 'model', 'community', 'growth', 'resilience']

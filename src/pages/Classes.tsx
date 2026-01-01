@@ -28,7 +28,6 @@ import {
   Flame,
   Waves,
   Flower2,
-  Zap,
   Cookie,
 } from 'lucide-react';
 import { useRecordedSessions, useLiveClasses, useFavoriteSessions, useSessionCompletions, useClassReminders } from '../hooks/useSupabaseData';

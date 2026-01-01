@@ -116,6 +116,7 @@ const courseStyles: Record<string, { gradient: string; icon: any }> = {
   'Vision & Vibes - Saturdays 7:30am ET': { gradient: 'from-amber-400 to-orange-500', icon: Sunrise },
   'Vision & Vibes w/Coach Emily M Saturday 7:30 am, Join Live!': { gradient: 'from-amber-400 to-orange-500', icon: Sunrise },
   'What Went Well w/Coach Dani': { gradient: 'from-green-400 to-emerald-500', icon: CheckCircle2 },
+  'What Went Well - Saturdays 3:00pm ET': { gradient: 'from-green-400 to-emerald-500', icon: CheckCircle2 },
   'Plan Your Week': { gradient: 'from-cyan-500 to-blue-600', icon: Calendar },
 };
 
@@ -315,7 +316,8 @@ export default function Classes() {
       'Vision & Vibes w/Coach Emily M Saturday 7:30 am, Join Live!',
       'Vision & Vibes',
       'Care without Collapse w/Coach Dani',
-      'What Went Well w/Coach Dani'
+      'What Went Well w/Coach Dani',
+      'What Went Well - Saturdays 3:00pm ET'
     ]
   };
 

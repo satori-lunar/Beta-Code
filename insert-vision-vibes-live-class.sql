@@ -21,7 +21,7 @@ INSERT INTO public.live_classes (
   'Vision & Vibes w/Coach Emily M Saturday 7:30 am, Join Live!',
   'Vision & Vibes is a calm, grounding workshop designed to help you ease into your day with intention instead of urgency. This is not about goals, pressure, or fixing yourself before the day begins. It''s about creating a quiet moment to check in, soften your nervous system, and reconnect with what matters—today and in the season ahead.',
   'Coach Emily M',
-  '2026-01-10 07:30:00-05'::timestamptz, -- Saturday, January 10, 2026, 7:30 AM ET
+  '2026-01-03 07:30:00-05'::timestamptz, -- Saturday, January 3, 2026, 7:30 AM ET
   45,
   NULL, -- Zoom link to be added when available
   'sunrise', -- Icon representing morning mindfulness and intention-setting

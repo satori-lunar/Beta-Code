@@ -63,7 +63,7 @@ const classUrls: Record<string, string> = {
   'Evenings with Emily B.': 'https://us02web.zoom.us/j/86769218463',
   'The Habit Lab': 'https://www.birchandstonecoaching.com/8am-et-the-habit-lab',
   'Habit Lab': 'https://www.birchandstonecoaching.com/8am-et-the-habit-lab',
-  'Nighttime Nurturing': 'https://us02web.zoom.us/j/87954176691',
+  'Nighttime Nurturing w/Coach Dani': 'https://us02web.zoom.us/j/87954176691',
   'Care without Collapse w/Coach Dani': 'https://www.birchandstonecoaching.com/coaching/groups/care-without-collapse-saturday-12-00pm-et',
 };
 
@@ -87,6 +87,7 @@ const courseStyles: Record<string, { gradient: string; icon: any }> = {
   'Foundations in Motion': { gradient: 'from-green-500 to-emerald-600', icon: Activity },
   'Nighttime Nurturing': { gradient: 'from-indigo-500 to-purple-600', icon: Moon },
   'Nighttime Nurturing- Fridays @ 11pm ET': { gradient: 'from-indigo-500 to-purple-600', icon: Moon },
+  'Nighttime Nurturing w/Coach Dani': { gradient: 'from-indigo-500 to-purple-600', icon: Moon },
   '2-Bite Tuesdays': { gradient: 'from-orange-400 to-amber-500', icon: Cookie },
   '2-Bite Tuesday at 10pm ET': { gradient: 'from-orange-400 to-amber-500', icon: Cookie },
   'Refreshed & Ready': { gradient: 'from-yellow-400 to-orange-500', icon: Sunrise },
@@ -310,7 +311,7 @@ export default function Classes() {
     'Friday': [
       'The Habit Lab',
       'Energy in Motion',
-      'Nighttime Nurturing'
+      'Nighttime Nurturing w/Coach Dani'
     ],
     'Saturday': [
       'Vision & Vibes w/Coach Emily M Saturday 7:30 am, Join Live!',

@@ -7,6 +7,7 @@ import {
   User,
   Calendar,
   Heart,
+  Shield,
   Eye,
   Video,
   ExternalLink,
@@ -60,6 +61,7 @@ const classUrls: Record<string, string> = {
   'The Habit Lab': 'https://www.birchandstonecoaching.com/8am-et-the-habit-lab',
   'Habit Lab': 'https://www.birchandstonecoaching.com/8am-et-the-habit-lab',
   'Nighttime Nurturing': 'https://us02web.zoom.us/j/87954176691',
+  'Care without Collapse - Saturday 12:00pm ET': 'https://www.birchandstonecoaching.com/coaching/groups/care-without-collapse-saturday-12-00pm-et',
 };
 
 const classImages: Record<string, string> = {
@@ -91,6 +93,7 @@ const courseStyles: Record<string, { gradient: string; icon: any }> = {
   'The Habit Lab': { gradient: 'from-teal-500 to-cyan-600', icon: Target },
   'Habit Lab': { gradient: 'from-teal-500 to-cyan-600', icon: Target },
   'Energy in Motion': { gradient: 'from-red-500 to-orange-600', icon: Flame },
+  'Care without Collapse - Saturday 12:00pm ET': { gradient: 'from-blue-500 to-indigo-600', icon: Shield },
   'Strength in Motion': { gradient: 'from-slate-600 to-gray-700', icon: Dumbbell },
   'Made 2 Move: Group Exercise Replays': { gradient: 'from-green-500 to-teal-600', icon: Activity },
   'Inner Chords': { gradient: 'from-violet-500 to-purple-600', icon: Waves },

@@ -28,6 +28,7 @@ import {
   Flame,
   Waves,
   Flower2,
+  Zap,
   Cookie,
 } from 'lucide-react';
 import { useRecordedSessions, useLiveClasses, useFavoriteSessions, useSessionCompletions, useClassReminders } from '../hooks/useSupabaseData';
@@ -47,6 +48,7 @@ const classUrls: Record<string, string> = {
   'Energy in Motion': 'https://www.birchandstonecoaching.com/9am-et-energy-in-motion',
   'Hatha Yoga': 'https://www.birchandstonecoaching.com/4pm-et-hatha-yoga',
   'Just Begin': 'https://www.birchandstonecoaching.com/5-30pm-et-seedlings',
+  'Vision & Vibes': 'https://www.birchandstonecoaching.com/coaching/groups/vision-vibes-saturday-7-30am-et',
   'Inner Chords': 'https://www.birchandstonecoaching.com/8am-et-inner-chords',
   'The Reflecting Pool': 'https://www.birchandstonecoaching.com/10am-et-the-reflecting-pool',
   'Wisdom Rising': 'https://www.birchandstonecoaching.com/4pm-et-wisdom-rising',
@@ -109,6 +111,8 @@ const courseStyles: Record<string, { gradient: string; icon: any }> = {
   'Declutter to Breathe': { gradient: 'from-sky-400 to-blue-500', icon: Waves },
   'Just Begin': { gradient: 'from-lime-400 to-green-500', icon: Leaf },
   'Just Begin - Mondays 5:30pm ET': { gradient: 'from-lime-400 to-green-500', icon: Leaf },
+  'Vision & Vibes': { gradient: 'from-amber-400 to-orange-500', icon: Sunrise },
+  'Vision & Vibes - Saturdays 7:30am ET': { gradient: 'from-amber-400 to-orange-500', icon: Sunrise },
   'Plan Your Week': { gradient: 'from-cyan-500 to-blue-600', icon: Calendar },
 };
 
@@ -305,6 +309,7 @@ export default function Classes() {
       'Nighttime Nurturing'
     ],
     'Saturday': [
+      'Vision & Vibes',
       'Care without Collapse w/Coach Dani'
     ]
   };

@@ -41,7 +41,7 @@ export default function SignIn() {
         setTimeout(async () => {
           const { data: { session: retrySession } } = await supabase.auth.getSession()
           if (retrySession) {
-            navigate('/')
+      navigate('/')
           } else {
             setError('Sign in completed. Redirecting...')
             // Session should be established via auth state change

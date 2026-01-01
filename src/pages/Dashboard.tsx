@@ -271,33 +271,33 @@ export default function Dashboard() {
         {/* Welcome Header with Streak */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-100 dark:border-gray-700">
           <div className="flex flex-col gap-4">
-            <div className="flex items-center justify-between flex-wrap gap-4">
-              <div>
-                <h1 className="text-4xl font-bold text-gray-900 dark:text-white">
-                  Welcome back, {user?.user_metadata?.name || 'Friend'}!
-                </h1>
-                <p className="text-gray-600 dark:text-gray-400 mt-2 text-lg">
-                  {format(new Date(), 'EEEE, MMMM d, yyyy')}
-                </p>
-              </div>
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div>
+              <h1 className="text-4xl font-bold text-gray-900 dark:text-white">
+                Welcome back, {user?.user_metadata?.name || 'Friend'}!
+              </h1>
+              <p className="text-gray-600 dark:text-gray-400 mt-2 text-lg">
+                {format(new Date(), 'EEEE, MMMM d, yyyy')}
+              </p>
+            </div>
 
-              {/* Streak Badge and Theme Button */}
-              <div className="flex items-center gap-6">
-                <button
-                  onClick={() => setShowThemeModal(true)}
-                  className="p-3 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors"
-                  title="Customize theme"
-                  style={{ color: primaryColor }}
-                >
-                  <Palette className="w-6 h-6" />
-                </button>
-                <div className="text-center">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Flame className="w-8 h-8" style={{ color: primaryColor }} />
-                    <span className="text-4xl font-bold" style={{ color: primaryColor }}>{currentStreak}</span>
-                  </div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Badges Earned</p>
+            {/* Streak Badge and Theme Button */}
+            <div className="flex items-center gap-6">
+              <button
+                onClick={() => setShowThemeModal(true)}
+                className="p-3 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors"
+                title="Customize theme"
+                style={{ color: primaryColor }}
+              >
+                <Palette className="w-6 h-6" />
+              </button>
+              <div className="text-center">
+                <div className="flex items-center gap-2 mb-1">
+                  <Flame className="w-8 h-8" style={{ color: primaryColor }} />
+                  <span className="text-4xl font-bold" style={{ color: primaryColor }}>{currentStreak}</span>
                 </div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Badges Earned</p>
+              </div>
               </div>
             </div>
 

@@ -20,43 +20,10 @@ export function useIsAdmin() {
       return;
     }
 
-    const checkAdmin = async () => {
-      try {
-        // First check: user email is one of the configured admin emails
-        const email = user.email || (user.user_metadata as any)?.email || '';
-        const isEmailAdmin = ADMIN_EMAILS.includes(email);
-
-        // Second check: check database role (this might fail due to RLS, that's OK)
-        let isRoleAdmin = false;
-        try {
-          const { data: userData, error: roleError } = await supabase
-            .from('users')
-            .select('role')
-            .eq('id', user.id)
-            .single();
-
-          if (!roleError) {
-            // Check for both admin and admin_lv2
-            isRoleAdmin = userData?.role === 'admin' || userData?.role === 'admin_lv2';
-          }
-        } catch (roleCheckErr) {
-          // Continue with email check only
-        }
-
-        const finalIsAdmin = isEmailAdmin || isRoleAdmin;
-        setIsAdmin(finalIsAdmin);
-      } catch (err) {
-        console.error('Error checking admin status:', err);
-        // Fallback to email check
-        const email = user.email || (user.user_metadata as any)?.email || '';
-        const fallbackIsAdmin = ADMIN_EMAILS.includes(email);
-        setIsAdmin(fallbackIsAdmin);
-      } finally {
-    setLoading(false);
-      }
-    };
-
-    checkAdmin();
+     // Simple check: user email is one of the configured admin emails
+     const email = user.email || (user.user_metadata as any)?.email || '';
+     setIsAdmin(ADMIN_EMAILS.includes(email));
+     setLoading(false);
   }, [user]);
 
   return { isAdmin, loading };

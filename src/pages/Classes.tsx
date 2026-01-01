@@ -308,7 +308,10 @@ export default function Classes() {
       'Energy in Motion',
       'Nighttime Nurturing'
     ],
-    'Saturday': []
+    'Saturday': [
+      'Care without Collapse - Saturday 12:00pm ET',
+      'Care without Collapse w/Coach Dani'
+    ]
   };
 
   // Group classes by weekday using the SQL structure, maintaining order

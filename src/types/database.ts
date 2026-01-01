@@ -316,43 +316,82 @@ export type Database = {
       }
       nutrition_entries: {
         Row: {
-          calories: number | null
-          carbs: number | null
-          created_at: string | null
-          date: string
-          fat: number | null
           id: string
-          meal_type: string
-          name: string
-          notes: string | null
-          protein: number | null
           user_id: string
+          date: string
+          total_calories: number | null
+          total_protein: number | null
+          total_carbs: number | null
+          total_fat: number | null
+          water_intake: number | null
+          created_at: string | null
+          updated_at: string | null
         }
         Insert: {
-          calories?: number | null
-          carbs?: number | null
-          created_at?: string | null
-          date: string
-          fat?: number | null
           id?: string
-          meal_type: string
-          name: string
-          notes?: string | null
-          protein?: number | null
           user_id: string
+          date: string
+          total_calories?: number | null
+          total_protein?: number | null
+          total_carbs?: number | null
+          total_fat?: number | null
+          water_intake?: number | null
+          created_at?: string | null
+          updated_at?: string | null
         }
         Update: {
-          calories?: number | null
-          carbs?: number | null
-          created_at?: string | null
-          date?: string
-          fat?: number | null
           id?: string
-          meal_type?: string
-          name?: string
-          notes?: string | null
-          protein?: number | null
           user_id?: string
+          date?: string
+          total_calories?: number | null
+          total_protein?: number | null
+          total_carbs?: number | null
+          total_fat?: number | null
+          water_intake?: number | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      meals: {
+        Row: {
+          id: string
+          nutrition_entry_id: string
+          user_id: string
+          type: string
+          name: string
+          calories: number | null
+          protein: number | null
+          carbs: number | null
+          fat: number | null
+          time: string
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          nutrition_entry_id: string
+          user_id: string
+          type: string
+          name: string
+          calories?: number | null
+          protein?: number | null
+          carbs?: number | null
+          fat?: number | null
+          time: string
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          nutrition_entry_id?: string
+          user_id?: string
+          type?: string
+          name?: string
+          calories?: number | null
+          protein?: number | null
+          carbs?: number | null
+          fat?: number | null
+          time?: string
+          created_at?: string | null
         }
         Relationships: []
       }
@@ -398,6 +437,9 @@ export type Database = {
           full_name: string | null
           goal_weight: number | null
           goal_weight_unit: string | null
+          ultimate_goal_weight: number | null
+          weekly_goal_weight: number | null
+          new_year_resolution_weight: number | null
           id: string
           join_date: string | null
           has_completed_dashboard_tour: boolean | null
@@ -412,6 +454,9 @@ export type Database = {
           full_name?: string | null
           goal_weight?: number | null
           goal_weight_unit?: string | null
+          ultimate_goal_weight?: number | null
+          weekly_goal_weight?: number | null
+          new_year_resolution_weight?: number | null
           id: string
           join_date?: string | null
           has_completed_dashboard_tour?: boolean | null
@@ -426,6 +471,9 @@ export type Database = {
           full_name?: string | null
           goal_weight?: number | null
           goal_weight_unit?: string | null
+          ultimate_goal_weight?: number | null
+          weekly_goal_weight?: number | null
+          new_year_resolution_weight?: number | null
           id?: string
           join_date?: string | null
           has_completed_dashboard_tour?: boolean | null
@@ -697,7 +745,7 @@ export type Database = {
           avatar_url: string | null
           join_date: string | null
           streak: number | null
-          role: 'member' | 'admin'
+          role: 'member' | 'admin' | 'admin_lv2'
           created_at: string | null
           updated_at: string | null
         }
@@ -961,6 +1009,111 @@ export type Database = {
           user_id?: string
           session_id?: string
           created_at?: string | null
+        }
+        Relationships: []
+      }
+      notification_preferences: {
+        Row: {
+          id: string
+          user_id: string
+          habit_reminders_enabled: boolean | null
+          habit_reminder_time: string | null
+          journal_reminders_enabled: boolean | null
+          journal_reminder_time: string | null
+          mental_health_reminders_enabled: boolean | null
+          mental_health_reminder_time: string | null
+          goal_reminders_enabled: boolean | null
+          goal_reminder_frequency: string | null
+          goal_reminder_time: string | null
+          streak_reminders_enabled: boolean | null
+          achievement_notifications_enabled: boolean | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          habit_reminders_enabled?: boolean | null
+          habit_reminder_time?: string | null
+          journal_reminders_enabled?: boolean | null
+          journal_reminder_time?: string | null
+          mental_health_reminders_enabled?: boolean | null
+          mental_health_reminder_time?: string | null
+          goal_reminders_enabled?: boolean | null
+          goal_reminder_frequency?: string | null
+          goal_reminder_time?: string | null
+          streak_reminders_enabled?: boolean | null
+          achievement_notifications_enabled?: boolean | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          habit_reminders_enabled?: boolean | null
+          habit_reminder_time?: string | null
+          journal_reminders_enabled?: boolean | null
+          journal_reminder_time?: string | null
+          mental_health_reminders_enabled?: boolean | null
+          mental_health_reminder_time?: string | null
+          goal_reminders_enabled?: boolean | null
+          goal_reminder_frequency?: string | null
+          goal_reminder_time?: string | null
+          streak_reminders_enabled?: boolean | null
+          achievement_notifications_enabled?: boolean | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      new_year_resolutions: {
+        Row: {
+          id: string
+          user_id: string
+          year: number
+          title: string
+          description: string | null
+          category: string
+          why_important: string | null
+          milestones: Json | null
+          progress: number | null
+          status: string | null
+          target_date: string | null
+          reflections: Json | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          year: number
+          title: string
+          description?: string | null
+          category: string
+          why_important?: string | null
+          milestones?: Json | null
+          progress?: number | null
+          status?: string | null
+          target_date?: string | null
+          reflections?: Json | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          year?: number
+          title?: string
+          description?: string | null
+          category?: string
+          why_important?: string | null
+          milestones?: Json | null
+          progress?: number | null
+          status?: string | null
+          target_date?: string | null
+          reflections?: Json | null
+          created_at?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }

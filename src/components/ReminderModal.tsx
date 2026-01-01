@@ -69,7 +69,7 @@ export default function ReminderModal({
           <div className="bg-gray-50 rounded-xl p-4">
             <h3 className="font-semibold text-gray-900 mb-1">{title}</h3>
             <p className="text-sm text-gray-600">
-              {format(parseISO(scheduledAt), 'EEEE, MMMM d, h:mm a')}
+              {format(parseISO(scheduledAt), 'EEEE, h:mm a')}
             </p>
           </div>
 

@@ -7,11 +7,13 @@ import {
   Edit3,
   Calendar,
   Flag,
-  TrendingUp
+  TrendingUp,
+  Sparkles
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { format, parseISO, isBefore } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 
 type GoalStatus = 'not_started' | 'in_progress' | 'completed' | 'paused';
 type GoalCategory = 'health' | 'fitness' | 'wellness' | 'personal' | 'career' | 'relationships';
@@ -47,6 +49,7 @@ const statusOptions: { id: GoalStatus; label: string; color: string }[] = [
 
 export default function Goals() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingGoal, setEditingGoal] = useState<string | null>(null);
   const [filterCategory, setFilterCategory] = useState<GoalCategory | 'all'>('all');
@@ -92,12 +95,20 @@ export default function Goals() {
   });
 
   const handleSaveGoal = async () => {
-    if (!user || !newGoal.title.trim()) return;
+    if (!user) {
+      alert('You must be logged in to create goals.');
+      return;
+    }
+
+    if (!newGoal.title.trim()) {
+      alert('Please enter a goal title.');
+      return;
+    }
 
     try {
       const goalData = {
-        title: newGoal.title,
-        description: newGoal.description,
+        title: newGoal.title.trim(),
+        description: newGoal.description.trim() || null,
         category: newGoal.category,
         status: newGoal.status,
         target_date: newGoal.target_date || null,
@@ -106,23 +117,31 @@ export default function Goals() {
       };
 
       if (editingGoal) {
-        const { error } = await supabase
-          .from('goals' as any)
+        const { error } = await (supabase as any)
+          .from('goals')
           .update(goalData)
           .eq('id', editingGoal);
-        if (error) throw error;
+        if (error) {
+          console.error('Error updating goal:', error);
+          alert(`Failed to update goal: ${error.message || 'Unknown error'}`);
+          return;
+        }
       } else {
-        const { error } = await supabase
-          .from('goals' as any)
+        const { error } = await (supabase as any)
+          .from('goals')
           .insert(goalData);
-        if (error) throw error;
+        if (error) {
+          console.error('Error creating goal:', error);
+          alert(`Failed to create goal: ${error.message || 'Unknown error'}. Please make sure the goals table exists in your database.`);
+          return;
+        }
       }
 
-      fetchGoals();
+      await fetchGoals();
       resetForm();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving goal:', error);
-      alert('Failed to save goal. Please try again.');
+      alert(`Failed to save goal: ${error?.message || 'Unknown error'}. Please check the console for details.`);
     }
   };
 
@@ -182,13 +201,22 @@ export default function Goals() {
           </h1>
           <p className="text-gray-500 mt-1 text-sm sm:text-base">Set and track your wellness goals</p>
         </div>
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="btn-primary flex items-center gap-2 self-start sm:self-auto"
-        >
-          <Plus className="w-5 h-5" />
-          <span className="text-sm sm:text-base">New Goal</span>
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate('/new-year-resolution')}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-medium hover:from-purple-600 hover:to-indigo-700 transition-colors"
+          >
+            <Sparkles className="w-5 h-5" />
+            New Year's Resolution
+          </button>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="btn-primary flex items-center gap-2 self-start sm:self-auto"
+          >
+            <Plus className="w-5 h-5" />
+            <span className="text-sm sm:text-base">New Goal</span>
+          </button>
+        </div>
       </div>
 
       {/* Filters */}

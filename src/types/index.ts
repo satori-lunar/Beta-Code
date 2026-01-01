@@ -65,6 +65,7 @@ export interface JournalEntry {
   title: string;
   content: string;
   mood: 'great' | 'good' | 'neutral' | 'low' | 'bad';
+  specific_emotion?: string | null;
   tags: string[];
   gratitude?: string[];
   createdAt: string;

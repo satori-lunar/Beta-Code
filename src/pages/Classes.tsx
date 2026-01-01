@@ -14,7 +14,6 @@ import {
   CheckCircle2,
   ChevronRight,
   Moon,
-  UtensilsCrossed,
   Sparkles,
   Target,
   Sunrise,
@@ -28,6 +27,7 @@ import {
   Flame,
   Waves,
   Flower2,
+  Cookie,
 } from 'lucide-react';
 import { useRecordedSessions, useLiveClasses, useFavoriteSessions, useSessionCompletions, useClassReminders } from '../hooks/useSupabaseData';
 import { useCourses } from '../hooks/useCourses';
@@ -36,6 +36,31 @@ import { useTrackVideoView, useTrackFavorite, useTrackReminder } from '../hooks/
 import { format, parseISO, isAfter, isBefore, addHours } from 'date-fns';
 import ReminderModal from '../components/ReminderModal';
 
+// Class URL mapping - maps class names to their respective URLs
+const classUrls: Record<string, string> = {
+  'Plan Your Week': 'https://www.birchandstonecoaching.com/7-30-am-et-plan-your-week',
+  'Rooted Weight Health': 'https://www.birchandstonecoaching.com/8-30-am-et-rooted-weight-health', // Sunday class
+  'The Heart of Nourishment': 'https://www.birchandstonecoaching.com/9am-et-the-heart-of-nourishment',
+  'Foundations in Motion': 'https://www.birchandstonecoaching.com/9am-et-energy-in-motion',
+  'Strength in Motion': 'https://www.birchandstonecoaching.com/9am-et-energy-in-motion',
+  'Energy in Motion': 'https://www.birchandstonecoaching.com/9am-et-energy-in-motion',
+  'Hatha Yoga': 'https://www.birchandstonecoaching.com/4pm-et-hatha-yoga',
+  'Seedlings': 'https://www.birchandstonecoaching.com/5-30pm-et-seedlings',
+  'Inner Chords': 'https://www.birchandstonecoaching.com/8am-et-inner-chords',
+  'The Reflecting Pool': 'https://www.birchandstonecoaching.com/10am-et-the-reflecting-pool',
+  'Wisdom Rising': 'https://www.birchandstonecoaching.com/4pm-et-wisdom-rising',
+  '2-Bite Tuesdays': 'https://us02web.zoom.us/j/82693227525',
+  'Refreshed & Ready': 'https://us02web.zoom.us/j/82732085104',
+  'Refreshed and Ready': 'https://us02web.zoom.us/j/82732085104',
+  'Grief & Growth': 'https://us02web.zoom.us/j/81574095006',
+  'Tangled: Challenging Relationships': 'https://www.birchandstonecoaching.com/1-30pm-et-tangled',
+  'Tangled': 'https://www.birchandstonecoaching.com/1-30pm-et-tangled',
+  'Evenings with Emily B': 'https://us02web.zoom.us/j/86769218463',
+  'Evenings with Emily B.': 'https://us02web.zoom.us/j/86769218463',
+  'The Habit Lab': 'https://www.birchandstonecoaching.com/8am-et-the-habit-lab',
+  'Habit Lab': 'https://www.birchandstonecoaching.com/8am-et-the-habit-lab',
+  'Nighttime Nurturing': 'https://us02web.zoom.us/j/87954176691',
+};
 
 const classImages: Record<string, string> = {
   'Yoga': 'from-pink-400 to-rose-500',
@@ -49,12 +74,16 @@ const classImages: Record<string, string> = {
 // Course-specific gradients and icons for visual variety
 const courseStyles: Record<string, { gradient: string; icon: any }> = {
   'Wisdom Rising': { gradient: 'from-purple-500 to-indigo-600', icon: Sparkles },
+  'Wisdom Rising - Tuesdays 4pm ET': { gradient: 'from-purple-500 to-indigo-600', icon: Sparkles },
   'Hatha Yoga with Meghan': { gradient: 'from-pink-400 to-rose-500', icon: Flower2 },
+  'Hatha Yoga with Meghan - Mon/Thurs 4pm ET': { gradient: 'from-pink-400 to-rose-500', icon: Flower2 },
   'Hatha Yoga': { gradient: 'from-pink-400 to-rose-500', icon: Flower2 },
   'Time Management Replay': { gradient: 'from-blue-500 to-cyan-600', icon: Timer },
   'Foundations in Motion': { gradient: 'from-green-500 to-emerald-600', icon: Activity },
   'Nighttime Nurturing': { gradient: 'from-indigo-500 to-purple-600', icon: Moon },
-  '2-Bite Tuesdays': { gradient: 'from-orange-400 to-amber-500', icon: UtensilsCrossed },
+  'Nighttime Nurturing- Fridays @ 11pm ET': { gradient: 'from-indigo-500 to-purple-600', icon: Moon },
+  '2-Bite Tuesdays': { gradient: 'from-orange-400 to-amber-500', icon: Cookie },
+  '2-Bite Tuesday at 10pm ET': { gradient: 'from-orange-400 to-amber-500', icon: Cookie },
   'Refreshed & Ready': { gradient: 'from-yellow-400 to-orange-500', icon: Sunrise },
   'Refreshed and Ready': { gradient: 'from-yellow-400 to-orange-500', icon: Sunrise },
   'Evenings with Emily B': { gradient: 'from-pink-500 to-rose-600', icon: Sunset },
@@ -65,14 +94,18 @@ const courseStyles: Record<string, { gradient: string; icon: any }> = {
   'Strength in Motion': { gradient: 'from-slate-600 to-gray-700', icon: Dumbbell },
   'Made 2 Move: Group Exercise Replays': { gradient: 'from-green-500 to-teal-600', icon: Activity },
   'Inner Chords': { gradient: 'from-violet-500 to-purple-600', icon: Waves },
+  'Inner Chords - Tuesdays 8am ET': { gradient: 'from-violet-500 to-purple-600', icon: Waves },
   'Instinctive Meditation': { gradient: 'from-indigo-400 to-blue-500', icon: Brain },
+  'Instinctive Meditation - Wednesdays 7pm ET': { gradient: 'from-indigo-400 to-blue-500', icon: Brain },
   'The Reflecting Pool': { gradient: 'from-blue-400 to-indigo-500', icon: Activity },
   'Tangled: Challenging Relationships': { gradient: 'from-rose-500 to-pink-600', icon: Users },
+  'Tangled: Challenging Relationships - Thursdays 1:30pm ET': { gradient: 'from-rose-500 to-pink-600', icon: Users },
   'The Heart of Nourishment': { gradient: 'from-amber-400 to-orange-500', icon: Heart },
   'Grief & Growth': { gradient: 'from-gray-500 to-slate-600', icon: Flower2 },
   'Rooted Weight Health': { gradient: 'from-emerald-500 to-green-600', icon: Leaf },
   'Declutter to Breathe': { gradient: 'from-sky-400 to-blue-500', icon: Waves },
   'Seedlings': { gradient: 'from-lime-400 to-green-500', icon: Leaf },
+  'Seedlings - Mondays 5:30pm ET': { gradient: 'from-lime-400 to-green-500', icon: Leaf },
   'Plan Your Week': { gradient: 'from-cyan-500 to-blue-600', icon: Calendar },
 };
 
@@ -99,13 +132,36 @@ export default function Classes() {
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  const now = new Date();
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
+  const notifiedClassesRef = useRef<Set<string>>(new Set());
+
+  // Get current time - update every minute to keep live status accurate
+  const [currentTime, setCurrentTime] = useState(new Date());
+  
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000); // Update every minute
+    
+    return () => clearInterval(interval);
+  }, []);
+
+  // Check notification permission on mount
+  useEffect(() => {
+    if ('Notification' in window) {
+      setNotificationPermission(Notification.permission);
+      // Request permission if not already granted or denied
+      if (Notification.permission === 'default') {
+        Notification.requestPermission().then(setNotificationPermission);
+      }
+    }
+  }, []);
 
   // Helper functions
   const isClassLive = (scheduledAt: string, duration: number) => {
     const startTime = parseISO(scheduledAt);
     const endTime = addHours(startTime, duration / 60);
-    return isAfter(now, startTime) && isBefore(now, endTime);
+    return isAfter(currentTime, startTime) && isBefore(currentTime, endTime);
   };
 
   // Map Supabase data to component format
@@ -129,22 +185,85 @@ export default function Classes() {
   }, [recordedSessions, favoriteIds, completedIds]);
 
   const mappedLiveClasses = useMemo(() => {
-    return (liveClasses || []).map(cls => ({
+    return (liveClasses || []).map(cls => {
+      // Get URL from mapping - handle special case for Rooted Weight Health
+      let classUrl = classUrls[cls.title];
+      
+      // Rooted Weight Health has different URLs for Sunday vs Thursday
+      if (cls.title === 'Rooted Weight Health') {
+        const classWeekday = format(parseISO(cls.scheduled_at), 'EEEE');
+        if (classWeekday === 'Thursday') {
+          classUrl = 'https://us02web.zoom.us/j/89878609955';
+        } else {
+          classUrl = classUrls['Rooted Weight Health'];
+        }
+      }
+      
+      // Use class URL from mapping, fallback to zoom_link from database, then fallback to #
+      const finalUrl = classUrl || cls.zoom_link || '#';
+      
+      return {
       id: cls.id,
       title: cls.title,
       description: cls.description || '',
       instructor: cls.instructor,
       scheduledAt: cls.scheduled_at,
       duration: cls.duration,
-      zoomLink: cls.zoom_link || '#',
+        zoomLink: finalUrl,
       thumbnail: cls.thumbnail_url || '',
       category: cls.category,
       isLive: isClassLive(cls.scheduled_at, cls.duration),
-    }));
+      };
+    });
   }, [liveClasses]);
 
   // Filtered data - no filters for live classes, just use all classes
   const filteredLiveClasses = mappedLiveClasses;
+
+  // Get currently live classes
+  const currentlyLiveClasses = useMemo(() => {
+    return filteredLiveClasses.filter((c) => {
+      const startTime = parseISO(c.scheduledAt);
+      const endTime = addHours(startTime, c.duration / 60);
+      return isAfter(currentTime, startTime) && isBefore(currentTime, endTime);
+    });
+  }, [filteredLiveClasses, currentTime]);
+
+  // Check for newly live classes and send notifications
+  useEffect(() => {
+    if (notificationPermission === 'granted') {
+      currentlyLiveClasses.forEach(classItem => {
+        if (!notifiedClassesRef.current.has(classItem.id)) {
+          try {
+            const notification = new Notification(`🎉 ${classItem.title} is Live Now!`, {
+              body: `Click to join ${classItem.title}`,
+              icon: '/favicon.ico',
+              tag: `class-${classItem.id}`,
+              requireInteraction: false,
+            });
+
+            notification.onclick = () => {
+              window.focus();
+              if (classItem.zoomLink && classItem.zoomLink !== '#') {
+                window.open(classItem.zoomLink, '_blank', 'noopener,noreferrer');
+              }
+              notification.close();
+            };
+
+            notifiedClassesRef.current.add(classItem.id);
+            
+            // Remove from notified set after class duration expires
+            const durationMs = Math.max(classItem.duration * 60 * 1000, 60000);
+            setTimeout(() => {
+              notifiedClassesRef.current.delete(classItem.id);
+            }, durationMs);
+          } catch (error) {
+            console.error('Error sending notification:', error);
+          }
+        }
+      });
+    }
+  }, [currentlyLiveClasses, notificationPermission]);
 
   // Define class structure matching the SQL file exactly
   // This ensures the same order and grouping as defined in insert-live-classes.sql
@@ -236,7 +355,6 @@ export default function Classes() {
   }, [filteredLiveClasses]);
 
   const weekdayOrder = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  const currentlyLiveClasses = filteredLiveClasses.filter((c) => isClassLive(c.scheduledAt, c.duration));
   
   // Track if we've initialized the selected weekday for the live tab
   const hasInitializedWeekday = useRef(false);
@@ -399,7 +517,35 @@ export default function Classes() {
       {/* Live Classes */}
       {activeTab === 'live' && (
         <div className="space-y-6">
-          {/* Live Now */}
+          {/* Live Now Banner */}
+          {currentlyLiveClasses.length > 0 && (
+            <div className="bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg p-4 shadow-lg animate-pulse">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="w-3 h-3 bg-white rounded-full animate-pulse" />
+                  <div>
+                    <h2 className="text-lg font-semibold">Class{currentlyLiveClasses.length > 1 ? 'es' : ''} Live Now!</h2>
+                    <p className="text-sm text-red-50">
+                      {currentlyLiveClasses.length} class{currentlyLiveClasses.length > 1 ? 'es are' : ' is'} currently in session
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    // Scroll to live classes or open first live class
+                    if (currentlyLiveClasses.length > 0 && currentlyLiveClasses[0].zoomLink && currentlyLiveClasses[0].zoomLink !== '#') {
+                      window.open(currentlyLiveClasses[0].zoomLink, '_blank', 'noopener,noreferrer');
+                    }
+                  }}
+                  className="px-4 py-2 bg-white text-red-600 font-semibold rounded-lg hover:bg-red-50 transition-colors"
+                >
+                  Join Now
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Live Now Classes */}
           {currentlyLiveClasses.length > 0 && (
             <div>
               <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
@@ -497,6 +643,7 @@ export default function Classes() {
                     <RecordedSessionCard
                       key={session.id}
                       session={session}
+                      courses={courseList}
                       onToggleFavorite={async () => {
                         const wasFavorite = favoriteIds.has(session.id);
                         toggleFavorite(session.id);
@@ -608,6 +755,7 @@ export default function Classes() {
               <RecordedSessionCard
                 key={session.id}
                 session={session}
+                courses={courseList}
                 onToggleFavorite={async () => {
                   const wasFavorite = favoriteIds.has(session.id);
                   toggleFavorite(session.id);
@@ -648,6 +796,7 @@ export default function Classes() {
               <RecordedSessionCard
                 key={session.id}
                 session={session}
+                courses={courseList}
                 onToggleFavorite={async () => {
                   const wasFavorite = favoriteIds.has(session.id);
                   toggleFavorite(session.id);
@@ -725,22 +874,36 @@ function LiveClassCard({ classItem, isLive }: LiveClassCardProps) {
     }
   };
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Don't trigger if clicking on the button
+    if ((e.target as HTMLElement).closest('button')) {
+      return;
+    }
+    
+    if (isLive && classItem.zoomLink && classItem.zoomLink !== '#') {
+      window.open(classItem.zoomLink, '_blank', 'noopener,noreferrer');
+    }
+  };
+
   const handleButtonClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (isLive) {
       // If live, open zoom link
-      if (classItem.zoomLink) {
+      if (classItem.zoomLink && classItem.zoomLink !== '#') {
         window.open(classItem.zoomLink, '_blank', 'noopener,noreferrer');
       }
     } else {
       // If not live, show reminder modal
-      e.preventDefault();
       setShowReminderModal(true);
     }
   };
 
   return (
     <>
-      <div className="card overflow-hidden hover:shadow-elevated transition-shadow group">
+      <div 
+        className={`card overflow-hidden hover:shadow-elevated transition-shadow group ${isLive && classItem.zoomLink && classItem.zoomLink !== '#' ? 'cursor-pointer' : ''}`}
+        onClick={handleCardClick}
+      >
         <div className={`h-32 bg-gradient-to-br ${classStyle.gradient} -mx-6 -mt-6 mb-4 relative overflow-hidden`}>
         {isLive && (
             <div className="absolute top-3 left-3 px-3 py-1 bg-red-500 text-white text-xs font-medium rounded-full flex items-center gap-1 z-10">
@@ -832,25 +995,56 @@ interface RecordedSessionCardProps {
     isFavorite: boolean;
     isCompleted: boolean;
     tags: string[];
+    courseId?: string | null;
   };
+  courses?: Array<{ id: string; title: string }>;
   onToggleFavorite: () => void;
   onToggleComplete: () => void;
   onClick?: () => void;
 }
 
-function RecordedSessionCard({ session, onToggleFavorite, onToggleComplete, onClick }: RecordedSessionCardProps) {
-  // Generate a consistent gradient based on session ID for visual variety
-  const gradients = [
-    'from-coral-400 to-pink-500',
-    'from-blue-400 to-indigo-500',
-    'from-purple-400 to-pink-500',
-    'from-green-400 to-teal-500',
-    'from-orange-400 to-red-500',
-    'from-indigo-400 to-purple-500',
-    'from-teal-400 to-cyan-500',
-    'from-rose-400 to-pink-500',
-  ];
-  const sessionGradient = gradients[parseInt(session.id.slice(-1), 16) % gradients.length];
+function RecordedSessionCard({ session, courses = [], onToggleFavorite, onToggleComplete, onClick }: RecordedSessionCardProps) {
+  // Find the course for this session
+  const course = session.courseId ? courses.find(c => c.id === session.courseId) : null;
+  
+  // Get course-specific styles - try exact match first, then try matching course title start
+  let courseStyle = null;
+  if (course) {
+    // Try exact match first
+    courseStyle = courseStyles[course.title] || null;
+    
+    // If no exact match, extract the base course title (before any " - " or "- " separator)
+    // and try to find a matching style key that matches the base title
+    if (!courseStyle) {
+      // Handle both " - " (space-dash-space) and "- " (dash-space) separators
+      const baseTitle = course.title.split(/ - |- /)[0].trim();
+      const matchingKey = Object.keys(courseStyles).find(key => {
+        const keyBase = key.split(/ - |- /)[0].trim();
+        return baseTitle === keyBase || baseTitle === key || course.title.startsWith(key);
+      });
+      if (matchingKey) {
+        courseStyle = courseStyles[matchingKey];
+      }
+    }
+  }
+  
+  // Fallback: try to match by category as last resort (e.g., "Yoga" category -> "Hatha Yoga" style)
+  if (!courseStyle && session.category) {
+    // Map common categories to course styles
+    const categoryMap: Record<string, string> = {
+      'Yoga': 'Hatha Yoga',
+      'Meditation': 'Instinctive Meditation',
+      'Wisdom': 'Wisdom Rising',
+    };
+    const mappedCourse = categoryMap[session.category];
+    if (mappedCourse && courseStyles[mappedCourse]) {
+      courseStyle = courseStyles[mappedCourse];
+    }
+  }
+  
+  // Use course gradient if available, otherwise fallback to category-based or default
+  const sessionGradient = courseStyle?.gradient || 'from-gray-400 to-gray-600';
+  const CourseIcon = courseStyle?.icon || null;
 
   const handleCardClick = (e: React.MouseEvent) => {
     // Only trigger onClick if the click wasn't on a button
@@ -867,10 +1061,29 @@ function RecordedSessionCard({ session, onToggleFavorite, onToggleComplete, onCl
     >
       {/* Thumbnail/Image Area */}
       <div className={`h-48 bg-gradient-to-br ${sessionGradient} -mx-6 -mt-6 mb-4 relative overflow-hidden`} onClick={(e) => e.stopPropagation()}>
-        {/* Play overlay */}
-        <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity">
-          <div className="bg-white/20 backdrop-blur-sm rounded-full p-4 transform group-hover:scale-110 transition-transform">
+        {/* Course Icon - displayed prominently in background */}
+        {CourseIcon && (
+          <div className="absolute inset-0 flex items-center justify-center opacity-30 group-hover:opacity-40 transition-opacity">
+            <CourseIcon className="w-32 h-32 text-white" />
+          </div>
+        )}
+        
+        {/* Session Title overlay - shown on hover */}
+        <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="text-center px-4">
+            <h4 className="text-white font-semibold text-lg mb-2 line-clamp-2 drop-shadow-lg">
+              {session.title}
+            </h4>
+            {CourseIcon && (
+              <div className="flex items-center justify-center">
+                <CourseIcon className="w-12 h-12 text-white" />
+              </div>
+            )}
+            {!CourseIcon && (
+              <div className="flex items-center justify-center">
             <PlayCircle className="w-12 h-12 text-white" />
+              </div>
+            )}
           </div>
         </div>
         

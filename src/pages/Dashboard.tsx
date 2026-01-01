@@ -18,13 +18,28 @@ import {
   Trophy,
   Palette,
   Sun,
-  Moon
+  Moon,
+  ChevronRight,
+  Crown,
+  Layers,
+  Edit3,
+  Brain,
+  Wind,
+  Utensils,
+  Droplet,
+  Dumbbell,
+  Activity,
+  GraduationCap,
+  Users,
+  Scale,
+  Shield,
+  UserPlus
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { useHabits, useJournalEntries, useUserBadges } from '../hooks/useSupabaseData';
+import { useHabits, useJournalEntries, useUserBadges, useNewYearResolutions } from '../hooks/useSupabaseData';
 import { supabase } from '../lib/supabase';
-import { format, isToday, parseISO } from 'date-fns';
+import { format, isToday, parseISO, startOfWeek, addDays } from 'date-fns';
 const badgeIcons: Record<string, React.ElementType> = {
   flame: Flame,
   target: Target,
@@ -33,66 +48,108 @@ const badgeIcons: Record<string, React.ElementType> = {
   star: Star,
   zap: Zap,
   trophy: Trophy,
+  'check-circle': CheckCircle2,
+  crown: Crown,
+  sun: Sun,
+  moon: Moon,
+  layers: Layers,
+  'trending-up': TrendingUp,
+  'book-open': BookOpen,
+  'pen-tool': Edit3,
+  book: BookOpen,
+  brain: Brain,
+  lotus: Sparkles,
+  wind: Wind,
+  utensils: Utensils,
+  calendar: Calendar,
+  droplet: Droplet,
+  dumbbell: Dumbbell,
+  activity: Activity,
+  'graduation-cap': GraduationCap,
+  users: Users,
+  scale: Scale,
+  shield: Shield,
+  'user-plus': UserPlus,
 };
 
 // All available badges in the system
 const allAvailableBadges = [
-  {
-    id: 'first-steps',
-    name: 'First Steps',
-    description: 'Complete your first habit',
-    icon: 'target',
-    category: 'habit'
-  },
-  {
-    id: 'week-warrior',
-    name: 'Week Warrior',
-    description: 'Maintain a 7-day streak',
-    icon: 'flame',
-    category: 'streak'
-  },
-  {
-    id: 'journaling-beginner',
-    name: 'Journaling Beginner',
-    description: 'Write your first journal entry',
-    icon: 'star',
-    category: 'journal'
-  },
-  {
-    id: 'wellness-champion',
-    name: 'Wellness Champion',
-    description: 'Track health metrics for 7 days',
-    icon: 'heart',
-    category: 'health'
-  },
-  {
-    id: 'fitness-enthusiast',
-    name: 'Fitness Enthusiast',
-    description: 'Complete 10 workouts',
-    icon: 'zap',
-    category: 'workout'
-  },
-  {
-    id: 'consistency-king',
-    name: 'Consistency King',
-    description: 'Maintain a 30-day streak',
-    icon: 'trophy',
-    category: 'streak'
-  },
-  {
-    id: 'habit-master',
-    name: 'Habit Master',
-    description: 'Complete all habits for 7 days straight',
-    icon: 'award',
-    category: 'habit'
-  },
-  {
-    id: 'mindful-soul',
-    name: 'Mindful Soul',
-    description: 'Complete 5 mindfulness sessions',
-    icon: 'sparkles',
-    category: 'mindfulness'
-  },
+  // Streak Badges
+  { id: 'week-warrior', name: 'Week Warrior', description: 'Maintain a 7-day streak', icon: 'flame', category: 'streak' },
+  { id: 'consistency-king', name: 'Consistency King', description: 'Maintain a 30-day streak', icon: 'trophy', category: 'streak' },
+  { id: 'century-club', name: 'Century Club', description: 'Maintain a 100-day streak', icon: 'zap', category: 'streak' },
+  { id: 'half-year-hero', name: 'Half Year Hero', description: 'Maintain a 180-day streak', icon: 'award', category: 'streak' },
+  { id: 'year-warrior', name: 'Year Warrior', description: 'Maintain a 365-day streak', icon: 'crown', category: 'streak' },
+  
+  // Habit Badges
+  { id: 'first-steps', name: 'First Steps', description: 'Complete your first habit', icon: 'target', category: 'habit' },
+  { id: 'habit-builder', name: 'Habit Builder', description: 'Complete 10 habits', icon: 'check-circle', category: 'habit' },
+  { id: 'habit-master', name: 'Habit Master', description: 'Complete 50 habits', icon: 'award', category: 'habit' },
+  { id: 'habit-legend', name: 'Habit Legend', description: 'Complete 100 habits', icon: 'trophy', category: 'habit' },
+  { id: 'perfect-week', name: 'Perfect Week', description: 'Complete all habits for 7 days straight', icon: 'star', category: 'habit' },
+  { id: 'perfect-month', name: 'Perfect Month', description: 'Complete all habits for 30 days straight', icon: 'crown', category: 'habit' },
+  { id: 'early-bird', name: 'Early Bird', description: 'Complete morning habits 10 times', icon: 'sun', category: 'habit' },
+  { id: 'night-owl', name: 'Night Owl', description: 'Complete evening habits 10 times', icon: 'moon', category: 'habit' },
+  { id: 'multi-tasker', name: 'Multi-Tasker', description: 'Maintain 5 active habits', icon: 'layers', category: 'habit' },
+  { id: 'consistency-champion', name: 'Consistency Champion', description: 'Complete habits with 80%+ rate for 30 days', icon: 'trending-up', category: 'habit' },
+  
+  // Journal/Mindfulness Badges
+  { id: 'journaling-beginner', name: 'Journaling Beginner', description: 'Write your first journal entry', icon: 'book-open', category: 'mindfulness' },
+  { id: 'reflective-writer', name: 'Reflective Writer', description: 'Write 5 journal entries', icon: 'pen-tool', category: 'mindfulness' },
+  { id: 'daily-diarist', name: 'Daily Diarist', description: 'Write 30 journal entries', icon: 'book', category: 'mindfulness' },
+  { id: 'gratitude-guru', name: 'Gratitude Guru', description: 'Write 10 gratitude entries', icon: 'heart', category: 'mindfulness' },
+  { id: 'mindful-writer', name: 'Mindful Writer', description: 'Write 100 journal entries', icon: 'sparkles', category: 'mindfulness' },
+  { id: 'journal-streak', name: 'Journal Streak', description: 'Write journal entries for 7 days straight', icon: 'flame', category: 'mindfulness' },
+  { id: 'mindful-beginner', name: 'Mindful Beginner', description: 'Complete your first mindfulness session', icon: 'brain', category: 'mindfulness' },
+  { id: 'zen-seeker', name: 'Zen Seeker', description: 'Complete 10 meditation sessions', icon: 'sparkles', category: 'mindfulness' },
+  { id: 'mindfulness-master', name: 'Mindfulness Master', description: 'Complete 50 meditation sessions', icon: 'lotus', category: 'mindfulness' },
+  { id: 'breathing-pro', name: 'Breathing Pro', description: 'Complete 20 breathing exercises', icon: 'wind', category: 'mindfulness' },
+  { id: 'calm-collector', name: 'Calm Collector', description: 'Complete 5 different mindfulness types', icon: 'heart', category: 'mindfulness' },
+  
+  // Nutrition Badges
+  { id: 'nutrition-starter', name: 'Nutrition Starter', description: 'Log your first meal', icon: 'utensils', category: 'nutrition' },
+  { id: 'meal-logger', name: 'Meal Logger', description: 'Log meals for 7 days', icon: 'calendar', category: 'nutrition' },
+  { id: 'balanced-eater', name: 'Balanced Eater', description: 'Log meals for 30 days', icon: 'check-circle', category: 'nutrition' },
+  { id: 'hydration-hero', name: 'Hydration Hero', description: 'Meet water goals for 10 days', icon: 'droplet', category: 'nutrition' },
+  { id: 'protein-power', name: 'Protein Power', description: 'Meet protein goals for 5 days', icon: 'zap', category: 'nutrition' },
+  { id: 'nutrition-master', name: 'Nutrition Master', description: 'Log meals for 100 days', icon: 'award', category: 'nutrition' },
+  { id: 'goal-getter', name: 'Goal Getter', description: 'Meet nutrition goals for 7 days straight', icon: 'target', category: 'nutrition' },
+  
+  // Workout/Session Badges
+  { id: 'fitness-enthusiast', name: 'Fitness Enthusiast', description: 'Complete your first workout', icon: 'dumbbell', category: 'workout' },
+  { id: 'active-starter', name: 'Active Starter', description: 'Complete 5 sessions', icon: 'activity', category: 'workout' },
+  { id: 'workout-warrior', name: 'Workout Warrior', description: 'Complete 25 sessions', icon: 'zap', category: 'workout' },
+  { id: 'fitness-champion', name: 'Fitness Champion', description: 'Complete 100 sessions', icon: 'trophy', category: 'workout' },
+  { id: 'course-completer', name: 'Course Completer', description: 'Finish your first course', icon: 'graduation-cap', category: 'special' },
+  { id: 'course-master', name: 'Course Master', description: 'Complete 5 courses', icon: 'award', category: 'special' },
+  { id: 'live-class-attendee', name: 'Live Class Attendee', description: 'Attend your first live class', icon: 'users', category: 'special' },
+  { id: 'regular-attendee', name: 'Regular Attendee', description: 'Attend 10 live classes', icon: 'calendar', category: 'special' },
+  { id: 'session-streak', name: 'Session Streak', description: 'Complete sessions for 7 days straight', icon: 'flame', category: 'workout' },
+  
+  // Points & Levels Badges
+  { id: 'point-collector', name: 'Point Collector', description: 'Earn 100 points', icon: 'star', category: 'special' },
+  { id: 'point-master', name: 'Point Master', description: 'Earn 500 points', icon: 'award', category: 'special' },
+  { id: 'point-legend', name: 'Point Legend', description: 'Earn 1000 points', icon: 'trophy', category: 'special' },
+  { id: 'level-up', name: 'Level Up', description: 'Reach level 5', icon: 'trending-up', category: 'special' },
+  { id: 'level-master', name: 'Level Master', description: 'Reach level 10', icon: 'crown', category: 'special' },
+  { id: 'level-legend', name: 'Level Legend', description: 'Reach level 20', icon: 'zap', category: 'special' },
+  
+  // Consistency & Achievement Badges
+  { id: 'track-star', name: 'Track Star', description: 'Log your first weight entry', icon: 'scale', category: 'special' },
+  { id: 'health-tracker', name: 'Health Tracker', description: 'Log health metrics for 7 days', icon: 'activity', category: 'special' },
+  { id: 'wellness-champion', name: 'Wellness Champion', description: 'Track health metrics for 30 days', icon: 'heart', category: 'special' },
+  { id: 'all-around', name: 'All Around', description: 'Earn badges in 5 different categories', icon: 'layers', category: 'special' },
+  { id: 'wellness-warrior', name: 'Wellness Warrior', description: 'Earn 10 different badges', icon: 'shield', category: 'special' },
+  { id: 'badge-collector', name: 'Badge Collector', description: 'Earn 20 different badges', icon: 'award', category: 'special' },
+  { id: 'badge-master', name: 'Badge Master', description: 'Earn 30 different badges', icon: 'trophy', category: 'special' },
+  
+  // Special Milestone Badges
+  { id: 'new-member', name: 'New Member', description: 'Join the platform', icon: 'user-plus', category: 'special' },
+  { id: 'week-one', name: 'Week One', description: 'Complete your first week', icon: 'calendar', category: 'special' },
+  { id: 'month-one', name: 'Month One', description: 'Complete your first month', icon: 'calendar', category: 'special' },
+  { id: 'quarter-champion', name: 'Quarter Champion', description: 'Complete 3 months', icon: 'award', category: 'special' },
+  { id: 'six-month-milestone', name: 'Six Month Milestone', description: 'Complete 6 months', icon: 'trophy', category: 'special' },
+  { id: 'one-year-milestone', name: 'One Year Milestone', description: 'Complete 1 year', icon: 'crown', category: 'special' },
 ];
 
 const wellnessQuotes = [
@@ -114,6 +171,15 @@ export default function Dashboard() {
   const { data: habits = [] } = useHabits();
   const { data: journalEntries = [] } = useJournalEntries();
   const { data: userBadges = [] } = useUserBadges();
+  const currentYear = 2026;
+  const { resolutions: newYearResolutions } = useNewYearResolutions(currentYear);
+  
+  // Check if it's New Year season (Dec 1 - Jan 31)
+  const isNewYearSeason = () => {
+    const now = new Date();
+    const month = now.getMonth(); // 0-11
+    return month === 11 || month === 0; // December or January
+  };
 
   const [dailyQuote, setDailyQuote] = useState('');
   const [showBadgeModal, setShowBadgeModal] = useState(false);
@@ -131,13 +197,18 @@ export default function Dashboard() {
     setDailyQuote(wellnessQuotes[quoteIndex]);
   }, []);
 
-  // Calculate streak (count habits completed today)
-  const todayCompletedCount = habits.filter(habit => {
+  // Calculate weekly completion (count habits completed this week)
+  const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
+  const weekEnd = addDays(weekStart, 6);
+  const thisWeekCompletedCount = habits.filter(habit => {
     const completedDates = habit.completed_dates as string[] || [];
-    return completedDates.some(date => isToday(parseISO(date)));
+    return completedDates.some(date => {
+      const dateObj = parseISO(date);
+      return dateObj >= weekStart && dateObj <= weekEnd;
+    });
   }).length;
 
-  const totalHabitsToday = habits.length;
+  const totalHabitsThisWeek = habits.length;
 
   // Get latest journal entry
   const latestJournal = journalEntries.length > 0 ? journalEntries[0] : null;
@@ -261,6 +332,60 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* New Year's Resolution Card (Seasonal) */}
+        {isNewYearSeason() && (
+          <div className="bg-gradient-to-br from-purple-500 via-indigo-500 to-pink-500 rounded-2xl shadow-xl p-6 sm:p-8 text-white">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
+                    <Sparkles className="w-6 h-6 text-white" />
+                  </div>
+                  <h2 className="text-2xl font-bold">New Year's Resolution {currentYear}</h2>
+                </div>
+                {newYearResolutions.length > 0 ? (
+                  <div className="space-y-3">
+                    {newYearResolutions.slice(0, 2).map((resolution) => (
+                      <div key={resolution.id} className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
+                        <h3 className="font-semibold text-lg mb-2">{resolution.title}</h3>
+                        <div className="flex items-center gap-3">
+                          <div className="flex-1 bg-white/20 rounded-full h-2 overflow-hidden">
+                            <div
+                              className="h-full bg-white rounded-full transition-all duration-500"
+                              style={{ width: `${resolution.progress}%` }}
+                            />
+                          </div>
+                          <span className="text-sm font-medium">{resolution.progress}%</span>
+                        </div>
+                      </div>
+                    ))}
+                    <Link
+                      to="/new-year-resolution"
+                      className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg font-medium transition-colors backdrop-blur-sm"
+                    >
+                      View All Resolutions
+                      <ChevronRight className="w-5 h-5" />
+                    </Link>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-lg opacity-90 mb-4">
+                      Ready for a fresh start? Set your intention for {currentYear} and create a resolution that truly matters to you.
+                    </p>
+                    <Link
+                      to="/new-year-resolution"
+                      className="inline-flex items-center gap-2 px-6 py-3 bg-white text-purple-600 rounded-xl font-semibold hover:bg-gray-100 transition-colors"
+                    >
+                      <Sparkles className="w-5 h-5" />
+                      Create Your Resolution
+                    </Link>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Today's Progress */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
@@ -273,7 +398,7 @@ export default function Dashboard() {
               <div className="flex items-center gap-3">
                 <Target className="w-8 h-8" style={{ color: primaryColor }} />
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  Today's Habits
+                  This Week's Habits
                 </h2>
               </div>
               <Link
@@ -288,31 +413,31 @@ export default function Dashboard() {
             <div className="mb-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-gray-600 dark:text-gray-400">
-                  {todayCompletedCount} of {totalHabitsToday} completed
+                  {thisWeekCompletedCount} of {totalHabitsThisWeek} completed
                 </span>
                 <span className="text-2xl font-bold" style={{ color: primaryColor }}>
-                  {totalHabitsToday > 0 ? Math.round((todayCompletedCount / totalHabitsToday) * 100) : 0}%
+                  {totalHabitsThisWeek > 0 ? Math.round((thisWeekCompletedCount / totalHabitsThisWeek) * 100) : 0}%
                 </span>
               </div>
               <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
                 <div
                   className="h-3 rounded-full transition-all duration-500"
                   style={{
-                    width: `${totalHabitsToday > 0 ? (todayCompletedCount / totalHabitsToday) * 100 : 0}%`,
+                    width: `${totalHabitsThisWeek > 0 ? (thisWeekCompletedCount / totalHabitsThisWeek) * 100 : 0}%`,
                     background: `linear-gradient(to right, ${primaryColor}, ${colorPresets[colorPreset].colors[1]})`
                   }}
                 />
               </div>
             </div>
 
-            {totalHabitsToday === 0 ? (
+            {totalHabitsThisWeek === 0 ? (
               <p className="text-gray-500 dark:text-gray-400 text-sm">
                 No habits set up yet. Start building positive routines!
               </p>
-            ) : todayCompletedCount === totalHabitsToday ? (
+            ) : thisWeekCompletedCount === totalHabitsThisWeek ? (
               <p className="text-green-600 dark:text-green-400 font-medium flex items-center gap-2">
                 <CheckCircle2 className="w-5 h-5" />
-                Amazing! All habits completed today!
+                Amazing! All habits completed this week!
               </p>
             ) : (
               <p className="text-gray-600 dark:text-gray-300 text-sm">

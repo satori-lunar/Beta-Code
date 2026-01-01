@@ -93,6 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } catch (err) {
           // Ignore logging errors
         }
+        
         setSession(session);
         setUser(session?.user ?? null);
         

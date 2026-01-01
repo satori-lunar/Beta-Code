@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   Plus,
   Droplet,
@@ -28,6 +28,9 @@ import {
   ResponsiveContainer
 } from 'recharts';
 import { analyzeFoodImage } from '../lib/foodAnalysis';
+import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabase';
+import { format } from 'date-fns';
 
 const waterData = [
   { time: '8AM', amount: 350 },
@@ -44,7 +47,7 @@ const waterData = [
 const mealTypes = [
   { id: 'breakfast', name: 'Breakfast', icon: Coffee, color: '#fcd5ce' },
   { id: 'lunch', name: 'Lunch', icon: UtensilsCrossed, color: '#d8f3dc' },
-  { id: 'snacks', name: 'Snacks', icon: Cookie, color: '#e2d5f1' },
+  { id: 'snack', name: 'Snacks', icon: Cookie, color: '#e2d5f1' },
   { id: 'dinner', name: 'Dinner', icon: MoonIcon, color: '#bde0fe' },
 ];
 
@@ -59,6 +62,7 @@ interface Meal {
 }
 
 export default function Nutrition() {
+  const { user } = useAuth();
   const [waterIntake, setWaterIntake] = useState(0);
   const [showAddMealModal, setShowAddMealModal] = useState(false);
   const [selectedMealType, setSelectedMealType] = useState('breakfast');
@@ -68,9 +72,13 @@ export default function Nutrition() {
   const [mealImage, setMealImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [showCamera, setShowCamera] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [nutritionEntryId, setNutritionEntryId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+
+  const today = format(new Date(), 'yyyy-MM-dd');
 
   const [newMeal, setNewMeal] = useState({
     name: '',
@@ -80,7 +88,8 @@ export default function Nutrition() {
     fat: '',
   });
 
-  const waterGoal = 2000;
+  // Convert to American units: 2000ml = ~68oz (2000 * 0.033814)
+  const waterGoal = 68; // ounces
   const calorieGoal = 2000;
 
   const totalCalories = meals.reduce((sum, meal) => sum + meal.calories, 0);
@@ -88,29 +97,289 @@ export default function Nutrition() {
   const totalCarbs = meals.reduce((sum, meal) => sum + meal.carbs, 0);
   const totalFat = meals.reduce((sum, meal) => sum + meal.fat, 0);
 
-  const addWater = (amount: number) => {
-    setWaterIntake(prev => Math.max(0, prev + amount));
+  // Get or create today's nutrition entry
+  const getOrCreateNutritionEntry = async () => {
+    if (!user) {
+      console.error('No user found');
+      return null;
+    }
+
+    try {
+      // First, try to get existing entry
+      const { data: existing, error: fetchError } = await supabase
+        .from('nutrition_entries')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('date', today)
+        .maybeSingle();
+
+      if (fetchError) {
+        console.error('Error fetching nutrition entry:', fetchError);
+      }
+
+      if (existing) {
+        const existingData = existing as any;
+        if (existingData.id) {
+          setNutritionEntryId(existingData.id);
+          setWaterIntake(existingData.water_intake || 0);
+          return existingData.id;
+        }
+      }
+
+      // If no existing entry, create one - only use required fields
+      const insertData: any = {
+        user_id: user.id,
+        date: today,
+      };
+
+      const { data: newEntry, error: createError } = await supabase
+        .from('nutrition_entries')
+        .insert(insertData)
+        .select('*')
+        .single();
+
+      if (createError) {
+        console.error('Error creating nutrition entry:', createError);
+        console.error('Error code:', createError.code);
+        console.error('Error message:', createError.message);
+        console.error('Error details:', JSON.stringify(createError, null, 2));
+        
+        // If it's a unique constraint error (entry was created between check and insert)
+        if (createError.code === '23505' || createError.message?.includes('duplicate') || createError.message?.includes('unique')) {
+          // Retry fetch one more time
+          const { data: retryData, error: retryError } = await supabase
+            .from('nutrition_entries')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('date', today)
+            .maybeSingle();
+          
+          if (!retryError && retryData) {
+            const retryDataTyped = retryData as any;
+            if (retryDataTyped.id) {
+              setNutritionEntryId(retryDataTyped.id);
+              setWaterIntake(retryDataTyped.water_intake || 0);
+              return retryDataTyped.id;
+            }
+          }
+        }
+        
+        // Show more detailed error to user
+        alert(`Failed to create nutrition entry: ${createError.message || 'Unknown error'}. Please check the console for details.`);
+        return null;
+      }
+
+      if (newEntry) {
+        const newEntryData = newEntry as any;
+        if (newEntryData.id) {
+          setNutritionEntryId(newEntryData.id);
+          setWaterIntake(newEntryData.water_intake || 0);
+          return newEntryData.id;
+        } else {
+          console.error('Entry created but no ID in response:', newEntryData);
+        }
+      } else {
+        console.error('No data returned from create operation');
+      }
+
+      return null;
+    } catch (error: any) {
+      console.error('Unexpected error getting/creating nutrition entry:', error);
+      console.error('Error type:', typeof error);
+      console.error('Error stack:', error?.stack);
+      alert(`Unexpected error: ${error?.message || 'Unknown error'}. Please check the console.`);
+      return null;
+    }
   };
 
-  const handleAddMeal = () => {
-    if (newMeal.name && newMeal.calories) {
-      setMeals([
-        ...meals,
-        {
-          id: Date.now().toString(),
-          type: selectedMealType,
-          name: newMeal.name,
-          calories: parseInt(newMeal.calories) || 0,
-          protein: parseInt(newMeal.protein) || 0,
-          carbs: parseInt(newMeal.carbs) || 0,
-          fat: parseInt(newMeal.fat) || 0,
-        },
-      ]);
+  // Fetch meals for today
+  const fetchMeals = async (entryId: string) => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('meals' as any)
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('nutrition_entry_id', entryId)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+
+      if (data) {
+        const mappedMeals: Meal[] = data.map((meal: any) => ({
+          id: meal.id,
+          type: meal.type,
+          name: meal.name,
+          calories: meal.calories || 0,
+          protein: meal.protein || 0,
+          carbs: meal.carbs || 0,
+          fat: meal.fat || 0,
+        }));
+        setMeals(mappedMeals);
+      }
+    } catch (error) {
+      console.error('Error fetching meals:', error);
+    }
+  };
+
+
+  // Load data on mount
+  useEffect(() => {
+    const loadData = async () => {
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      const entryId = await getOrCreateNutritionEntry();
+      if (entryId) {
+        await fetchMeals(entryId);
+      }
+      setLoading(false);
+    };
+
+    loadData();
+  }, [user, today]);
+
+  // Update totals when meals or water change (only if columns exist)
+  useEffect(() => {
+    if (nutritionEntryId && user) {
+      // Try to update totals, but don't fail if columns don't exist
+      const totals: any = {};
+      const calculatedCalories = meals.reduce((sum, meal) => sum + meal.calories, 0);
+      const calculatedProtein = meals.reduce((sum, meal) => sum + meal.protein, 0);
+      const calculatedCarbs = meals.reduce((sum, meal) => sum + meal.carbs, 0);
+      const calculatedFat = meals.reduce((sum, meal) => sum + meal.fat, 0);
+
+      // Only include fields if they have values (avoid updating with defaults unnecessarily)
+      if (calculatedCalories > 0) totals.total_calories = calculatedCalories;
+      if (calculatedProtein > 0) totals.total_protein = calculatedProtein;
+      if (calculatedCarbs > 0) totals.total_carbs = calculatedCarbs;
+      if (calculatedFat > 0) totals.total_fat = calculatedFat;
+      if (waterIntake > 0) totals.water_intake = waterIntake;
+
+      // Only update if we have something to update
+      if (Object.keys(totals).length > 0) {
+        supabase
+          .from('nutrition_entries')
+          .update(totals)
+          .eq('id', nutritionEntryId)
+          .then(({ error }) => {
+            if (error) {
+              // Silently fail if columns don't exist - this is okay, totals are calculated client-side
+              console.warn('Could not update nutrition totals (columns may not exist):', error.message);
+            }
+          });
+      }
+    }
+  }, [meals, waterIntake, nutritionEntryId, user]);
+
+  const addWater = async (amount: number) => {
+    // Amount is in ounces
+    const newAmount = Math.max(0, waterIntake + amount);
+    setWaterIntake(newAmount);
+    
+    if (nutritionEntryId && user) {
+      try {
+        // Store in oz (database value will be in oz)
+        const { error } = await supabase
+          .from('nutrition_entries')
+          .update({ water_intake: newAmount } as any)
+          .eq('id', nutritionEntryId);
+        
+        if (error) {
+          // Silently fail if column doesn't exist - water intake is stored in state
+          console.warn('Could not update water intake (column may not exist):', error.message);
+        }
+      } catch (error) {
+        console.warn('Error updating water intake:', error);
+      }
+    }
+  };
+
+  const handleAddMeal = async () => {
+    if (!newMeal.name.trim()) {
+      alert('Please enter a meal name');
+      return;
+    }
+
+    if (!user) {
+      alert('You must be logged in to add meals');
+      return;
+    }
+
+    // Ensure we have a nutrition entry ID
+    let entryId = nutritionEntryId;
+    if (!entryId) {
+      entryId = await getOrCreateNutritionEntry();
+      if (!entryId) {
+        alert('Failed to initialize nutrition entry. Please refresh the page and try again.');
+        return;
+      }
+    }
+
+    try {
+      const mealData = {
+        nutrition_entry_id: entryId,
+        user_id: user.id,
+        type: selectedMealType,
+        name: newMeal.name,
+        calories: parseInt(newMeal.calories) || 0,
+        protein: parseInt(newMeal.protein) || 0,
+        carbs: parseInt(newMeal.carbs) || 0,
+        fat: parseInt(newMeal.fat) || 0,
+        time: new Date().toTimeString().slice(0, 5), // HH:MM format
+      };
+
+      const { data, error } = await supabase
+        .from('meals' as any)
+        .insert(mealData)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
+
+      if (data && typeof data === 'object' && 'id' in data) {
+        const meal = data as any;
+        // Add to local state
+        setMeals([
+          ...meals,
+          {
+            id: meal.id,
+            type: meal.type,
+            name: meal.name,
+            calories: meal.calories || 0,
+            protein: meal.protein || 0,
+            carbs: meal.carbs || 0,
+            fat: meal.fat || 0,
+          },
+        ]);
+      } else {
+        throw new Error('No data returned from insert');
+      }
+
+      // Reset form but keep modal open and preserve meal type
       setNewMeal({ name: '', calories: '', protein: '', carbs: '', fat: '' });
       setMealImage(null);
       setImagePreview(null);
-      setShowAddMealModal(false);
+    } catch (error: any) {
+      console.error('Error adding meal:', error);
+      const errorMessage = error?.message || 'Failed to add meal. Please try again.';
+      alert(errorMessage);
     }
+  };
+
+  const handleCloseModal = () => {
+    setShowAddMealModal(false);
+    // Reset form when closing
+    setNewMeal({ name: '', calories: '', protein: '', carbs: '', fat: '' });
+    setMealImage(null);
+    setImagePreview(null);
   };
 
   const handleImageSelect = async (file: File) => {
@@ -215,6 +484,17 @@ export default function Nutrition() {
 
   const hasNoData = meals.length === 0 && waterIntake === 0;
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-coral-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading your meals...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8 pb-20 lg:pb-0">
       {/* Header */}
@@ -279,7 +559,7 @@ export default function Nutrition() {
                 <span className="font-medium text-gray-900">3. Set Goals</span>
               </div>
               <p className="text-sm text-gray-600">
-                Your daily goals are set to 2000 kcal and 2000ml water by default.
+                Your daily goals are set to 2000 kcal and 68oz water by default.
               </p>
             </div>
           </div>
@@ -349,14 +629,14 @@ export default function Nutrition() {
             <h2 className="text-xl font-display font-semibold text-gray-900">Water Intake</h2>
             <div className="flex items-center gap-2 text-sm">
               <span className="text-gray-500">Today</span>
-              <span className="font-bold text-blue-600">{waterIntake}ml</span>
-              <span className="text-gray-400">/ {waterGoal}ml</span>
+              <span className="font-bold text-blue-600">{waterIntake}oz</span>
+              <span className="text-gray-400">/ {waterGoal}oz</span>
             </div>
           </div>
 
           <div className="flex items-center gap-4 mb-6">
             <button
-              onClick={() => addWater(-250)}
+              onClick={() => addWater(-8)}
               className="p-3 rounded-xl bg-gray-100 hover:bg-gray-200 transition-colors"
             >
               <Minus className="w-5 h-5 text-gray-600" />
@@ -372,11 +652,11 @@ export default function Nutrition() {
                 className="absolute -top-8 transform -translate-x-1/2 bg-blue-600 text-white text-xs px-2 py-1 rounded"
                 style={{ left: `${Math.min((waterIntake / waterGoal) * 100, 100)}%` }}
               >
-                {waterIntake}ml
+                {waterIntake}oz
               </div>
             </div>
             <button
-              onClick={() => addWater(250)}
+              onClick={() => addWater(8)}
               className="p-3 rounded-xl bg-blue-100 hover:bg-blue-200 transition-colors"
             >
               <Plus className="w-5 h-5 text-blue-600" />
@@ -384,14 +664,15 @@ export default function Nutrition() {
           </div>
 
           <div className="flex justify-center gap-3 mb-6">
-            {[150, 250, 350, 500].map((amount) => (
+            {/* Convert to oz: 150ml=5oz, 250ml=8oz, 350ml=12oz, 500ml=17oz */}
+            {[5, 8, 12, 17].map((amount) => (
               <button
                 key={amount}
                 onClick={() => addWater(amount)}
                 className="flex items-center gap-1 px-3 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-600 text-sm font-medium transition-colors"
               >
                 <Droplet className="w-4 h-4" />
-                +{amount}ml
+                +{amount}oz
               </button>
             ))}
           </div>
@@ -547,7 +828,7 @@ export default function Nutrition() {
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-display font-semibold">Add Meal</h3>
               <button
-                onClick={() => setShowAddMealModal(false)}
+                onClick={handleCloseModal}
                 className="p-2 hover:bg-gray-100 rounded-lg"
               >
                 <X className="w-5 h-5 text-gray-500" />
@@ -651,7 +932,7 @@ export default function Nutrition() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Food Name
+                  Food Name *
                 </label>
                 <input
                   type="text"
@@ -659,7 +940,11 @@ export default function Nutrition() {
                   onChange={(e) => setNewMeal({ ...newMeal, name: e.target.value })}
                   placeholder="e.g., Grilled chicken salad"
                   className="input"
+                  required
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  Calories and nutrition info are optional
+                </p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -718,10 +1003,10 @@ export default function Nutrition() {
 
               <div className="flex gap-3 pt-4">
                 <button
-                  onClick={() => setShowAddMealModal(false)}
+                  onClick={handleCloseModal}
                   className="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-gray-50"
                 >
-                  Cancel
+                  Done
                 </button>
                 <button onClick={handleAddMeal} className="flex-1 btn-primary">
                   Add Meal

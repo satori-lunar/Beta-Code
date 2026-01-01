@@ -1278,6 +1278,75 @@ export function useClassReminders() {
   return { setReminder, loading, error }
 }
 
+// Hook to fetch user's class reminders with live class details
+export function useUserClassReminders() {
+  const { user } = useAuth()
+  const [reminders, setReminders] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
+
+  useEffect(() => {
+    if (!user) {
+      setReminders([])
+      setLoading(false)
+      return
+    }
+
+    async function fetchReminders() {
+      if (!user) return;
+      try {
+        setLoading(true)
+        const { data, error: fetchError } = await supabase
+          .from('class_reminders')
+          .select(`
+            *,
+            live_classes (
+              id,
+              title,
+              description,
+              instructor,
+              scheduled_at,
+              duration,
+              zoom_link,
+              category
+            )
+          `)
+          .eq('user_id', user.id)
+
+        if (fetchError) throw fetchError
+        setReminders(data || [])
+      } catch (err) {
+        setError(err as Error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchReminders()
+
+    // Subscribe to changes
+    const channel = supabase
+      .channel('class_reminders_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'class_reminders',
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => fetchReminders()
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [user?.id])
+
+  return { reminders, loading, error }
+}
+
 // Helper function to award a badge to a user
 export async function awardBadge(
   userId: string,
@@ -1332,6 +1401,9 @@ export async function checkAndAwardStreakBadges(userId: string, streak: number) 
   const streakBadges = [
     { minStreak: 7, name: 'Week Warrior', description: 'Maintain a 7-day streak', icon: 'flame', category: 'streak' },
     { minStreak: 30, name: 'Consistency King', description: 'Maintain a 30-day streak', icon: 'trophy', category: 'streak' },
+    { minStreak: 100, name: 'Century Club', description: 'Maintain a 100-day streak', icon: 'zap', category: 'streak' },
+    { minStreak: 180, name: 'Half Year Hero', description: 'Maintain a 180-day streak', icon: 'award', category: 'streak' },
+    { minStreak: 365, name: 'Year Warrior', description: 'Maintain a 365-day streak', icon: 'crown', category: 'streak' },
   ]
 
   for (const badge of streakBadges) {
@@ -1349,7 +1421,7 @@ export async function checkAndAwardStreakBadges(userId: string, streak: number) 
 // Check and award first-time badges
 export async function checkFirstTimeBadges(
   userId: string,
-  action: 'habit_complete' | 'journal_entry' | 'weight_log' | 'workout_complete'
+  action: 'habit_complete' | 'journal_entry' | 'weight_log' | 'workout_complete' | 'session_complete' | 'nutrition_log' | 'mindfulness_complete'
 ) {
   const firstTimeBadges: Record<string, { name: string; description: string; icon: string; category: string }> = {
     habit_complete: {
@@ -1361,20 +1433,38 @@ export async function checkFirstTimeBadges(
     journal_entry: {
       name: 'Journaling Beginner',
       description: 'Write your first journal entry',
-      icon: 'star',
-      category: 'journal',
+      icon: 'book-open',
+      category: 'mindfulness',
     },
     weight_log: {
       name: 'Track Star',
       description: 'Log your first weight entry',
-      icon: 'star',
+      icon: 'scale',
       category: 'special',
     },
     workout_complete: {
       name: 'Fitness Enthusiast',
       description: 'Complete your first workout',
-      icon: 'zap',
+      icon: 'dumbbell',
       category: 'workout',
+    },
+    session_complete: {
+      name: 'Active Starter',
+      description: 'Complete your first session',
+      icon: 'activity',
+      category: 'workout',
+    },
+    nutrition_log: {
+      name: 'Nutrition Starter',
+      description: 'Log your first meal',
+      icon: 'utensils',
+      category: 'nutrition',
+    },
+    mindfulness_complete: {
+      name: 'Mindful Beginner',
+      description: 'Complete your first mindfulness session',
+      icon: 'brain',
+      category: 'mindfulness',
     },
   }
 
@@ -1386,6 +1476,61 @@ export async function checkFirstTimeBadges(
     return result;
   }
   return null;
+}
+
+// Check habit completion badges (milestones, consistency)
+export async function checkHabitCompletionBadges(userId: string) {
+  try {
+    await (supabase as any).rpc('check_habit_completion_badges', {
+      p_user_id: userId
+    });
+  } catch (error) {
+    console.error('Error checking habit completion badges:', error);
+  }
+}
+
+// Check journal badges
+export async function checkJournalBadges(userId: string) {
+  try {
+    await (supabase as any).rpc('check_journal_badges', {
+      p_user_id: userId
+    });
+  } catch (error) {
+    console.error('Error checking journal badges:', error);
+  }
+}
+
+// Check nutrition badges
+export async function checkNutritionBadges(userId: string) {
+  try {
+    await (supabase as any).rpc('check_nutrition_badges', {
+      p_user_id: userId
+    });
+  } catch (error) {
+    console.error('Error checking nutrition badges:', error);
+  }
+}
+
+// Check points/level badges
+export async function checkPointsBadges(userId: string) {
+  try {
+    await (supabase as any).rpc('check_points_badges', {
+      p_user_id: userId
+    });
+  } catch (error) {
+    console.error('Error checking points badges:', error);
+  }
+}
+
+// Comprehensive badge check (all categories)
+export async function checkAllBadges(userId: string) {
+  try {
+    await (supabase as any).rpc('check_all_badges', {
+      p_user_id: userId
+    });
+  } catch (error) {
+    console.error('Error checking all badges:', error);
+  }
 }
 
 // Hook for notification preferences
@@ -1405,6 +1550,7 @@ export function useNotificationPreferences() {
     }
 
     async function fetchPreferences() {
+      if (!user) return // Type guard
       try {
         setLoading(true)
         const { data, error: fetchError } = await supabase
@@ -1459,5 +1605,205 @@ export function useNotificationPreferences() {
   }
 
   return { preferences, loading, error, updatePreferences }
+}
+
+// Hook for New Year's Resolutions
+export function useNewYearResolutions(year?: number) {
+  const { user } = useAuth()
+  const [resolutions, setResolutions] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
+  
+  const targetYear = year || new Date().getFullYear()
+  const userId = user ? user.id : null
+
+  useEffect(() => {
+    if (!user) {
+      setResolutions([])
+      setLoading(false)
+      return
+    }
+
+    let isMounted = true
+
+    const fetchResolutions = async () => {
+      try {
+        setLoading(true)
+        const { data, error: fetchError } = await supabase
+          .from('new_year_resolutions')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('year', targetYear)
+          .order('created_at', { ascending: false })
+
+        if (fetchError) throw fetchError
+        if (!isMounted) return
+
+        setResolutions((data || []).map((r: any) => ({
+          id: r.id,
+          year: r.year,
+          title: r.title,
+          description: r.description,
+          category: r.category,
+          whyImportant: r.why_important,
+          milestones: r.milestones || [],
+          progress: r.progress || 0,
+          status: r.status || 'active',
+          targetDate: r.target_date,
+          reflections: r.reflections || [],
+          createdAt: r.created_at,
+          updatedAt: r.updated_at,
+        })))
+      } catch (err) {
+        if (isMounted) setError(err as Error)
+      } finally {
+        if (isMounted) setLoading(false)
+      }
+    }
+
+    fetchResolutions()
+
+    const channel = supabase
+      .channel('new_year_resolutions_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'new_year_resolutions',
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => fetchResolutions()
+      )
+      .subscribe()
+
+    return () => {
+      isMounted = false
+      supabase.removeChannel(channel)
+    }
+  }, [userId, targetYear])
+
+  const createResolution = async (resolutionData: {
+    title: string
+    description?: string
+    category: string
+    whyImportant?: string
+    milestones?: any[]
+    targetDate?: string
+  }) => {
+    if (!user) throw new Error('User not authenticated')
+
+    try {
+      const { data, error: createError } = await supabase
+        .from('new_year_resolutions')
+        .insert({
+          user_id: user.id,
+          year: targetYear,
+          title: resolutionData.title,
+          description: resolutionData.description || null,
+          category: resolutionData.category,
+          why_important: resolutionData.whyImportant || null,
+          milestones: resolutionData.milestones || [],
+          target_date: resolutionData.targetDate || null,
+          progress: 0,
+          status: 'active',
+        })
+        .select()
+        .single()
+
+      if (createError) throw createError
+      return { success: true, data }
+    } catch (err) {
+      setError(err as Error)
+      return { success: false, error: err }
+    }
+  }
+
+  const updateResolution = async (id: string, updates: any) => {
+    if (!user) throw new Error('User not authenticated')
+
+    try {
+      const updateData: any = {}
+      if (updates.title !== undefined) updateData.title = updates.title
+      if (updates.description !== undefined) updateData.description = updates.description
+      if (updates.category !== undefined) updateData.category = updates.category
+      if (updates.whyImportant !== undefined) updateData.why_important = updates.whyImportant
+      if (updates.milestones !== undefined) updateData.milestones = updates.milestones
+      if (updates.progress !== undefined) updateData.progress = updates.progress
+      if (updates.status !== undefined) updateData.status = updates.status
+      if (updates.targetDate !== undefined) updateData.target_date = updates.targetDate
+      if (updates.reflections !== undefined) updateData.reflections = updates.reflections
+
+      const { data, error: updateError } = await supabase
+        .from('new_year_resolutions')
+        .update(updateData)
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .select()
+        .single()
+
+      if (updateError) throw updateError
+      return { success: true, data }
+    } catch (err) {
+      setError(err as Error)
+      return { success: false, error: err }
+    }
+  }
+
+  const deleteResolution = async (id: string) => {
+    if (!user) throw new Error('User not authenticated')
+
+    try {
+      const { error: deleteError } = await supabase
+        .from('new_year_resolutions')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id)
+
+      if (deleteError) throw deleteError
+      return { success: true }
+    } catch (err) {
+      setError(err as Error)
+      return { success: false, error: err }
+    }
+  }
+
+  return {
+    resolutions,
+    loading,
+    error,
+    createResolution,
+    updateResolution,
+    deleteResolution,
+    refetch: () => {
+      if (user) {
+        supabase
+          .from('new_year_resolutions')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('year', targetYear)
+          .order('created_at', { ascending: false })
+          .then(({ data, error }) => {
+            if (!error && data) {
+              setResolutions((data || []).map((r: any) => ({
+                id: r.id,
+                year: r.year,
+                title: r.title,
+                description: r.description,
+                category: r.category,
+                whyImportant: r.why_important,
+                milestones: r.milestones || [],
+                progress: r.progress || 0,
+                status: r.status || 'active',
+                targetDate: r.target_date,
+                reflections: r.reflections || [],
+                createdAt: r.created_at,
+                updatedAt: r.updated_at,
+              })))
+            }
+          })
+      }
+    },
+  }
 }
 

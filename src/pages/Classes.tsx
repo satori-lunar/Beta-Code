@@ -49,6 +49,7 @@ const classUrls: Record<string, string> = {
   'Just Begin': 'https://www.birchandstonecoaching.com/5-30pm-et-seedlings',
   'Vision & Vibes': 'https://www.birchandstonecoaching.com/coaching/groups/vision-vibes-saturday-7-30am-et',
   'Vision & Vibes w/Coach Emily M Saturday 7:30 am, Join Live!': 'https://www.birchandstonecoaching.com/coaching/groups/vision-vibes-saturday-7-30am-et',
+  'What Went Well w/Coach Dani': 'https://www.birchandstonecoaching.com/coaching/groups/vision-vibes-saturday-7-30am-et',
   'Inner Chords': 'https://www.birchandstonecoaching.com/8am-et-inner-chords',
   'The Reflecting Pool': 'https://www.birchandstonecoaching.com/10am-et-the-reflecting-pool',
   'Wisdom Rising': 'https://www.birchandstonecoaching.com/4pm-et-wisdom-rising',
@@ -114,6 +115,7 @@ const courseStyles: Record<string, { gradient: string; icon: any }> = {
   'Vision & Vibes': { gradient: 'from-amber-400 to-orange-500', icon: Sunrise },
   'Vision & Vibes - Saturdays 7:30am ET': { gradient: 'from-amber-400 to-orange-500', icon: Sunrise },
   'Vision & Vibes w/Coach Emily M Saturday 7:30 am, Join Live!': { gradient: 'from-amber-400 to-orange-500', icon: Sunrise },
+  'What Went Well w/Coach Dani': { gradient: 'from-green-400 to-emerald-500', icon: CheckCircle2 },
   'Plan Your Week': { gradient: 'from-cyan-500 to-blue-600', icon: Calendar },
 };
 
@@ -312,7 +314,8 @@ export default function Classes() {
     'Saturday': [
       'Vision & Vibes w/Coach Emily M Saturday 7:30 am, Join Live!',
       'Vision & Vibes',
-      'Care without Collapse w/Coach Dani'
+      'Care without Collapse w/Coach Dani',
+      'What Went Well w/Coach Dani'
     ]
   };
 

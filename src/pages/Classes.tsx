@@ -311,7 +311,8 @@ export default function Classes() {
     'Friday': [
       'The Habit Lab',
       'Energy in Motion',
-      'Nighttime Nurturing w/Coach Dani'
+      'Nighttime Nurturing w/Coach Dani',
+      'Nighttime Nurturing'
     ],
     'Saturday': [
       'Vision & Vibes w/Coach Emily M Saturday 7:30 am, Join Live!',

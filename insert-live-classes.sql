@@ -215,6 +215,15 @@ INSERT INTO public.live_classes (
     45,
     'https://us02web.zoom.us/j/87954176691',
     'Wellness'
+  ),
+  (
+    'Nighttime Nurturing',
+    'Nighttime Nurturing is a cozy, calming evening workshop designed to support you when the day winds down… and the urges, emotions, and habits often wind up. If evenings are when you snack, scroll, graze, wander the pantry, or feel yourself slipping into old routines, this class is your soft landing place. Each session offers: gentle coaching around nighttime snacking, overeating, and emotional urges, practices for comfort, grounding, and emotional regulation, simple tools to unwind without using food to soothe, cozy rituals that cue rest, not cravings, a warm, supportive community to end your day with intention. Nighttime Nurturing is where you learn to care for yourself after hours—with warmth, honesty, and zero shame. It''s the quiet shift that changes everything about your nights… and your tomorrow.',
+    'Coach Dani',
+    '2024-12-20 23:00:00-05'::timestamptz, -- Friday, December 20, 11:00 PM ET
+    45,
+    'https://us02web.zoom.us/j/87954176691',
+    'Wellness'
   );
 
 -- Verify the data

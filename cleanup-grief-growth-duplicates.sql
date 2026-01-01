@@ -9,8 +9,7 @@ SELECT
   'Courses' as table_name,
   id,
   title,
-  created_at,
-  updated_at
+  created_at
 FROM public.courses
 WHERE title LIKE '%Grief & Growth%'
 ORDER BY created_at;

@@ -49,6 +49,7 @@ const classUrls: Record<string, string> = {
   'Hatha Yoga': 'https://www.birchandstonecoaching.com/4pm-et-hatha-yoga',
   'Just Begin': 'https://www.birchandstonecoaching.com/5-30pm-et-seedlings',
   'Vision & Vibes': 'https://www.birchandstonecoaching.com/coaching/groups/vision-vibes-saturday-7-30am-et',
+  'Vision & Vibes w/Coach Emily M Saturday 7:30 am, Join Live!': 'https://www.birchandstonecoaching.com/coaching/groups/vision-vibes-saturday-7-30am-et',
   'Inner Chords': 'https://www.birchandstonecoaching.com/8am-et-inner-chords',
   'The Reflecting Pool': 'https://www.birchandstonecoaching.com/10am-et-the-reflecting-pool',
   'Wisdom Rising': 'https://www.birchandstonecoaching.com/4pm-et-wisdom-rising',
@@ -102,7 +103,7 @@ const courseStyles: Record<string, { gradient: string; icon: any }> = {
   'Inner Chords - Tuesdays 8am ET': { gradient: 'from-violet-500 to-purple-600', icon: Waves },
   'Instinctive Meditation': { gradient: 'from-indigo-400 to-blue-500', icon: Brain },
   'Instinctive Meditation - Wednesdays 7pm ET': { gradient: 'from-indigo-400 to-blue-500', icon: Brain },
-  'The Reflecting Pool': { gradient: 'from-blue-400 to-indigo-500', icon: Activity },
+  'The Reflecting Pool': { gradient: 'from-blue-400 to-indigo-500', icon: Waves },
   'Tangled: Challenging Relationships': { gradient: 'from-rose-500 to-pink-600', icon: Users },
   'Tangled: Challenging Relationships - Thursdays 1:30pm ET': { gradient: 'from-rose-500 to-pink-600', icon: Users },
   'The Heart of Nourishment': { gradient: 'from-amber-400 to-orange-500', icon: Heart },
@@ -113,6 +114,7 @@ const courseStyles: Record<string, { gradient: string; icon: any }> = {
   'Just Begin - Mondays 5:30pm ET': { gradient: 'from-lime-400 to-green-500', icon: Leaf },
   'Vision & Vibes': { gradient: 'from-amber-400 to-orange-500', icon: Sunrise },
   'Vision & Vibes - Saturdays 7:30am ET': { gradient: 'from-amber-400 to-orange-500', icon: Sunrise },
+  'Vision & Vibes w/Coach Emily M Saturday 7:30 am, Join Live!': { gradient: 'from-amber-400 to-orange-500', icon: Sunrise },
   'Plan Your Week': { gradient: 'from-cyan-500 to-blue-600', icon: Calendar },
 };
 
@@ -309,6 +311,7 @@ export default function Classes() {
       'Nighttime Nurturing'
     ],
     'Saturday': [
+      'Vision & Vibes w/Coach Emily M Saturday 7:30 am, Join Live!',
       'Vision & Vibes',
       'Care without Collapse w/Coach Dani'
     ]

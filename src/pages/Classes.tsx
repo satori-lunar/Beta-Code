@@ -46,7 +46,7 @@ const classUrls: Record<string, string> = {
   'Strength in Motion': 'https://www.birchandstonecoaching.com/9am-et-energy-in-motion',
   'Energy in Motion': 'https://www.birchandstonecoaching.com/9am-et-energy-in-motion',
   'Hatha Yoga': 'https://www.birchandstonecoaching.com/4pm-et-hatha-yoga',
-  'Seedlings': 'https://www.birchandstonecoaching.com/5-30pm-et-seedlings',
+  'Just Begin': 'https://www.birchandstonecoaching.com/5-30pm-et-seedlings',
   'Inner Chords': 'https://www.birchandstonecoaching.com/8am-et-inner-chords',
   'The Reflecting Pool': 'https://www.birchandstonecoaching.com/10am-et-the-reflecting-pool',
   'Wisdom Rising': 'https://www.birchandstonecoaching.com/4pm-et-wisdom-rising',
@@ -107,8 +107,8 @@ const courseStyles: Record<string, { gradient: string; icon: any }> = {
   'Grief & Growth': { gradient: 'from-gray-500 to-slate-600', icon: Flower2 },
   'Rooted Weight Health': { gradient: 'from-emerald-500 to-green-600', icon: Leaf },
   'Declutter to Breathe': { gradient: 'from-sky-400 to-blue-500', icon: Waves },
-  'Seedlings': { gradient: 'from-lime-400 to-green-500', icon: Leaf },
-  'Seedlings - Mondays 5:30pm ET': { gradient: 'from-lime-400 to-green-500', icon: Leaf },
+  'Just Begin': { gradient: 'from-lime-400 to-green-500', icon: Leaf },
+  'Just Begin - Mondays 5:30pm ET': { gradient: 'from-lime-400 to-green-500', icon: Leaf },
   'Plan Your Week': { gradient: 'from-cyan-500 to-blue-600', icon: Calendar },
 };
 
@@ -279,7 +279,7 @@ export default function Classes() {
       'The Heart of Nourishment',
       'Foundations in Motion',
       'Hatha Yoga',
-      'Seedlings'
+      'Just Begin'
     ],
     'Tuesday': [
       'Inner Chords',

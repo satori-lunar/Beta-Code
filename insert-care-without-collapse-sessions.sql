@@ -3,7 +3,7 @@
 -- ============================================
 -- Run this in Supabase SQL Editor
 
--- Insert the Care without Collapse live class for Saturday at 12:00pm ET
+-- Insert Care without Collapse live classes
 INSERT INTO public.live_classes (
   title,
   description,
@@ -13,10 +13,23 @@ INSERT INTO public.live_classes (
   zoom_link,
   thumbnail_url,
   category
-) VALUES (
+) VALUES
+-- Birch & Stone Coaching class
+(
   'Care without Collapse - Saturday 12:00pm ET',
   'When you''re caring for someone else—an aging parent, a partner, a child, a family member—it can quietly take over your whole nervous system. You stay strong. You show up. You keep going. And somewhere along the way, you start to disappear. Care Without Collapse is a supportive space for caregivers who want relief without guilt and steadiness without burning out. This class isn''t about doing more or fixing everything. It''s about learning how to care with ground under you. Together, we''ll: Name the invisible weight caregivers carry Untangle responsibility from self-erasure Learn how to stay emotionally present without collapsing under it Practice small, realistic ways to support yourself while you support others You don''t need to have the right words. You don''t need a plan. You just need a place where you are also held. Come as you are. Leave steadier.',
   'Birch & Stone Coaching',
+  '2024-12-28 12:00:00-05'::timestamptz, -- Saturdays at 12:00 PM ET
+  45,
+  NULL, -- Zoom link to be added when available
+  'shield', -- Icon representing protection/support for caregivers
+  'Caregiving Support'
+),
+-- Coach Dani class
+(
+  'Care without Collapse w/Coach Dani',
+  'When you''re caring for someone else—an aging parent, a partner, a child, a family member—it can quietly take over your whole nervous system.',
+  'Coach Dani',
   '2024-12-28 12:00:00-05'::timestamptz, -- Saturdays at 12:00 PM ET
   45,
   NULL, -- Zoom link to be added when available
@@ -33,5 +46,5 @@ SELECT
   category,
   thumbnail_url
 FROM public.live_classes
-WHERE title = 'Care without Collapse - Saturday 12:00pm ET'
+WHERE title LIKE '%Care without Collapse%'
 ORDER BY scheduled_at DESC;

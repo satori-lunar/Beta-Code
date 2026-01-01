@@ -33,5 +33,5 @@ SELECT
   category,
   thumbnail_url
 FROM public.live_classes
-WHERE title = 'Care without Collapse Saturday 12:00pm ET'
+WHERE title = 'Care without Collapse - Saturday 12:00pm ET'
 ORDER BY scheduled_at DESC;

@@ -44,6 +44,15 @@ INSERT INTO public.live_classes (
     'https://www.birchandstonecoaching.com/1-30pm-et-tangled',
     'Relationships'
   ),
+  (
+    'Between Us',
+    'Through conversation, reflection, and gentle inquiry, we''ll look at desire, pleasure, emotional closeness, and choice in this season of life.',
+    'Coach Emily B',
+    '2024-12-15 19:00:00-05'::timestamptz, -- Sunday, December 15, 7:00 PM ET
+    45,
+    'https://us02web.zoom.us/j/89035678571',
+    'Relationships'
+  ),
   
   -- Monday Classes
   (

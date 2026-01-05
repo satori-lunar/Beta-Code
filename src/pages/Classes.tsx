@@ -59,6 +59,7 @@ const classUrls: Record<string, string> = {
   'Tangled: Challenging Relationships': 'https://www.birchandstonecoaching.com/1-30pm-et-tangled',
   'Tangled': 'https://www.birchandstonecoaching.com/1-30pm-et-tangled',
   'Tangled with Coach Emily B': 'https://www.birchandstonecoaching.com/1-30pm-et-tangled',
+  'Between Us': 'https://us02web.zoom.us/j/89035678571',
   'Evenings with Emily B': 'https://us02web.zoom.us/j/86769218463',
   'Evenings with Emily B.': 'https://us02web.zoom.us/j/86769218463',
   'The Habit Lab': 'https://www.birchandstonecoaching.com/8am-et-the-habit-lab',
@@ -107,6 +108,7 @@ const courseStyles: Record<string, { gradient: string; icon: any }> = {
   'The Reflecting Pool': { gradient: 'from-blue-400 to-indigo-500', icon: Waves },
   'Tangled: Challenging Relationships': { gradient: 'from-rose-500 to-pink-600', icon: Users },
   'Tangled with Coach Emily B': { gradient: 'from-rose-500 to-pink-600', icon: Users },
+  'Between Us': { gradient: 'from-pink-500 to-rose-600', icon: Heart },
   'Tangled: Challenging Relationships - Thursdays 1:30pm ET': { gradient: 'from-rose-500 to-pink-600', icon: Users },
   'The Heart of Nourishment': { gradient: 'from-amber-400 to-orange-500', icon: Heart },
   'Grief & Growth': { gradient: 'from-gray-500 to-slate-600', icon: Flower2 },
@@ -284,7 +286,8 @@ export default function Classes() {
     'Sunday': [
       'Plan Your Week',
       'Rooted Weight Health',
-      'Tangled with Coach Emily B'
+      'Tangled with Coach Emily B',
+      'Between Us'
     ],
     'Monday': [
       'The Heart of Nourishment',

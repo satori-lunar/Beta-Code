@@ -83,12 +83,12 @@ INSERT INTO public.live_classes (
     'Yoga'
   ),
   (
-    'Seedlings',
-    'In this gentle, guided class, you''ll learn how to recognize your thoughts, understand your emotions, and begin practicing the tools that help you grow stronger roots. Whether you''re brand new to coaching or simply looking for a refresher in the model, this is a safe, supportive space to ask questions, explore your inner landscape, and build confidence one practice at a time. Together, we''ll revisit and relearn the model, deepen our understanding, and most importantly — connect in community. Come hang out, grow alongside others, and nurture the resilience that helps you thrive.',
+    'Just Begin with Coach Emily B',
+    'Just Begin is a gentle, encouraging class for anyone standing at the edge of something new and feeling unsure how to start.',
     'Coach Emily B',
     '2024-12-16 17:30:00-05'::timestamptz, -- Monday, December 16, 5:30 PM ET
     45,
-    NULL,
+    'https://www.birchandstonecoaching.com/5-30pm-et-seedlings',
     'Coaching Fundamentals'
   ),
   

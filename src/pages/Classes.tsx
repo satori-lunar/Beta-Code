@@ -46,6 +46,7 @@ const classUrls: Record<string, string> = {
   'Energy in Motion': 'https://www.birchandstonecoaching.com/9am-et-energy-in-motion',
   'Hatha Yoga': 'https://www.birchandstonecoaching.com/4pm-et-hatha-yoga',
   'Just Begin': 'https://www.birchandstonecoaching.com/5-30pm-et-seedlings',
+  'Just Begin with Coach Emily B': 'https://www.birchandstonecoaching.com/5-30pm-et-seedlings',
   'Vision & Vibes': 'https://www.birchandstonecoaching.com/coaching/groups/vision-vibes-saturday-7-30am-et',
   'Vision & Vibes w/Coach Emily M Saturday 7:30 am, Join Live!': 'https://www.birchandstonecoaching.com/coaching/groups/vision-vibes-saturday-7-30am-et',
   'What Went Well w/Coach Dani': 'https://www.birchandstonecoaching.com/coaching/groups/vision-vibes-saturday-7-30am-et',
@@ -116,6 +117,7 @@ const courseStyles: Record<string, { gradient: string; icon: any }> = {
   'Declutter to Breathe': { gradient: 'from-sky-400 to-blue-500', icon: Waves },
   'Just Begin': { gradient: 'from-lime-400 to-green-500', icon: Leaf },
   'Just Begin - Mondays 5:30pm ET': { gradient: 'from-lime-400 to-green-500', icon: Leaf },
+  'Just Begin with Coach Emily B': { gradient: 'from-lime-400 to-green-500', icon: Leaf },
   'Vision & Vibes': { gradient: 'from-amber-400 to-orange-500', icon: Sunrise },
   'Vision & Vibes - Saturdays 7:30am ET': { gradient: 'from-amber-400 to-orange-500', icon: Sunrise },
   'Vision & Vibes w/Coach Emily M Saturday 7:30 am, Join Live!': { gradient: 'from-amber-400 to-orange-500', icon: Sunrise },
@@ -293,7 +295,7 @@ export default function Classes() {
       'The Heart of Nourishment',
       'Foundations in Motion',
       'Hatha Yoga',
-      'Just Begin'
+      'Just Begin with Coach Emily B'
     ],
     'Tuesday': [
       'Inner Chords',

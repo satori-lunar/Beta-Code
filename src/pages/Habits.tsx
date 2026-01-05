@@ -352,13 +352,13 @@ export default function Habits() {
 
   // Calculate weekly completion rate instead of daily rate
   const weekEnd = new Date();
-  const weekStart = subDays(weekEnd, 6); // Last 7 days including today
+  const weekStartForRate = subDays(weekEnd, 6); // Last 7 days including today
   const weeklyCompletionRate = totalHabits > 0 ? Math.round(
     habits.reduce((total, habit) => {
       const completedDates = (habit.completed_dates as any) || [];
       return total + calculateCompletionRate(
         Array.isArray(completedDates) ? completedDates : [],
-        weekStart,
+        weekStartForRate,
         weekEnd
       );
     }, 0) / totalHabits

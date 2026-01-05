@@ -30,12 +30,11 @@ import {
   Flower2,
   Cookie,
 } from 'lucide-react';
-import { useRecordedSessions, useLiveClasses, useFavoriteSessions, useSessionCompletions, useClassReminders } from '../hooks/useSupabaseData';
+import { useRecordedSessions, useLiveClasses, useFavoriteSessions, useSessionCompletions } from '../hooks/useSupabaseData';
 import { useCourses } from '../hooks/useCourses';
 import { useReminderChecker } from '../hooks/useReminderChecker';
-import { useTrackVideoView, useTrackFavorite, useTrackReminder } from '../hooks/useActivityTracking';
+import { useTrackVideoView, useTrackFavorite } from '../hooks/useActivityTracking';
 import { format, parseISO, isAfter, isBefore, addHours } from 'date-fns';
-import ReminderModal from '../components/ReminderModal';
 
 // Class URL mapping - maps class names to their respective URLs
 const classUrls: Record<string, string> = {
@@ -864,10 +863,6 @@ interface LiveClassCardProps {
 }
 
 function LiveClassCard({ classItem, isLive }: LiveClassCardProps) {
-  const [showReminderModal, setShowReminderModal] = useState(false);
-  const { setReminder } = useClassReminders();
-  const { trackReminder } = useTrackReminder();
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const classStyle = courseStyles[classItem.title] || {
     gradient: classImages[classItem.category] || 'from-coral-400 to-coral-600',
@@ -875,23 +870,6 @@ function LiveClassCard({ classItem, isLive }: LiveClassCardProps) {
   };
   const IconComponent = classStyle.icon;
 
-  const handleSetReminder = async (reminderMinutes: 5 | 15) => {
-    try {
-      await setReminder(
-        classItem.id,
-        'email', // Only email now
-        reminderMinutes,
-        classItem.scheduledAt
-      );
-      // Track reminder activity
-      await trackReminder(classItem.id, 'reminder_set', reminderMinutes, classItem.title);
-      setToastMessage(`Reminder set! You'll receive an email ${reminderMinutes} minutes before the class.`);
-      setTimeout(() => setToastMessage(null), 3000);
-    } catch (error) {
-      console.error('Error setting reminder:', error);
-      throw error;
-    }
-  };
 
   const handleCardClick = (e: React.MouseEvent) => {
     // Don't trigger if clicking on the button
@@ -906,14 +884,8 @@ function LiveClassCard({ classItem, isLive }: LiveClassCardProps) {
 
   const handleButtonClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (isLive) {
-      // If live, open zoom link
-      if (classItem.zoomLink && classItem.zoomLink !== '#') {
-        window.open(classItem.zoomLink, '_blank', 'noopener,noreferrer');
-      }
-    } else {
-      // If not live, show reminder modal
-      setShowReminderModal(true);
+    if (isLive && classItem.zoomLink && classItem.zoomLink !== '#') {
+      window.open(classItem.zoomLink, '_blank', 'noopener,noreferrer');
     }
   };
 
@@ -963,38 +935,17 @@ function LiveClassCard({ classItem, isLive }: LiveClassCardProps) {
               {format(parseISO(classItem.scheduledAt), 'EEEE')}, {format(parseISO(classItem.scheduledAt), 'h:mm a')}
           </span>
         </div>
+        {isLive && (
           <button
             onClick={handleButtonClick}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-colors ${
-            isLive
-              ? 'bg-red-500 hover:bg-red-600 text-white'
-              : 'bg-coral-100 hover:bg-coral-200 text-coral-600'
-          }`}
-        >
-          {isLive ? 'Join Now' : 'Set Reminder'}
-          <ExternalLink className="w-4 h-4" />
+            className="flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-colors bg-red-500 hover:bg-red-600 text-white"
+          >
+            Join Now
+            <ExternalLink className="w-4 h-4" />
           </button>
+        )}
       </div>
     </div>
-
-      {/* Toast Notification */}
-      {toastMessage && (
-        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 animate-in slide-in-from-top-5 fade-in duration-300">
-          <div className="bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-3">
-            <CheckCircle2 className="w-5 h-5" />
-            <span className="font-medium">{toastMessage}</span>
-          </div>
-        </div>
-      )}
-
-      {/* Reminder Modal */}
-      <ReminderModal
-        isOpen={showReminderModal}
-        onClose={() => setShowReminderModal(false)}
-        onConfirm={handleSetReminder}
-        scheduledAt={classItem.scheduledAt}
-        title={classItem.title}
-      />
     </>
   );
 }

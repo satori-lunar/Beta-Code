@@ -100,33 +100,35 @@ export default function Nutrition() {
   });
 
   // Load nutrition goals from user profile
-  useEffect(() => {
-    const loadNutritionGoals = async () => {
-      if (!user) return;
+  const loadNutritionGoals = async () => {
+    if (!user) return;
 
-      try {
-        const { data, error } = await supabase
-          .from('user_profiles')
-          .select('calorie_goal, water_goal_oz, protein_goal, carbs_goal, fat_goal')
-          .eq('id', user.id)
-          .single();
+    try {
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('calorie_goal, water_goal_oz, protein_goal, carbs_goal, fat_goal')
+        .eq('id', user.id)
+        .single();
 
-        if (data && !error) {
-          const goals = {
-            calorie_goal: data.calorie_goal || 2000,
-            water_goal_oz: data.water_goal_oz !== null ? parseFloat(String(data.water_goal_oz)) : 68,
-            protein_goal: data.protein_goal || 150,
-            carbs_goal: data.carbs_goal || 250,
-            fat_goal: data.fat_goal || 70,
-          };
-          console.log('Loaded nutrition goals:', goals);
-          setNutritionGoals(goals);
-        }
-      } catch (error) {
-        console.warn('Could not load nutrition goals, using defaults:', error);
+      if (data && !error) {
+        const goals = {
+          calorie_goal: data.calorie_goal || 2000,
+          water_goal_oz: data.water_goal_oz !== null ? parseFloat(String(data.water_goal_oz)) : 68,
+          protein_goal: data.protein_goal || 150,
+          carbs_goal: data.carbs_goal || 250,
+          fat_goal: data.fat_goal || 70,
+        };
+        console.log('Loaded nutrition goals:', goals);
+        setNutritionGoals(goals);
+        return goals;
       }
-    };
+    } catch (error) {
+      console.warn('Could not load nutrition goals, using defaults:', error);
+    }
+    return nutritionGoals;
+  };
 
+  useEffect(() => {
     loadNutritionGoals();
   }, [user]);
 
@@ -137,7 +139,8 @@ export default function Nutrition() {
   const carbsGoal = nutritionGoals.carbs_goal;
   const fatGoal = nutritionGoals.fat_goal;
 
-  console.log('Current goals:', { waterGoal, calorieGoal, proteinGoal, carbsGoal, fatGoal });
+  // Debug: Show current goals in console
+  console.log('Current goals in UI:', { waterGoal, calorieGoal, proteinGoal, carbsGoal, fatGoal });
 
   // Goal setting form state
   const [goalForm, setGoalForm] = useState({
@@ -178,8 +181,11 @@ export default function Nutrition() {
 
       if (error) throw error;
 
-      setNutritionGoals(updates);
+      // Reload goals from database to ensure we have the latest values
+      await loadNutritionGoals();
+
       setShowGoalsModal(false);
+      console.log('Goals updated successfully:', updates);
       alert('Nutrition goals updated successfully!');
     } catch (error) {
       console.error('Error updating nutrition goals:', error);
@@ -595,10 +601,14 @@ export default function Nutrition() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl lg:text-3xl font-display font-bold text-gray-900">
-            Nutrition Tracker
-          </h1>
-          <p className="text-gray-500 mt-1">Track your meals and stay hydrated</p>
+        <h1 className="text-2xl lg:text-3xl font-display font-bold text-gray-900">
+          Nutrition Tracker
+        </h1>
+        <p className="text-gray-500 mt-1">Track your meals and stay hydrated</p>
+        {/* Debug: Show current goals */}
+        <div className="mt-2 text-xs text-gray-400">
+          Goals: {calorieGoal} cal, {waterGoal}oz water, {proteinGoal}g protein, {carbsGoal}g carbs, {fatGoal}g fat
+        </div>
         </div>
         <button
           onClick={() => setShowGoalsModal(true)}

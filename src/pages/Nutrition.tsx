@@ -16,7 +16,8 @@ import {
   CheckCircle,
   Camera,
   Upload,
-  Loader2
+  Loader2,
+  Settings
 } from 'lucide-react';
 import {
   AreaChart,
@@ -74,6 +75,7 @@ export default function Nutrition() {
   const [showCamera, setShowCamera] = useState(false);
   const [loading, setLoading] = useState(true);
   const [nutritionEntryId, setNutritionEntryId] = useState<string | null>(null);
+  const [showGoalsModal, setShowGoalsModal] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -88,9 +90,98 @@ export default function Nutrition() {
     fat: '',
   });
 
-  // Convert to American units: 2000ml = ~68oz (2000 * 0.033814)
-  const waterGoal = 68; // ounces
-  const calorieGoal = 2000;
+  // Nutrition goals from user profile
+  const [nutritionGoals, setNutritionGoals] = useState({
+    calorie_goal: 2000,
+    water_goal_oz: 68,
+    protein_goal: 150,
+    carbs_goal: 250,
+    fat_goal: 70,
+  });
+
+  // Load nutrition goals from user profile
+  useEffect(() => {
+    const loadNutritionGoals = async () => {
+      if (!user) return;
+
+      try {
+        const { data, error } = await supabase
+          .from('user_profiles')
+          .select('calorie_goal, water_goal_oz, protein_goal, carbs_goal, fat_goal')
+          .eq('id', user.id)
+          .single();
+
+        if (data && !error) {
+          setNutritionGoals({
+            calorie_goal: data.calorie_goal || 2000,
+            water_goal_oz: data.water_goal_oz || 68,
+            protein_goal: data.protein_goal || 150,
+            carbs_goal: data.carbs_goal || 250,
+            fat_goal: data.fat_goal || 70,
+          });
+        }
+      } catch (error) {
+        console.warn('Could not load nutrition goals, using defaults:', error);
+      }
+    };
+
+    loadNutritionGoals();
+  }, [user]);
+
+  // Use dynamic goals instead of hardcoded values
+  const waterGoal = nutritionGoals.water_goal_oz;
+  const calorieGoal = nutritionGoals.calorie_goal;
+  const proteinGoal = nutritionGoals.protein_goal;
+  const carbsGoal = nutritionGoals.carbs_goal;
+  const fatGoal = nutritionGoals.fat_goal;
+
+  // Goal setting form state
+  const [goalForm, setGoalForm] = useState({
+    calorie_goal: '',
+    water_goal_oz: '',
+    protein_goal: '',
+    carbs_goal: '',
+    fat_goal: '',
+  });
+
+  // Initialize goal form with current goals
+  useEffect(() => {
+    setGoalForm({
+      calorie_goal: nutritionGoals.calorie_goal.toString(),
+      water_goal_oz: nutritionGoals.water_goal_oz.toString(),
+      protein_goal: nutritionGoals.protein_goal.toString(),
+      carbs_goal: nutritionGoals.carbs_goal.toString(),
+      fat_goal: nutritionGoals.fat_goal.toString(),
+    });
+  }, [nutritionGoals]);
+
+  const handleSetGoals = async () => {
+    if (!user) return;
+
+    try {
+      const updates = {
+        calorie_goal: parseInt(goalForm.calorie_goal) || 2000,
+        water_goal_oz: parseFloat(goalForm.water_goal_oz) || 68,
+        protein_goal: parseInt(goalForm.protein_goal) || 150,
+        carbs_goal: parseInt(goalForm.carbs_goal) || 250,
+        fat_goal: parseInt(goalForm.fat_goal) || 70,
+      };
+
+      const { error } = await supabase
+        .from('user_profiles')
+        .update(updates)
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      setNutritionGoals(updates);
+      setShowGoalsModal(false);
+      alert('Nutrition goals updated successfully!');
+    } catch (error) {
+      console.error('Error updating nutrition goals:', error);
+      alert('Failed to update goals. Please try again.');
+    }
+  };
 
   const totalCalories = meals.reduce((sum, meal) => sum + meal.calories, 0);
   const totalProtein = meals.reduce((sum, meal) => sum + meal.protein, 0);
@@ -498,11 +589,20 @@ export default function Nutrition() {
   return (
     <div className="space-y-8 pb-20 lg:pb-0">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl lg:text-3xl font-display font-bold text-gray-900">
-          Nutrition Tracker
-        </h1>
-        <p className="text-gray-500 mt-1">Track your meals and stay hydrated</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl lg:text-3xl font-display font-bold text-gray-900">
+            Nutrition Tracker
+          </h1>
+          <p className="text-gray-500 mt-1">Track your meals and stay hydrated</p>
+        </div>
+        <button
+          onClick={() => setShowGoalsModal(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-coral-100 hover:bg-coral-200 text-coral-600 rounded-lg transition-colors"
+        >
+          <Settings className="w-4 h-4" />
+          <span className="hidden sm:inline">Set Goals</span>
+        </button>
       </div>
 
       {/* Getting Started Card - Shows when there's no data */}
@@ -598,7 +698,13 @@ export default function Nutrition() {
             </div>
           </div>
           <p className="text-2xl font-bold text-gray-900">{totalProtein}g</p>
-          <p className="text-sm text-gray-500">Protein</p>
+          <p className="text-sm text-gray-500">/ {proteinGoal}g Protein</p>
+          <div className="mt-2 h-2 bg-gray-100 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-red-500 rounded-full"
+              style={{ width: `${Math.min((totalProtein / proteinGoal) * 100, 100)}%` }}
+            />
+          </div>
         </div>
 
         <div className="stat-card">
@@ -608,7 +714,13 @@ export default function Nutrition() {
             </div>
           </div>
           <p className="text-2xl font-bold text-gray-900">{totalCarbs}g</p>
-          <p className="text-sm text-gray-500">Carbs</p>
+          <p className="text-sm text-gray-500">/ {carbsGoal}g Carbs</p>
+          <div className="mt-2 h-2 bg-gray-100 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-amber-500 rounded-full"
+              style={{ width: `${Math.min((totalCarbs / carbsGoal) * 100, 100)}%` }}
+            />
+          </div>
         </div>
 
         <div className="stat-card">
@@ -618,7 +730,13 @@ export default function Nutrition() {
             </div>
           </div>
           <p className="text-2xl font-bold text-gray-900">{totalFat}g</p>
-          <p className="text-sm text-gray-500">Fat</p>
+          <p className="text-sm text-gray-500">/ {fatGoal}g Fat</p>
+          <div className="mt-2 h-2 bg-gray-100 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-purple-500 rounded-full"
+              style={{ width: `${Math.min((totalFat / fatGoal) * 100, 100)}%` }}
+            />
+          </div>
         </div>
       </div>
 
@@ -1010,6 +1128,103 @@ export default function Nutrition() {
                 </button>
                 <button onClick={handleAddMeal} className="flex-1 btn-primary">
                   Add Meal
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Goals Modal */}
+      {showGoalsModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-md p-6 shadow-elevated">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-display font-semibold">Set Nutrition Goals</h3>
+              <button
+                onClick={() => setShowGoalsModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Daily Calorie Goal (kcal)
+                </label>
+                <input
+                  type="number"
+                  value={goalForm.calorie_goal}
+                  onChange={(e) => setGoalForm({ ...goalForm, calorie_goal: e.target.value })}
+                  placeholder="2000"
+                  className="input"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Daily Water Goal (oz)
+                </label>
+                <input
+                  type="number"
+                  step="0.1"
+                  value={goalForm.water_goal_oz}
+                  onChange={(e) => setGoalForm({ ...goalForm, water_goal_oz: e.target.value })}
+                  placeholder="68"
+                  className="input"
+                />
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Protein (g)
+                  </label>
+                  <input
+                    type="number"
+                    value={goalForm.protein_goal}
+                    onChange={(e) => setGoalForm({ ...goalForm, protein_goal: e.target.value })}
+                    placeholder="150"
+                    className="input"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Carbs (g)
+                  </label>
+                  <input
+                    type="number"
+                    value={goalForm.carbs_goal}
+                    onChange={(e) => setGoalForm({ ...goalForm, carbs_goal: e.target.value })}
+                    placeholder="250"
+                    className="input"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Fat (g)
+                  </label>
+                  <input
+                    type="number"
+                    value={goalForm.fat_goal}
+                    onChange={(e) => setGoalForm({ ...goalForm, fat_goal: e.target.value })}
+                    placeholder="70"
+                    className="input"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={() => setShowGoalsModal(false)}
+                  className="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button onClick={handleSetGoals} className="flex-1 btn-primary">
+                  Save Goals
                 </button>
               </div>
             </div>

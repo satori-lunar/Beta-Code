@@ -444,6 +444,11 @@ export type Database = {
           weekly_goal_weight_min: number | null
           weekly_goal_weight_max: number | null
           new_year_resolution_weight: number | null
+          calorie_goal: number | null
+          water_goal_oz: number | null
+          protein_goal: number | null
+          carbs_goal: number | null
+          fat_goal: number | null
           id: string
           join_date: string | null
           has_completed_dashboard_tour: boolean | null
@@ -465,6 +470,11 @@ export type Database = {
           weekly_goal_weight_min?: number | null
           weekly_goal_weight_max?: number | null
           new_year_resolution_weight?: number | null
+          calorie_goal?: number | null
+          water_goal_oz?: number | null
+          protein_goal?: number | null
+          carbs_goal?: number | null
+          fat_goal?: number | null
           id: string
           join_date?: string | null
           has_completed_dashboard_tour?: boolean | null
@@ -486,6 +496,11 @@ export type Database = {
           weekly_goal_weight_min?: number | null
           weekly_goal_weight_max?: number | null
           new_year_resolution_weight?: number | null
+          calorie_goal?: number | null
+          water_goal_oz?: number | null
+          protein_goal?: number | null
+          carbs_goal?: number | null
+          fat_goal?: number | null
           id?: string
           join_date?: string | null
           has_completed_dashboard_tour?: boolean | null

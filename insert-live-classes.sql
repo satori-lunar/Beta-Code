@@ -35,6 +35,15 @@ INSERT INTO public.live_classes (
     NULL,
     'Weight Health'
   ),
+  (
+    'Tangled with Coach Emily B',
+    'Tangled is a space for exploring the complexity of human relationships—whether with partners, parents, children, friends, or colleagues.',
+    'Coach Emily B',
+    '2024-12-15 18:00:00-05'::timestamptz, -- Sunday, December 15, 6:00 PM ET
+    45,
+    'https://www.birchandstonecoaching.com/1-30pm-et-tangled',
+    'Relationships'
+  ),
   
   -- Monday Classes
   (

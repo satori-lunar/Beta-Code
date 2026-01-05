@@ -114,7 +114,7 @@ export default function Nutrition() {
         if (data && !error) {
           const goals = {
             calorie_goal: data.calorie_goal || 2000,
-            water_goal_oz: parseFloat(data.water_goal_oz) || 68,
+            water_goal_oz: data.water_goal_oz !== null ? parseFloat(String(data.water_goal_oz)) : 68,
             protein_goal: data.protein_goal || 150,
             carbs_goal: data.carbs_goal || 250,
             fat_goal: data.fat_goal || 70,

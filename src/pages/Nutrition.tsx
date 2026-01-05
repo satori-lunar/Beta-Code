@@ -118,7 +118,7 @@ export default function Nutrition() {
           carbs_goal: data.carbs_goal || 250,
           fat_goal: data.fat_goal || 70,
         };
-        console.log('Loaded nutrition goals:', goals);
+          console.log('Loaded nutrition goals:', goals.calorie_goal, goals.water_goal_oz, goals.protein_goal, goals.carbs_goal, goals.fat_goal);
         setNutritionGoals(goals);
         return goals;
       }
@@ -140,7 +140,7 @@ export default function Nutrition() {
   const fatGoal = nutritionGoals.fat_goal;
 
   // Debug: Show current goals in console
-  console.log('Current goals in UI:', { waterGoal, calorieGoal, proteinGoal, carbsGoal, fatGoal });
+  console.log('Current goals in UI:', waterGoal, calorieGoal, proteinGoal, carbsGoal, fatGoal);
 
   // Goal setting form state
   const [goalForm, setGoalForm] = useState({
@@ -153,6 +153,7 @@ export default function Nutrition() {
 
   // Initialize goal form with current goals
   useEffect(() => {
+    console.log('Initializing goal form with:', nutritionGoals);
     setGoalForm({
       calorie_goal: nutritionGoals.calorie_goal.toString(),
       water_goal_oz: nutritionGoals.water_goal_oz.toString(),
@@ -185,7 +186,7 @@ export default function Nutrition() {
       await loadNutritionGoals();
 
       setShowGoalsModal(false);
-      console.log('Goals updated successfully:', updates);
+      console.log('Goals updated successfully:', updates.calorie_goal, updates.water_goal_oz, updates.protein_goal, updates.protein_goal, updates.carbs_goal, updates.fat_goal);
       alert('Nutrition goals updated successfully!');
     } catch (error) {
       console.error('Error updating nutrition goals:', error);
@@ -606,8 +607,8 @@ export default function Nutrition() {
         </h1>
         <p className="text-gray-500 mt-1">Track your meals and stay hydrated</p>
         {/* Debug: Show current goals */}
-        <div className="mt-2 text-xs text-gray-400">
-          Goals: {calorieGoal} cal, {waterGoal}oz water, {proteinGoal}g protein, {carbsGoal}g carbs, {fatGoal}g fat
+        <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded-lg text-sm">
+          <strong>Current Goals:</strong> {calorieGoal} cal, {waterGoal}oz water, {proteinGoal}g protein, {carbsGoal}g carbs, {fatGoal}g fat
         </div>
         </div>
         <button

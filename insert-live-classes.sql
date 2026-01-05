@@ -179,15 +179,6 @@ INSERT INTO public.live_classes (
     'Weight Health'
   ),
   (
-    'Tangled: Challenging Relationships',
-    'Tangled is a space for exploring the complexity of human relationships—whether with partners, parents, children, friends, or colleagues. Many of us find ourselves caught in dynamics that leave us questioning our worth, doubting our voice, or losing sight of who we are. This class helps you gently untangle those knots.',
-    'Coach Emily B',
-    '2024-12-19 13:30:00-05'::timestamptz, -- Thursday, December 19, 1:30 PM ET
-    45,
-    NULL,
-    'Relationships'
-  ),
-  (
     'Hatha Yoga',
     'Move at your own pace from your own space, with classes encompassing strengthening postures, revitalizing flows, nourishing stretches and soothing relaxation. We''ll alleviate common discomforts, work on balance in the body and in life, and cultivate a calm, clear mind. Recommended props: yoga mat, 2 yoga blocks, yoga strap, blanket.',
     'Meghan',

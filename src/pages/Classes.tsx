@@ -57,7 +57,6 @@ const classUrls: Record<string, string> = {
   'Refreshed & Ready': 'https://us02web.zoom.us/j/82732085104',
   'Refreshed and Ready': 'https://us02web.zoom.us/j/82732085104',
   'Grief & Growth': 'https://us02web.zoom.us/j/81574095006',
-  'Tangled: Challenging Relationships': 'https://www.birchandstonecoaching.com/1-30pm-et-tangled',
   'Tangled': 'https://www.birchandstonecoaching.com/1-30pm-et-tangled',
   'Tangled with Coach Emily B': 'https://www.birchandstonecoaching.com/1-30pm-et-tangled',
   'Between Us': 'https://us02web.zoom.us/j/89035678571',
@@ -107,7 +106,6 @@ const courseStyles: Record<string, { gradient: string; icon: any }> = {
   'Instinctive Meditation': { gradient: 'from-indigo-400 to-blue-500', icon: Brain },
   'Instinctive Meditation - Wednesdays 7pm ET': { gradient: 'from-indigo-400 to-blue-500', icon: Brain },
   'The Reflecting Pool': { gradient: 'from-blue-400 to-indigo-500', icon: Waves },
-  'Tangled: Challenging Relationships': { gradient: 'from-rose-500 to-pink-600', icon: Users },
   'Tangled with Coach Emily B': { gradient: 'from-rose-500 to-pink-600', icon: Users },
   'Between Us': { gradient: 'from-pink-500 to-rose-600', icon: Heart },
   'Tangled: Challenging Relationships - Thursdays 1:30pm ET': { gradient: 'from-rose-500 to-pink-600', icon: Users },
@@ -311,7 +309,6 @@ export default function Classes() {
     ],
     'Thursday': [
       'Rooted Weight Health',
-      'Tangled: Challenging Relationships',
       'Hatha Yoga',
       'Evenings with Emily B'
     ],

@@ -112,13 +112,15 @@ export default function Nutrition() {
           .single();
 
         if (data && !error) {
-          setNutritionGoals({
+          const goals = {
             calorie_goal: data.calorie_goal || 2000,
-            water_goal_oz: data.water_goal_oz || 68,
+            water_goal_oz: parseFloat(data.water_goal_oz) || 68,
             protein_goal: data.protein_goal || 150,
             carbs_goal: data.carbs_goal || 250,
             fat_goal: data.fat_goal || 70,
-          });
+          };
+          console.log('Loaded nutrition goals:', goals);
+          setNutritionGoals(goals);
         }
       } catch (error) {
         console.warn('Could not load nutrition goals, using defaults:', error);
@@ -134,6 +136,8 @@ export default function Nutrition() {
   const proteinGoal = nutritionGoals.protein_goal;
   const carbsGoal = nutritionGoals.carbs_goal;
   const fatGoal = nutritionGoals.fat_goal;
+
+  console.log('Current goals:', { waterGoal, calorieGoal, proteinGoal, carbsGoal, fatGoal });
 
   // Goal setting form state
   const [goalForm, setGoalForm] = useState({
@@ -659,7 +663,7 @@ export default function Nutrition() {
                 <span className="font-medium text-gray-900">3. Set Goals</span>
               </div>
               <p className="text-sm text-gray-600">
-                Your daily goals are set to 2000 kcal and 68oz water by default.
+                Your daily goals: {calorieGoal} kcal, {waterGoal}oz water, {proteinGoal}g protein, {carbsGoal}g carbs, {fatGoal}g fat.
               </p>
             </div>
           </div>

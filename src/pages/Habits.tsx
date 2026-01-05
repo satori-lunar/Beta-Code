@@ -349,7 +349,20 @@ export default function Habits() {
     return Array.isArray(completedDates) && completedDates.includes(dateString);
   }).length;
   const totalHabits = habits.length;
-  const completionRate = totalHabits > 0 ? Math.round((completedToday / totalHabits) * 100) : 0;
+
+  // Calculate weekly completion rate instead of daily rate
+  const weekEnd = new Date();
+  const weekStart = subDays(weekEnd, 6); // Last 7 days including today
+  const weeklyCompletionRate = totalHabits > 0 ? Math.round(
+    habits.reduce((total, habit) => {
+      const completedDates = (habit.completed_dates as any) || [];
+      return total + calculateCompletionRate(
+        Array.isArray(completedDates) ? completedDates : [],
+        weekStart,
+        weekEnd
+      );
+    }, 0) / totalHabits
+  ) : 0;
 
   // Award points function
   const awardPoints = async (points: number, source: string, sourceId?: string, description?: string) => {
@@ -692,8 +705,8 @@ export default function Habits() {
               <TrendingUp className="w-5 h-5 text-blue-600" />
             </div>
           </div>
-          <p className="text-2xl font-bold text-gray-900">{completionRate}%</p>
-          <p className="text-sm text-gray-500">Today's Rate</p>
+          <p className="text-2xl font-bold text-gray-900">{weeklyCompletionRate}%</p>
+          <p className="text-sm text-gray-500">This Week's Rate</p>
         </div>
 
         <div className="stat-card">

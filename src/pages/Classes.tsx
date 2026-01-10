@@ -66,6 +66,7 @@ const classUrls: Record<string, string> = {
   'Habit Lab': 'https://www.birchandstonecoaching.com/8am-et-the-habit-lab',
   'Nighttime Nurturing w/Coach Dani': 'https://us02web.zoom.us/j/87954176691',
   'Care without Collapse w/Coach Dani': 'https://www.birchandstonecoaching.com/coaching/groups/care-without-collapse-saturday-12-00pm-et',
+  'Motion to Momentum: A Gentle 5K Training Series w/Coach Courtney': 'https://us02web.zoom.us/j/83014128217',
 };
 
 const classImages: Record<string, string> = {
@@ -122,6 +123,7 @@ const courseStyles: Record<string, { gradient: string; icon: any }> = {
   'What Went Well w/Coach Dani': { gradient: 'from-green-400 to-emerald-500', icon: CheckCircle2 },
   'What Went Well - Saturdays 3:00pm ET': { gradient: 'from-green-400 to-emerald-500', icon: CheckCircle2 },
   'Plan Your Week': { gradient: 'from-cyan-500 to-blue-600', icon: Calendar },
+  'Motion to Momentum: A Gentle 5K Training Series w/Coach Courtney': { gradient: 'from-blue-500 to-cyan-600', icon: Target },
 };
 
 export default function Classes() {
@@ -319,6 +321,7 @@ export default function Classes() {
       'Nighttime Nurturing'
     ],
     'Saturday': [
+      'Motion to Momentum: A Gentle 5K Training Series w/Coach Courtney',
       'Vision & Vibes w/Coach Emily M Saturday 7:30 am, Join Live!',
       'Vision & Vibes',
       'Care without Collapse w/Coach Dani',

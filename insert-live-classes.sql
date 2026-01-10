@@ -233,6 +233,62 @@ INSERT INTO public.live_classes (
     45,
     'https://us02web.zoom.us/j/87954176691',
     'Wellness'
+  ),
+
+  -- Saturday Classes
+  (
+    'Motion to Momentum: A Gentle 5K Training Series w/Coach Courtney',
+    'Each week, you''ll follow a simple walking or walk-jogging plan on your own time, then come together for coaching and reflection.',
+    'Coach Courtney',
+    '2024-12-21 09:00:00-05'::timestamptz, -- Saturday, December 21, 9:00 AM ET
+    45,
+    'https://us02web.zoom.us/j/83014128217',
+    'Fitness'
+  ),
+  (
+    'Vision & Vibes w/Coach Emily M Saturday 7:30 am, Join Live!',
+    'Vision & Vibes is a morning wellness class that helps you start your day with intention, clarity, and positive energy. Join us for gentle movement, mindfulness practices, and community connection that sets a positive tone for your Saturday.',
+    'Coach Emily M',
+    '2024-12-21 07:30:00-05'::timestamptz, -- Saturday, December 21, 7:30 AM ET
+    45,
+    'https://www.birchandstonecoaching.com/coaching/groups/vision-vibes-saturday-7-30am-et',
+    'Wellness'
+  ),
+  (
+    'Vision & Vibes',
+    'Vision & Vibes is a morning wellness class that helps you start your day with intention, clarity, and positive energy. Join us for gentle movement, mindfulness practices, and community connection that sets a positive tone for your Saturday.',
+    'Coach Emily M',
+    '2024-12-21 07:30:00-05'::timestamptz, -- Saturday, December 21, 7:30 AM ET (duplicate for different title)
+    45,
+    'https://www.birchandstonecoaching.com/coaching/groups/vision-vibes-saturday-7-30am-et',
+    'Wellness'
+  ),
+  (
+    'Care without Collapse w/Coach Dani',
+    'Care without Collapse is a weekly class focused on sustainable self-care practices. Learn to care for yourself without burning out, building resilience and maintaining balance in your wellness journey.',
+    'Coach Dani',
+    '2024-12-21 12:00:00-05'::timestamptz, -- Saturday, December 21, 12:00 PM ET
+    45,
+    'https://www.birchandstonecoaching.com/coaching/groups/care-without-collapse-saturday-12-00pm-et',
+    'Wellness'
+  ),
+  (
+    'What Went Well w/Coach Dani',
+    'What Went Well is a weekly class where we celebrate progress, reflect on what''s working, and gently course-correct as needed. Each session focuses on building momentum through positive reinforcement, honest self-assessment, and actionable next steps.',
+    'Coach Dani',
+    '2024-12-21 15:00:00-05'::timestamptz, -- Saturday, December 21, 3:00 PM ET
+    45,
+    'https://www.birchandstonecoaching.com/coaching/groups/vision-vibes-saturday-7-30am-et',
+    'Wellness'
+  ),
+  (
+    'What Went Well - Saturdays 3:00pm ET',
+    'What Went Well is a weekly class where we celebrate progress, reflect on what''s working, and gently course-correct as needed. Each session focuses on building momentum through positive reinforcement, honest self-assessment, and actionable next steps.',
+    'Coach Dani',
+    '2024-12-21 15:00:00-05'::timestamptz, -- Saturday, December 21, 3:00 PM ET
+    45,
+    'https://www.birchandstonecoaching.com/coaching/groups/vision-vibes-saturday-7-30am-et',
+    'Wellness'
   );
 
 -- Verify the data

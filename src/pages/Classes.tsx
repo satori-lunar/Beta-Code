@@ -301,10 +301,10 @@ export default function Classes() {
       'Inner Chords',
       'Strength in Motion',
       'The Reflecting Pool',
+      'Wisdom Rising',
       '2-Bite Tuesdays'
     ],
     'Wednesday': [
-      'Wisdom Rising',
       'Refreshed & Ready',
       'Grief & Growth',
       'Instinctive Meditation'
@@ -323,9 +323,7 @@ export default function Classes() {
     'Saturday': [
       'Motion to Momentum: A Gentle 5K Training Series w/Coach Courtney',
       'Vision & Vibes w/Coach Emily M Saturday 7:30 am, Join Live!',
-      'Vision & Vibes',
       'Care without Collapse w/Coach Dani',
-      'What Went Well w/Coach Dani',
       'What Went Well - Saturdays 3:00pm ET'
     ]
   };

@@ -301,10 +301,10 @@ export default function Classes() {
       'Inner Chords',
       'Strength in Motion',
       'The Reflecting Pool',
-      'Wisdom Rising',
       '2-Bite Tuesdays'
     ],
     'Wednesday': [
+      'Wisdom Rising',
       'Refreshed & Ready',
       'Grief & Growth',
       'Instinctive Meditation'

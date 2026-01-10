@@ -120,11 +120,12 @@ INSERT INTO public.live_classes (
     NULL,
     'Personal Growth'
   ),
+  -- Single Wisdom Rising class at 7 PM ET
   (
     'Wisdom Rising',
     'Wisdom Rising is a weekly class designed to honor the transitions of midlife as a time of growth, strength, and renewal. Together, we''ll explore the foundations of a healthy, vibrant midlife—drawing from a holistic "menopause toolkit" that includes movement, nutrition, stress management, sleep support, and mindset practices, as well as community. Each week offers a blend of education, guided practices, and open conversation. You''ll walk away with both practical tools and a deeper sense of connection—discovering that the challenges of menopause, from hot flashes to brain fog, are not just obstacles to manage but invitations to rise into new wisdom and vitality. This is a space where women gather to feel seen and supported, to share stories, and to cultivate resilience in community. Midlife is not an ending; it''s the rising of a new chapter—one where wisdom, strength, and possibility come together. Join us weekly as we learn, share, and rise stronger—together.',
     'Coach Beth',
-    '2024-12-17 16:00:00-05'::timestamptz, -- Tuesday, December 17, 4:00 PM ET
+    '2024-12-18 00:00:00-05'::timestamptz, -- Wednesday, December 18, 12:00 AM UTC = 7:00 PM ET Tuesday
     45,
     NULL,
     'Wisdom'

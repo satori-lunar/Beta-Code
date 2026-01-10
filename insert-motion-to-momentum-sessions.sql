@@ -36,7 +36,7 @@ INSERT INTO public.recorded_sessions (
   instructor,
   recorded_at,
   duration,
-  url,
+  video_url,
   category,
   views,
   tags,

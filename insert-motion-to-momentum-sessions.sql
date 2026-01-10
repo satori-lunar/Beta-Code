@@ -30,6 +30,7 @@ INSERT INTO public.courses (
 ) ON CONFLICT (id) DO NOTHING;
 
 -- Step 2: Insert all 53 sessions
+-- NOTE: Sessions may already exist. If you get duplicate key errors, they are already inserted.
 INSERT INTO public.recorded_sessions (
   title,
   description,

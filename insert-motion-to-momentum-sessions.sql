@@ -13,6 +13,7 @@ INSERT INTO public.courses (
   description,
   instructor,
   duration,
+  sessions,
   category,
   level,
   tags
@@ -26,10 +27,10 @@ INSERT INTO public.courses (
   'Fitness',
   'beginner',
   ARRAY['fitness', 'running', 'walking', '5k', 'gentle', 'coaching', 'momentum']
-);
+) ON CONFLICT (id) DO NOTHING;
 
 -- Step 2: Insert all 53 sessions
-INSERT INTO public.sessions (
+INSERT INTO public.recorded_sessions (
   title,
   description,
   instructor,

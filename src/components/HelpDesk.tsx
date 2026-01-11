@@ -15,6 +15,12 @@ export default function HelpDesk({ userName = 'there' }: HelpDeskProps) {
   const [chatMessages, setChatMessages] = useState<Array<{ text: string; isUser: boolean; time: string }>>([]);
   const [ticketId, setTicketId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [lastViewedAt, setLastViewedAt] = useState<Date | null>(() => {
+    // Load from localStorage on component mount
+    const saved = localStorage.getItem('helpdesk-last-viewed');
+    return saved ? new Date(saved) : null;
+  });
 
   // Load or create a ticket for this user when chat opens
   useEffect(() => {
@@ -118,6 +124,73 @@ export default function HelpDesk({ userName = 'there' }: HelpDeskProps) {
     };
   }, [ticketId, isOpen, user?.id]);
 
+  // Count unread admin messages
+  const updateUnreadCount = async () => {
+    if (!user || !ticketId) {
+      setUnreadCount(0);
+      return;
+    }
+
+    try {
+      const { data: messages, error } = await (supabase as any)
+        .from('help_messages')
+        .select('created_at, sender_role')
+        .eq('ticket_id', ticketId)
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching messages for unread count:', error);
+        setUnreadCount(0);
+        return;
+      }
+
+      // Count admin messages newer than last viewed time
+      const unreadMessages = messages?.filter((msg: any) => {
+        const messageTime = new Date(msg.created_at);
+        return msg.sender_role !== 'member' && (!lastViewedAt || messageTime > lastViewedAt);
+      }) || [];
+
+      setUnreadCount(unreadMessages.length);
+    } catch (err) {
+      console.error('Error updating unread count:', err);
+      setUnreadCount(0);
+    }
+  };
+
+  // Update unread count when ticket changes or when new messages arrive
+  useEffect(() => {
+    updateUnreadCount();
+  }, [ticketId, lastViewedAt, user?.id]);
+
+  // Update unread count when new messages arrive (from real-time subscription)
+  useEffect(() => {
+    if (!ticketId || !user) return;
+
+    const channel = (supabase as any)
+      .channel(`help-messages-unread-${ticketId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'help_messages',
+          filter: `ticket_id=eq.${ticketId}`,
+        },
+        (payload: any) => {
+          const m = payload.new;
+          // Only count if it's from admin and user hasn't viewed it yet
+          if (m.sender_role !== 'member' && (!lastViewedAt || new Date(m.created_at) > lastViewedAt)) {
+            setUnreadCount(prev => prev + 1);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      (supabase as any).removeChannel(channel);
+    };
+  }, [ticketId, lastViewedAt, user?.id]);
+
   const handleSendMessage = async () => {
     if (!message.trim()) return;
     if (!user) {
@@ -181,10 +254,21 @@ export default function HelpDesk({ userName = 'there' }: HelpDeskProps) {
     <>
       {/* Floating Button - positioned above mobile nav */}
       <button
-        onClick={() => setIsOpen(true)}
-        className={`fixed bottom-24 lg:bottom-6 right-4 lg:right-6 w-14 h-14 bg-gradient-to-r from-coral-500 to-coral-600 text-white rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center z-50 ${isOpen ? 'hidden' : ''}`}
+        onClick={() => {
+          setIsOpen(true);
+          const now = new Date();
+          setLastViewedAt(now);
+          localStorage.setItem('helpdesk-last-viewed', now.toISOString());
+          setUnreadCount(0); // Clear unread count when opening
+        }}
+        className={`fixed bottom-24 lg:bottom-6 right-4 lg:right-6 w-14 h-14 bg-gradient-to-r from-coral-500 to-coral-600 text-white rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center z-50 ${isOpen ? 'hidden' : ''} relative`}
       >
         <MessageCircle className="w-6 h-6" />
+        {unreadCount > 0 && (
+          <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1">
+            {unreadCount > 99 ? '99+' : unreadCount}
+          </div>
+        )}
       </button>
 
       {/* Help Desk Panel */}
@@ -205,6 +289,10 @@ export default function HelpDesk({ userName = 'there' }: HelpDeskProps) {
               onClick={() => {
                 setIsOpen(false);
                 setActiveView('menu');
+                // Update last viewed time when closing chat
+                const now = new Date();
+                setLastViewedAt(now);
+                localStorage.setItem('helpdesk-last-viewed', now.toISOString());
               }}
               className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/30 transition-colors"
             >

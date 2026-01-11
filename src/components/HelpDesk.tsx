@@ -181,6 +181,16 @@ export default function HelpDesk({ userName = 'there' }: HelpDeskProps) {
           // Only count if it's from admin and user hasn't viewed it yet
           if (m.sender_role !== 'member' && (!lastViewedAt || new Date(m.created_at) > lastViewedAt)) {
             setUnreadCount(prev => prev + 1);
+
+            // Show browser notification if permission granted and chat is closed
+            if (!isOpen && 'Notification' in window && Notification.permission === 'granted') {
+              new Notification('New Support Message', {
+                body: m.message.length > 100 ? m.message.substring(0, 100) + '...' : m.message,
+                icon: '/favicon.ico',
+                badge: '/favicon.ico',
+                tag: 'help-desk-message'
+              });
+            }
           }
         }
       )
@@ -189,7 +199,7 @@ export default function HelpDesk({ userName = 'there' }: HelpDeskProps) {
     return () => {
       (supabase as any).removeChannel(channel);
     };
-  }, [ticketId, lastViewedAt, user?.id]);
+  }, [ticketId, lastViewedAt, user?.id, isOpen]);
 
   const handleSendMessage = async () => {
     if (!message.trim()) return;
@@ -260,14 +270,24 @@ export default function HelpDesk({ userName = 'there' }: HelpDeskProps) {
           setLastViewedAt(now);
           localStorage.setItem('helpdesk-last-viewed', now.toISOString());
           setUnreadCount(0); // Clear unread count when opening
+
+          // Request notification permission if not already granted
+          if ('Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission();
+          }
         }}
-        className={`fixed bottom-24 lg:bottom-6 right-4 lg:right-6 w-14 h-14 bg-gradient-to-r from-coral-500 to-coral-600 text-white rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center z-50 ${isOpen ? 'hidden' : ''}`}
+        className={`fixed bottom-24 lg:bottom-6 right-4 lg:right-6 w-14 h-14 bg-gradient-to-r from-coral-500 to-coral-600 text-white rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center z-50 ${isOpen ? 'hidden' : ''} ${unreadCount > 0 ? 'animate-pulse' : ''}`}
       >
         <MessageCircle className="w-6 h-6" />
         {unreadCount > 0 && (
-          <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[18px] h-4 flex items-center justify-center px-1">
-            {unreadCount > 99 ? '99+' : unreadCount}
-          </div>
+          <>
+            {/* Animated notification badge */}
+            <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[18px] h-4 flex items-center justify-center px-1 animate-bounce">
+              {unreadCount > 99 ? '99+' : unreadCount}
+            </div>
+            {/* Pulsing ring effect */}
+            <div className="absolute inset-0 rounded-full border-2 border-red-500 animate-ping opacity-75"></div>
+          </>
         )}
       </button>
 

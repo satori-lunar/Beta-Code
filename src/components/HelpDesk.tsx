@@ -265,7 +265,7 @@ export default function HelpDesk({ userName = 'there' }: HelpDeskProps) {
       >
         <MessageCircle className="w-6 h-6" />
         {unreadCount > 0 && (
-          <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1">
+          <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[18px] h-4 flex items-center justify-center px-1">
             {unreadCount > 99 ? '99+' : unreadCount}
           </div>
         )}

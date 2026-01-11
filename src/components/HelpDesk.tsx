@@ -261,7 +261,7 @@ export default function HelpDesk({ userName = 'there' }: HelpDeskProps) {
           localStorage.setItem('helpdesk-last-viewed', now.toISOString());
           setUnreadCount(0); // Clear unread count when opening
         }}
-        className={`fixed bottom-24 lg:bottom-6 right-4 lg:right-6 w-14 h-14 bg-gradient-to-r from-coral-500 to-coral-600 text-white rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center z-50 ${isOpen ? 'hidden' : ''} relative`}
+        className={`fixed bottom-24 lg:bottom-6 right-6 lg:right-8 w-14 h-14 bg-gradient-to-r from-coral-500 to-coral-600 text-white rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center z-50 ${isOpen ? 'hidden' : ''} relative`}
       >
         <MessageCircle className="w-6 h-6" />
         {unreadCount > 0 && (

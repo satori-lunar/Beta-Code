@@ -22,12 +22,11 @@ export default function HelpDesk({ userName = 'there' }: HelpDeskProps) {
     return saved ? new Date(saved) : null;
   });
 
-  // Load or create a ticket for this user when chat opens
+  // Load ticket ID immediately when user is available (for unread count)
   useEffect(() => {
-    const initChat = async () => {
-      if (!isOpen || !user) return;
+    const loadTicketId = async () => {
+      if (!user) return;
 
-      setLoading(true);
       try {
         // Always load the most recent ticket for this user (any status)
         const { data: existingTickets, error: ticketError } = await (supabase as any)
@@ -43,48 +42,57 @@ export default function HelpDesk({ userName = 'there' }: HelpDeskProps) {
 
         let activeTicketId = existingTickets && existingTickets.length > 0 ? existingTickets[0].id : null;
         setTicketId(activeTicketId);
+      } catch (err) {
+        console.error('Error loading ticket ID:', err);
+      }
+    };
 
+    void loadTicketId();
+  }, [user?.id]);
+
+  // Load messages when chat opens
+  useEffect(() => {
+    const loadMessages = async () => {
+      if (!isOpen || !user || !ticketId) return;
+
+      setLoading(true);
+      try {
         const greeting = {
           text: `Hi ${userName}! How can we help you today?`,
           isUser: false,
           time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         };
 
-        // Load existing messages for this ticket if we have one
-        if (activeTicketId) {
-          const { data: messages, error: messagesError } = await (supabase as any)
-            .from('help_messages')
-            .select('message, sender_id, sender_role, created_at')
-            .eq('ticket_id', activeTicketId)
-            .order('created_at', { ascending: true });
+        // Load existing messages for this ticket
+        const { data: messages, error: messagesError } = await (supabase as any)
+          .from('help_messages')
+          .select('message, sender_id, sender_role, created_at')
+          .eq('ticket_id', ticketId)
+          .order('created_at', { ascending: true });
 
-          if (messagesError) {
-            console.error('Error loading help messages:', messagesError);
-            setChatMessages([greeting]);
-          } else {
-            setChatMessages([
-              greeting,
-              ...(messages || []).map((m: any) => ({
-                text: m.message as string,
-                isUser: m.sender_role === 'member',
-                time: m.created_at
-                  ? new Date(m.created_at as string).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                  : '',
-              })),
-            ]);
-          }
-        } else {
-          // No previous ticket – just show greeting
+        if (messagesError) {
+          console.error('Error loading help messages:', messagesError);
           setChatMessages([greeting]);
+        } else {
+          setChatMessages([
+            greeting,
+            ...(messages || []).map((m: any) => ({
+              text: m.message as string,
+              isUser: m.sender_role === 'member',
+              time: m.created_at
+                ? new Date(m.created_at as string).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                : '',
+            })),
+          ]);
         }
       } finally {
         setLoading(false);
       }
     };
 
-    void initChat();
+    void loadMessages();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, user?.id]);
+  }, [isOpen, ticketId]);
 
   // Live updates: subscribe to new help_messages for this ticket
   useEffect(() => {
